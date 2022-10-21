@@ -2,13 +2,13 @@
 <Project>
   <ProjectOutputs>
     <ProjectOutput>
-      <FullPath>C:\Users\mb-92\OneDrive\Skrivebord\studie\StabilityTrees\cpp\build\x64\Release\ZERO_CHECK</FullPath>
+      <FullPath>C:\Users\mb-92\OneDrive\Skrivebord\studie\StableTrees\cpp\build\x64\Release\ZERO_CHECK</FullPath>
     </ProjectOutput>
     <ProjectOutput>
-      <FullPath>C:\Users\mb-92\OneDrive\Skrivebord\studie\StabilityTrees\cpp\build\Release\kf_cpp.cp39-win_amd64.pyd</FullPath>
+      <FullPath>C:\Users\mb-92\OneDrive\Skrivebord\studie\StableTrees\cpp\build\Release\stable_trees.cp39-win_amd64.pyd</FullPath>
     </ProjectOutput>
     <ProjectOutput>
-      <FullPath>C:\Users\mb-92\OneDrive\Skrivebord\studie\StabilityTrees\cpp\build\x64\Release\ALL_BUILD</FullPath>
+      <FullPath>C:\Users\mb-92\OneDrive\Skrivebord\studie\StableTrees\cpp\build\x64\Release\ALL_BUILD</FullPath>
     </ProjectOutput>
   </ProjectOutputs>
   <ContentFiles />

@@ -1,0 +1,5 @@
+
+del */S /Q 
+rd /s /q . 2>nul
+cmake ..
+cmake --build . --config Release

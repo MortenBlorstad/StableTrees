@@ -1,8 +1,8 @@
-# Install script for directory: C:/Users/mb-92/OneDrive/Skrivebord/studie/StabilityTrees/cpp
+# Install script for directory: C:/Users/mb-92/OneDrive/Skrivebord/studie/StableTrees/cpp
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
-  set(CMAKE_INSTALL_PREFIX "C:/Program Files (x86)/kf_code")
+  set(CMAKE_INSTALL_PREFIX "C:/Program Files (x86)/StableTrees")
 endif()
 string(REGEX REPLACE "/$" "" CMAKE_INSTALL_PREFIX "${CMAKE_INSTALL_PREFIX}")
 
@@ -34,7 +34,7 @@ endif()
 
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   # Include the install script for each subdirectory.
-  include("C:/Users/mb-92/OneDrive/Skrivebord/studie/StabilityTrees/cpp/build/thirdparty/pybind11/cmake_install.cmake")
+  include("C:/Users/mb-92/OneDrive/Skrivebord/studie/StableTrees/cpp/build/thirdparty/pybind11/cmake_install.cmake")
 
 endif()
 
@@ -46,5 +46,5 @@ endif()
 
 string(REPLACE ";" "\n" CMAKE_INSTALL_MANIFEST_CONTENT
        "${CMAKE_INSTALL_MANIFEST_FILES}")
-file(WRITE "C:/Users/mb-92/OneDrive/Skrivebord/studie/StabilityTrees/cpp/build/${CMAKE_INSTALL_MANIFEST}"
+file(WRITE "C:/Users/mb-92/OneDrive/Skrivebord/studie/StableTrees/cpp/build/${CMAKE_INSTALL_MANIFEST}"
      "${CMAKE_INSTALL_MANIFEST_CONTENT}")

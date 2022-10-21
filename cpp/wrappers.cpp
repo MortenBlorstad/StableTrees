@@ -3,7 +3,8 @@
 
 #include <cstdio>
 
-#include "kf.h"
+#include "node.hpp"
+namespace py = pybind11;
 
 int add(int i, int j)
 {
@@ -11,18 +12,15 @@ int add(int i, int j)
     return i + j;
 }
 
-PYBIND11_MODULE(kf_cpp, m)
+PYBIND11_MODULE(stable_trees, m)
 {
     m.doc() = "C++ KF implementation wrappers";  // optional module docstring
 
     m.def("add", &add, "A function which adds two numbers");
 
-    pybind11::class_<KF>(m, "KF")
-        .def(pybind11::init<double, double, double>())
-        .def("predict", &KF::predict)
-        .def("update", &KF::update)
-        .def_property_readonly("cov", &KF::cov)
-        .def_property_readonly("mean", &KF::mean)
-        .def_property_readonly("pos", &KF::pos)
-        .def_property_readonly("vel", &KF::vel);
+    py::class_<Node>(m, "Node")
+        .def(py::init<>())
+        .def("is_leaf", &Node::is_leaf)
+        .def("get_right_node", &Node::get_right_node)
+        .def("get_left_node", &Node::get_left_node);
 }

@@ -1,8 +1,8 @@
-# Install script for directory: C:/Users/mb-92/OneDrive/Skrivebord/studie/StabilityTrees/cpp/thirdparty/pybind11
+# Install script for directory: C:/Users/mb-92/OneDrive/Skrivebord/studie/StableTrees/cpp/thirdparty/pybind11
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
-  set(CMAKE_INSTALL_PREFIX "C:/Program Files (x86)/kf_code")
+  set(CMAKE_INSTALL_PREFIX "C:/Program Files (x86)/StableTrees")
 endif()
 string(REGEX REPLACE "/$" "" CMAKE_INSTALL_PREFIX "${CMAKE_INSTALL_PREFIX}")
 
