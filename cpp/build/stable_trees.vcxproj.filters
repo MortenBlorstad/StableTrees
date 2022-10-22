@@ -6,7 +6,10 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="C:\Users\mb-92\OneDrive\Skrivebord\studie\StableTrees\cpp\node.hpp">
+    <ClInclude Include="C:\Users\mb-92\OneDrive\Skrivebord\studie\StableTrees\cpp\Tree\node.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\mb-92\OneDrive\Skrivebord\studie\StableTrees\cpp\Tree\splitter.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

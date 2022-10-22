@@ -329,7 +329,8 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="C:\Users\mb-92\OneDrive\Skrivebord\studie\StableTrees\cpp\wrappers.cpp" />
-    <ClInclude Include="C:\Users\mb-92\OneDrive\Skrivebord\studie\StableTrees\cpp\node.hpp" />
+    <ClInclude Include="C:\Users\mb-92\OneDrive\Skrivebord\studie\StableTrees\cpp\Tree\node.hpp" />
+    <ClInclude Include="C:\Users\mb-92\OneDrive\Skrivebord\studie\StableTrees\cpp\Tree\splitter.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="C:\Users\mb-92\OneDrive\Skrivebord\studie\StableTrees\cpp\build\ZERO_CHECK.vcxproj">
