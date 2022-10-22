@@ -1,3 +1,6 @@
 {
-    "cmake.sourceDirectory": "${workspaceFolder}/cpp"
+    "cmake.sourceDirectory": "${workspaceFolder}/cpp",
+    "files.associations": {
+        "functional": "cpp"
+    }
 }

@@ -7,7 +7,7 @@ Id flags:
 The output was:
 0
 MSBuild version 17.3.1+2badb37d1 for .NET Framework
-Build started 10/21/2022 17:59:00.
+Build started 10/22/2022 09:56:14.
 Project "C:\Users\mb-92\OneDrive\Skrivebord\studie\StableTrees\cpp\build\CMakeFiles\3.25.0-rc2\CompilerIdC\CompilerIdC.vcxproj" on node 1 (default targets).
 PrepareForBuild:
   Creating directory "Debug\".
@@ -33,7 +33,7 @@ Build succeeded.
     0 Warning(s)
     0 Error(s)
 
-Time Elapsed 00:00:00.54
+Time Elapsed 00:00:00.63
 
 
 Compilation of the C compiler identification source "CMakeCCompilerId.c" produced "CompilerIdC.exe"
@@ -50,7 +50,7 @@ Id flags:
 The output was:
 0
 MSBuild version 17.3.1+2badb37d1 for .NET Framework
-Build started 10/21/2022 17:59:01.
+Build started 10/22/2022 09:56:15.
 Project "C:\Users\mb-92\OneDrive\Skrivebord\studie\StableTrees\cpp\build\CMakeFiles\3.25.0-rc2\CompilerIdCXX\CompilerIdCXX.vcxproj" on node 1 (default targets).
 PrepareForBuild:
   Creating directory "Debug\".
@@ -76,7 +76,7 @@ Build succeeded.
     0 Warning(s)
     0 Error(s)
 
-Time Elapsed 00:00:00.43
+Time Elapsed 00:00:00.52
 
 
 Compilation of the CXX compiler identification source "CMakeCXXCompilerId.cpp" produced "CompilerIdCXX.exe"
@@ -86,41 +86,41 @@ Compilation of the CXX compiler identification source "CMakeCXXCompilerId.cpp" p
 The CXX compiler identification is MSVC, found in "C:/Users/mb-92/OneDrive/Skrivebord/studie/StableTrees/cpp/build/CMakeFiles/3.25.0-rc2/CompilerIdCXX/CompilerIdCXX.exe"
 
 Detecting C compiler ABI info compiled with the following output:
-Change Dir: C:/Users/mb-92/OneDrive/Skrivebord/studie/StableTrees/cpp/build/CMakeFiles/CMakeScratch/TryCompile-qavae9
+Change Dir: C:/Users/mb-92/OneDrive/Skrivebord/studie/StableTrees/cpp/build/CMakeFiles/CMakeScratch/TryCompile-4d7i9f
 
-Run Build Command(s):C:/Program Files (x86)/Microsoft Visual Studio/2022/BuildTools/MSBuild/Current/Bin/amd64/MSBuild.exe cmTC_7774e.vcxproj /p:Configuration=Debug /p:Platform=x64 /p:VisualStudioVersion=17.0 /v:m && MSBuild version 17.3.1+2badb37d1 for .NET Framework
+Run Build Command(s):C:/Program Files (x86)/Microsoft Visual Studio/2022/BuildTools/MSBuild/Current/Bin/amd64/MSBuild.exe cmTC_0e7a7.vcxproj /p:Configuration=Debug /p:Platform=x64 /p:VisualStudioVersion=17.0 /v:m && MSBuild version 17.3.1+2badb37d1 for .NET Framework
   Microsoft (R) C/C++ Optimizing Compiler Version 19.33.31629 for x64
   CMakeCCompilerABI.c
   Copyright (C) Microsoft Corporation.  All rights reserved.
-  cl /c /Zi /W3 /WX- /diagnostics:column /Od /Ob0 /D _MBCS /D WIN32 /D _WINDOWS /D "CMAKE_INTDIR=\"Debug\"" /Gm- /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /Fo"cmTC_7774e.dir\Debug\\" /Fd"cmTC_7774e.dir\Debug\vc143.pdb" /external:W3 /Gd /TC /errorReport:queue "C:\Users\mb-92\OneDrive\Skrivebord\studie\cmake-3.25.0-rc2-windows-x86_64\share\cmake-3.25\Modules\CMakeCCompilerABI.c"
-  cmTC_7774e.vcxproj -> C:\Users\mb-92\OneDrive\Skrivebord\studie\StableTrees\cpp\build\CMakeFiles\CMakeScratch\TryCompile-qavae9\Debug\cmTC_7774e.exe
+  cl /c /Zi /W3 /WX- /diagnostics:column /Od /Ob0 /D _MBCS /D WIN32 /D _WINDOWS /D "CMAKE_INTDIR=\"Debug\"" /Gm- /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /Fo"cmTC_0e7a7.dir\Debug\\" /Fd"cmTC_0e7a7.dir\Debug\vc143.pdb" /external:W3 /Gd /TC /errorReport:queue "C:\Users\mb-92\OneDrive\Skrivebord\studie\cmake-3.25.0-rc2-windows-x86_64\share\cmake-3.25\Modules\CMakeCCompilerABI.c"
+  cmTC_0e7a7.vcxproj -> C:\Users\mb-92\OneDrive\Skrivebord\studie\StableTrees\cpp\build\CMakeFiles\CMakeScratch\TryCompile-4d7i9f\Debug\cmTC_0e7a7.exe
 
 
 
 Detecting CXX compiler ABI info compiled with the following output:
-Change Dir: C:/Users/mb-92/OneDrive/Skrivebord/studie/StableTrees/cpp/build/CMakeFiles/CMakeScratch/TryCompile-hemgv7
+Change Dir: C:/Users/mb-92/OneDrive/Skrivebord/studie/StableTrees/cpp/build/CMakeFiles/CMakeScratch/TryCompile-q0t3bu
 
-Run Build Command(s):C:/Program Files (x86)/Microsoft Visual Studio/2022/BuildTools/MSBuild/Current/Bin/amd64/MSBuild.exe cmTC_f2e1d.vcxproj /p:Configuration=Debug /p:Platform=x64 /p:VisualStudioVersion=17.0 /v:m && MSBuild version 17.3.1+2badb37d1 for .NET Framework
+Run Build Command(s):C:/Program Files (x86)/Microsoft Visual Studio/2022/BuildTools/MSBuild/Current/Bin/amd64/MSBuild.exe cmTC_3893c.vcxproj /p:Configuration=Debug /p:Platform=x64 /p:VisualStudioVersion=17.0 /v:m && MSBuild version 17.3.1+2badb37d1 for .NET Framework
   Microsoft (R) C/C++ Optimizing Compiler Version 19.33.31629 for x64
-  CMakeCXXCompilerABI.cpp
   Copyright (C) Microsoft Corporation.  All rights reserved.
-  cl /c /Zi /W3 /WX- /diagnostics:column /Od /Ob0 /D _MBCS /D WIN32 /D _WINDOWS /D "CMAKE_INTDIR=\"Debug\"" /Gm- /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /GR /Fo"cmTC_f2e1d.dir\Debug\\" /Fd"cmTC_f2e1d.dir\Debug\vc143.pdb" /external:W3 /Gd /TP /errorReport:queue "C:\Users\mb-92\OneDrive\Skrivebord\studie\cmake-3.25.0-rc2-windows-x86_64\share\cmake-3.25\Modules\CMakeCXXCompilerABI.cpp"
-  cmTC_f2e1d.vcxproj -> C:\Users\mb-92\OneDrive\Skrivebord\studie\StableTrees\cpp\build\CMakeFiles\CMakeScratch\TryCompile-hemgv7\Debug\cmTC_f2e1d.exe
+  CMakeCXXCompilerABI.cpp
+  cl /c /Zi /W3 /WX- /diagnostics:column /Od /Ob0 /D _MBCS /D WIN32 /D _WINDOWS /D "CMAKE_INTDIR=\"Debug\"" /Gm- /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /GR /Fo"cmTC_3893c.dir\Debug\\" /Fd"cmTC_3893c.dir\Debug\vc143.pdb" /external:W3 /Gd /TP /errorReport:queue "C:\Users\mb-92\OneDrive\Skrivebord\studie\cmake-3.25.0-rc2-windows-x86_64\share\cmake-3.25\Modules\CMakeCXXCompilerABI.cpp"
+  cmTC_3893c.vcxproj -> C:\Users\mb-92\OneDrive\Skrivebord\studie\StableTrees\cpp\build\CMakeFiles\CMakeScratch\TryCompile-q0t3bu\Debug\cmTC_3893c.exe
 
 
 
 Performing C++ SOURCE FILE Test HAS_MSVC_GL_LTCG succeeded with the following output:
-Change Dir: C:/Users/mb-92/OneDrive/Skrivebord/studie/StableTrees/cpp/build/CMakeFiles/CMakeScratch/TryCompile-nxls74
+Change Dir: C:/Users/mb-92/OneDrive/Skrivebord/studie/StableTrees/cpp/build/CMakeFiles/CMakeScratch/TryCompile-o53n30
 
-Run Build Command(s):C:/Program Files (x86)/Microsoft Visual Studio/2022/BuildTools/MSBuild/Current/Bin/amd64/MSBuild.exe cmTC_3b12d.vcxproj /p:Configuration=Debug /p:Platform=x64 /p:VisualStudioVersion=17.0 /v:m && MSBuild version 17.3.1+2badb37d1 for .NET Framework
+Run Build Command(s):C:/Program Files (x86)/Microsoft Visual Studio/2022/BuildTools/MSBuild/Current/Bin/amd64/MSBuild.exe cmTC_018a2.vcxproj /p:Configuration=Debug /p:Platform=x64 /p:VisualStudioVersion=17.0 /v:m && MSBuild version 17.3.1+2badb37d1 for .NET Framework
   Microsoft (R) C/C++ Optimizing Compiler Version 19.33.31629 for x64
   src.cxx
   Copyright (C) Microsoft Corporation.  All rights reserved.
-  cl /c /Zi /W3 /WX- /diagnostics:column /Od /Ob0 /GL /D _MBCS /D WIN32 /D _WINDOWS /D HAS_MSVC_GL_LTCG /D "CMAKE_INTDIR=\"Debug\"" /Gm- /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /GR /Fo"cmTC_3b12d.dir\Debug\\" /Fd"cmTC_3b12d.dir\Debug\vc143.pdb" /external:W3 /Gd /TP /errorReport:queue "C:\Users\mb-92\OneDrive\Skrivebord\studie\StableTrees\cpp\build\CMakeFiles\CMakeScratch\TryCompile-nxls74\src.cxx"
-LINK : warning LNK4075: ignoring '/INCREMENTAL' due to '/LTCG' specification [C:\Users\mb-92\OneDrive\Skrivebord\studie\StableTrees\cpp\build\CMakeFiles\CMakeScratch\TryCompile-nxls74\cmTC_3b12d.vcxproj]
+  cl /c /Zi /W3 /WX- /diagnostics:column /Od /Ob0 /GL /D _MBCS /D WIN32 /D _WINDOWS /D HAS_MSVC_GL_LTCG /D "CMAKE_INTDIR=\"Debug\"" /Gm- /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /GR /Fo"cmTC_018a2.dir\Debug\\" /Fd"cmTC_018a2.dir\Debug\vc143.pdb" /external:W3 /Gd /TP /errorReport:queue "C:\Users\mb-92\OneDrive\Skrivebord\studie\StableTrees\cpp\build\CMakeFiles\CMakeScratch\TryCompile-o53n30\src.cxx"
+LINK : warning LNK4075: ignoring '/INCREMENTAL' due to '/LTCG' specification [C:\Users\mb-92\OneDrive\Skrivebord\studie\StableTrees\cpp\build\CMakeFiles\CMakeScratch\TryCompile-o53n30\cmTC_018a2.vcxproj]
   Generating code
   Finished generating code
-  cmTC_3b12d.vcxproj -> C:\Users\mb-92\OneDrive\Skrivebord\studie\StableTrees\cpp\build\CMakeFiles\CMakeScratch\TryCompile-nxls74\Debug\cmTC_3b12d.exe
+  cmTC_018a2.vcxproj -> C:\Users\mb-92\OneDrive\Skrivebord\studie\StableTrees\cpp\build\CMakeFiles\CMakeScratch\TryCompile-o53n30\Debug\cmTC_018a2.exe
 
 
 Source file was:
