@@ -18,7 +18,7 @@ using namespace std;
 
 #include "Tree/node.hpp"
 #include "Tree/splitter.hpp"
-#include "Tree/treebuilder.hpp"
+#include "Tree/tree.hpp"
 
 
 namespace py = pybind11;
@@ -46,7 +46,10 @@ PYBIND11_MODULE(stable_trees, m)
         .def("set_right_node", &Node::set_right_node)
         .def("get_right_node", &Node::get_right_node)
         .def("get_left_node", &Node::get_left_node)
-        .def("predict", &Node::predict);
+        .def("predict", &Node::predict)
+        .def("text", &Node::text)
+        .def("nsamples", &Node::nsamples)
+        .def("get_split_score", &Node::get_split_score);
 
     py::class_<Splitter>(m, "Splitter")
         .def(py::init<>())
@@ -59,11 +62,20 @@ PYBIND11_MODULE(stable_trees, m)
         .def("select_split", &Splitter::select_split);
 
     
-    py::class_<Treebuilder>(m, "Treebuilder")
+    py::class_<Tree>(m, "Tree")
         .def(py::init<>())
-        .def("all_same", &Treebuilder::all_same)
-        .def("all_same_features_values", &Treebuilder::all_same_features_values )
-        .def("get_masks", &Treebuilder::get_masks);
+        .def("all_same", &Tree::all_same)
+        .def("all_same_features_values", &Tree::all_same_features_values )
+        .def("get_masks", &Tree::get_masks)
+        .def("build_tree", &Tree::build_tree)
+        .def("learn", &Tree::learn)
+        .def("get_root", &Tree::get_root)
+        .def("example", &Tree::example)
+        .def("predict", &Tree::predict);
+        
+
+
+  
 
 
 

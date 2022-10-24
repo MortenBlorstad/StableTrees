@@ -5,11 +5,13 @@ import sys
 
 sys.path.append(cur_file_path + '\\..\\cpp\\build\\Release\\')
 
-from stable_trees import Node, Splitter, Treebuilder
-
+from stable_trees import Node, Splitter, Tree
+from TreePlotter import TreePlotter
 
 import numpy as np
 import unittest
+
+plotter = TreePlotter()
 
 class TestKF(unittest.TestCase):
     def test_node_constructor(self):
@@ -115,7 +117,7 @@ class TestKF(unittest.TestCase):
     def test_TreeBuilder_stop_conditions(self):
         nrow = 100
         ncol = 10
-        treebuilder = Treebuilder()
+        treebuilder = Tree()
         
         y_same = np.ones(shape=nrow)
         y_diff = np.random.uniform(size=nrow, low=0, high = 1)
@@ -130,11 +132,39 @@ class TestKF(unittest.TestCase):
         X_same[:,0] = np.random.uniform(size=nrow, low=0, high = 1)
         self.assertFalse(treebuilder.all_same_features_values(X_same))
 
-
+    def test_TreeBuilder_get_masks(self):
+        y = np.array([0.5,1.0,2.5])
+        X = np.array([[0.0,0.0],[0,1.0],[0,3.0]])
         
 
+        value = X[:,1].mean()
+        mask = X[:,1]<=value
+        y_left = y[mask]
+        y_right = y[np.invert(mask)]
+        y_pred_left = np.mean(y_left)
+        y_pred_right = np.mean(y_right)
+        treebuilder = Tree()
+        #print(treebuilder.get_masks(X[:,1],y, value),value)
+
+    def test_TreeBuilder_build_tree(self):
+        y = np.array([1.0,0.9,2.5])
+        X = np.array([[0,1.0],[0,0.9],[0,3.0]])
+        treebuilder = Tree()
+        treebuilder.learn(X,y)
+        root = treebuilder.get_root()
+        print(root)
+        node = root
+        #while not node.is_leaf():
+        #    
+        #    print(node.get_left_node().predict())
+        #    print(node.get_right_node().predict())
+        #    node = node.get_left_node()
         
-        
+        plotter.plot(root)
+    
+
+
+  
         
 if __name__ == '__main__':
     unittest.main()

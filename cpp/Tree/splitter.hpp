@@ -3,8 +3,9 @@
 
 #define __SLITTER_HPP_INCLUDED__
 
-#include <Eigen/Dense>
-
+//#include <C:\Users\mb-92\OneDrive\Skrivebord\studie\StableTrees\cpp\thirdparty\eigen\Eigen/Dense>
+#include<Eigen/Dense>
+#include <unordered_set>
 
 using Eigen::Dynamic;
 using dVector = Eigen::Matrix<double, Dynamic, 1>;
@@ -27,6 +28,7 @@ class Splitter{
         double mse_criterion(dVector  &feature,dVector  &y, double  value);
         tuple<double,double> select_split(dVector  &feature, dVector  &y);
         tuple<int,double,double>  find_best_split(dMatrix  &X, dVector  &y);
+        tuple<double,double> select_split_from_all(dVector  &feature, dVector  &y);
 
     //private:
         //double mse_criterion(dMatrix &feature, dVector &y, bVector &mask);
@@ -97,8 +99,36 @@ double Splitter::mse_criterion(dVector  &feature,dVector  &y, double  value){
 
 }
 
+
+
+tuple<double,double> Splitter::select_split_from_all(dVector  &feature, dVector  &y){
+    double min_score = std::numeric_limits<double>::infinity();
+    double score;
+    double split_value;
+    double best_split_value;
+    std::unordered_set<double> values_seen = {};
+    for(int i =0; i<feature.rows(); i ++){
+        
+        split_value = feature(i);
+        if (values_seen.find(split_value) != values_seen.end()){
+            continue;
+        }
+        
+        values_seen.insert(split_value);
+
+        score = mse_criterion(feature, y, split_value);
+        if(min_score>score){
+
+            min_score = score;
+            best_split_value =split_value;
+        }
+    }
+
+    return tuple<double,double>(min_score,best_split_value);
+}
+
+
 tuple<double,double> Splitter::select_split(dVector  &feature, dVector  &y){
-    double min_score = INFINITY;
     double score;
     double split_value = feature.mean();
     score = mse_criterion(feature, y, split_value);
@@ -115,12 +145,14 @@ tuple<int, double,double> Splitter::find_best_split(dMatrix  &X, dVector  &y){
     for(int i =0; i<X.cols(); i++){
         feature = X.col(i);
         tie(score, split_value) = select_split(feature, y);
+
         if(min_score>score){
             min_score = score;
             best_split_value = split_value;
             split_feature = i;
         }
     }
+
     return tuple<int, double,double>(split_feature,min_score, best_split_value);
 }
 

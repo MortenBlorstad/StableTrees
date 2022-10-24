@@ -276,9 +276,6 @@ StableTrees_SOURCE_DIR:STATIC=C:/Users/mb-92/OneDrive/Skrivebord/studie/StableTr
 //Value Computed by CMake
 pybind11_BINARY_DIR:STATIC=C:/Users/mb-92/OneDrive/Skrivebord/studie/StableTrees/cpp/build/thirdparty/pybind11
 
-//The directory containing a CMake configuration file for pybind11.
-pybind11_DIR:PATH=pybind11_DIR-NOTFOUND
-
 //Value Computed by CMake
 pybind11_IS_TOP_LEVEL:STATIC=OFF
 

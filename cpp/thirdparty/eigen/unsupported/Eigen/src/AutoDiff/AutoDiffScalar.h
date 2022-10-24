@@ -534,8 +534,7 @@ struct ScalarBinaryOpTraits<typename DerType::Scalar,AutoDiffScalar<DerType>, Bi
   EIGEN_EXPR_BINARYOP_SCALAR_RETURN_TYPE(typename Eigen::internal::remove_all<DerType>::type, typename Eigen::internal::traits<typename Eigen::internal::remove_all<DerType>::type>::Scalar, product) > \
   FUNC(const Eigen::AutoDiffScalar<DerType>& x) { \
     using namespace Eigen; \
-    typedef typename Eigen::internal::traits<typename Eigen::internal::remove_all<DerType>::type>::Scalar Scalar; \
-    EIGEN_UNUSED_VARIABLE(sizeof(Scalar)); \
+    EIGEN_UNUSED typedef typename Eigen::internal::traits<typename Eigen::internal::remove_all<DerType>::type>::Scalar Scalar; \
     CODE; \
   }
 
@@ -683,12 +682,5 @@ template<typename DerType> struct NumTraits<AutoDiffScalar<DerType> >
 };
 
 }
-
-namespace std {
-template <typename T>
-class numeric_limits<Eigen::AutoDiffScalar<T> >
-  : public numeric_limits<typename T::Scalar> {};
-
-}  // namespace std
 
 #endif // EIGEN_AUTODIFF_SCALAR_H

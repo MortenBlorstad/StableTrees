@@ -7,7 +7,7 @@ Id flags:
 The output was:
 0
 MSBuild version 17.3.1+2badb37d1 for .NET Framework
-Build started 10/23/2022 10:40:33.
+Build started 10/24/2022 16:40:00.
 Project "C:\Users\mb-92\OneDrive\Skrivebord\studie\StableTrees\cpp\build\CMakeFiles\3.25.0-rc2\CompilerIdC\CompilerIdC.vcxproj" on node 1 (default targets).
 PrepareForBuild:
   Creating directory "Debug\".
@@ -33,7 +33,7 @@ Build succeeded.
     0 Warning(s)
     0 Error(s)
 
-Time Elapsed 00:00:00.56
+Time Elapsed 00:00:00.55
 
 
 Compilation of the C compiler identification source "CMakeCCompilerId.c" produced "CompilerIdC.exe"
@@ -50,7 +50,7 @@ Id flags:
 The output was:
 0
 MSBuild version 17.3.1+2badb37d1 for .NET Framework
-Build started 10/23/2022 10:40:34.
+Build started 10/24/2022 16:40:00.
 Project "C:\Users\mb-92\OneDrive\Skrivebord\studie\StableTrees\cpp\build\CMakeFiles\3.25.0-rc2\CompilerIdCXX\CompilerIdCXX.vcxproj" on node 1 (default targets).
 PrepareForBuild:
   Creating directory "Debug\".
@@ -86,41 +86,41 @@ Compilation of the CXX compiler identification source "CMakeCXXCompilerId.cpp" p
 The CXX compiler identification is MSVC, found in "C:/Users/mb-92/OneDrive/Skrivebord/studie/StableTrees/cpp/build/CMakeFiles/3.25.0-rc2/CompilerIdCXX/CompilerIdCXX.exe"
 
 Detecting C compiler ABI info compiled with the following output:
-Change Dir: C:/Users/mb-92/OneDrive/Skrivebord/studie/StableTrees/cpp/build/CMakeFiles/CMakeScratch/TryCompile-377rdq
+Change Dir: C:/Users/mb-92/OneDrive/Skrivebord/studie/StableTrees/cpp/build/CMakeFiles/CMakeScratch/TryCompile-zajeq7
 
-Run Build Command(s):C:/Program Files (x86)/Microsoft Visual Studio/2022/BuildTools/MSBuild/Current/Bin/amd64/MSBuild.exe cmTC_5de1e.vcxproj /p:Configuration=Debug /p:Platform=x64 /p:VisualStudioVersion=17.0 /v:m && MSBuild version 17.3.1+2badb37d1 for .NET Framework
+Run Build Command(s):C:/Program Files (x86)/Microsoft Visual Studio/2022/BuildTools/MSBuild/Current/Bin/amd64/MSBuild.exe cmTC_6fcdc.vcxproj /p:Configuration=Debug /p:Platform=x64 /p:VisualStudioVersion=17.0 /v:m && MSBuild version 17.3.1+2badb37d1 for .NET Framework
   Microsoft (R) C/C++ Optimizing Compiler Version 19.33.31629 for x64
   CMakeCCompilerABI.c
   Copyright (C) Microsoft Corporation.  All rights reserved.
-  cl /c /Zi /W3 /WX- /diagnostics:column /Od /Ob0 /D _MBCS /D WIN32 /D _WINDOWS /D "CMAKE_INTDIR=\"Debug\"" /Gm- /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /Fo"cmTC_5de1e.dir\Debug\\" /Fd"cmTC_5de1e.dir\Debug\vc143.pdb" /external:W3 /Gd /TC /errorReport:queue "C:\Users\mb-92\OneDrive\Skrivebord\studie\cmake-3.25.0-rc2-windows-x86_64\share\cmake-3.25\Modules\CMakeCCompilerABI.c"
-  cmTC_5de1e.vcxproj -> C:\Users\mb-92\OneDrive\Skrivebord\studie\StableTrees\cpp\build\CMakeFiles\CMakeScratch\TryCompile-377rdq\Debug\cmTC_5de1e.exe
+  cl /c /Zi /W3 /WX- /diagnostics:column /Od /Ob0 /D _MBCS /D WIN32 /D _WINDOWS /D "CMAKE_INTDIR=\"Debug\"" /Gm- /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /Fo"cmTC_6fcdc.dir\Debug\\" /Fd"cmTC_6fcdc.dir\Debug\vc143.pdb" /external:W3 /Gd /TC /errorReport:queue "C:\Users\mb-92\OneDrive\Skrivebord\studie\cmake-3.25.0-rc2-windows-x86_64\share\cmake-3.25\Modules\CMakeCCompilerABI.c"
+  cmTC_6fcdc.vcxproj -> C:\Users\mb-92\OneDrive\Skrivebord\studie\StableTrees\cpp\build\CMakeFiles\CMakeScratch\TryCompile-zajeq7\Debug\cmTC_6fcdc.exe
 
 
 
 Detecting CXX compiler ABI info compiled with the following output:
-Change Dir: C:/Users/mb-92/OneDrive/Skrivebord/studie/StableTrees/cpp/build/CMakeFiles/CMakeScratch/TryCompile-s7rnwv
+Change Dir: C:/Users/mb-92/OneDrive/Skrivebord/studie/StableTrees/cpp/build/CMakeFiles/CMakeScratch/TryCompile-3xdlem
 
-Run Build Command(s):C:/Program Files (x86)/Microsoft Visual Studio/2022/BuildTools/MSBuild/Current/Bin/amd64/MSBuild.exe cmTC_c0c53.vcxproj /p:Configuration=Debug /p:Platform=x64 /p:VisualStudioVersion=17.0 /v:m && MSBuild version 17.3.1+2badb37d1 for .NET Framework
+Run Build Command(s):C:/Program Files (x86)/Microsoft Visual Studio/2022/BuildTools/MSBuild/Current/Bin/amd64/MSBuild.exe cmTC_08725.vcxproj /p:Configuration=Debug /p:Platform=x64 /p:VisualStudioVersion=17.0 /v:m && MSBuild version 17.3.1+2badb37d1 for .NET Framework
   Microsoft (R) C/C++ Optimizing Compiler Version 19.33.31629 for x64
   CMakeCXXCompilerABI.cpp
   Copyright (C) Microsoft Corporation.  All rights reserved.
-  cl /c /Zi /W3 /WX- /diagnostics:column /Od /Ob0 /D _MBCS /D WIN32 /D _WINDOWS /D "CMAKE_INTDIR=\"Debug\"" /Gm- /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /GR /Fo"cmTC_c0c53.dir\Debug\\" /Fd"cmTC_c0c53.dir\Debug\vc143.pdb" /external:W3 /Gd /TP /errorReport:queue "C:\Users\mb-92\OneDrive\Skrivebord\studie\cmake-3.25.0-rc2-windows-x86_64\share\cmake-3.25\Modules\CMakeCXXCompilerABI.cpp"
-  cmTC_c0c53.vcxproj -> C:\Users\mb-92\OneDrive\Skrivebord\studie\StableTrees\cpp\build\CMakeFiles\CMakeScratch\TryCompile-s7rnwv\Debug\cmTC_c0c53.exe
+  cl /c /Zi /W3 /WX- /diagnostics:column /Od /Ob0 /D _MBCS /D WIN32 /D _WINDOWS /D "CMAKE_INTDIR=\"Debug\"" /Gm- /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /GR /Fo"cmTC_08725.dir\Debug\\" /Fd"cmTC_08725.dir\Debug\vc143.pdb" /external:W3 /Gd /TP /errorReport:queue "C:\Users\mb-92\OneDrive\Skrivebord\studie\cmake-3.25.0-rc2-windows-x86_64\share\cmake-3.25\Modules\CMakeCXXCompilerABI.cpp"
+  cmTC_08725.vcxproj -> C:\Users\mb-92\OneDrive\Skrivebord\studie\StableTrees\cpp\build\CMakeFiles\CMakeScratch\TryCompile-3xdlem\Debug\cmTC_08725.exe
 
 
 
 Performing C++ SOURCE FILE Test HAS_MSVC_GL_LTCG succeeded with the following output:
-Change Dir: C:/Users/mb-92/OneDrive/Skrivebord/studie/StableTrees/cpp/build/CMakeFiles/CMakeScratch/TryCompile-puoqsp
+Change Dir: C:/Users/mb-92/OneDrive/Skrivebord/studie/StableTrees/cpp/build/CMakeFiles/CMakeScratch/TryCompile-9rc6mp
 
-Run Build Command(s):C:/Program Files (x86)/Microsoft Visual Studio/2022/BuildTools/MSBuild/Current/Bin/amd64/MSBuild.exe cmTC_669d8.vcxproj /p:Configuration=Debug /p:Platform=x64 /p:VisualStudioVersion=17.0 /v:m && MSBuild version 17.3.1+2badb37d1 for .NET Framework
+Run Build Command(s):C:/Program Files (x86)/Microsoft Visual Studio/2022/BuildTools/MSBuild/Current/Bin/amd64/MSBuild.exe cmTC_ccc23.vcxproj /p:Configuration=Debug /p:Platform=x64 /p:VisualStudioVersion=17.0 /v:m && MSBuild version 17.3.1+2badb37d1 for .NET Framework
   Microsoft (R) C/C++ Optimizing Compiler Version 19.33.31629 for x64
   src.cxx
   Copyright (C) Microsoft Corporation.  All rights reserved.
-  cl /c /Zi /W3 /WX- /diagnostics:column /Od /Ob0 /GL /D _MBCS /D WIN32 /D _WINDOWS /D HAS_MSVC_GL_LTCG /D "CMAKE_INTDIR=\"Debug\"" /Gm- /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /GR /Fo"cmTC_669d8.dir\Debug\\" /Fd"cmTC_669d8.dir\Debug\vc143.pdb" /external:W3 /Gd /TP /errorReport:queue "C:\Users\mb-92\OneDrive\Skrivebord\studie\StableTrees\cpp\build\CMakeFiles\CMakeScratch\TryCompile-puoqsp\src.cxx"
-LINK : warning LNK4075: ignoring '/INCREMENTAL' due to '/LTCG' specification [C:\Users\mb-92\OneDrive\Skrivebord\studie\StableTrees\cpp\build\CMakeFiles\CMakeScratch\TryCompile-puoqsp\cmTC_669d8.vcxproj]
+  cl /c /Zi /W3 /WX- /diagnostics:column /Od /Ob0 /GL /D _MBCS /D WIN32 /D _WINDOWS /D HAS_MSVC_GL_LTCG /D "CMAKE_INTDIR=\"Debug\"" /Gm- /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /GR /Fo"cmTC_ccc23.dir\Debug\\" /Fd"cmTC_ccc23.dir\Debug\vc143.pdb" /external:W3 /Gd /TP /errorReport:queue "C:\Users\mb-92\OneDrive\Skrivebord\studie\StableTrees\cpp\build\CMakeFiles\CMakeScratch\TryCompile-9rc6mp\src.cxx"
+LINK : warning LNK4075: ignoring '/INCREMENTAL' due to '/LTCG' specification [C:\Users\mb-92\OneDrive\Skrivebord\studie\StableTrees\cpp\build\CMakeFiles\CMakeScratch\TryCompile-9rc6mp\cmTC_ccc23.vcxproj]
   Generating code
   Finished generating code
-  cmTC_669d8.vcxproj -> C:\Users\mb-92\OneDrive\Skrivebord\studie\StableTrees\cpp\build\CMakeFiles\CMakeScratch\TryCompile-puoqsp\Debug\cmTC_669d8.exe
+  cmTC_ccc23.vcxproj -> C:\Users\mb-92\OneDrive\Skrivebord\studie\StableTrees\cpp\build\CMakeFiles\CMakeScratch\TryCompile-9rc6mp\Debug\cmTC_ccc23.exe
 
 
 Source file was:

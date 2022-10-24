@@ -20,6 +20,7 @@
 
 #ifndef UNSUPPORTED_EIGEN_CXX11_SRC_TENSOR_TENSORSYCL_TUPLE_HPP
 #define UNSUPPORTED_EIGEN_CXX11_SRC_TENSOR_TENSORSYCL_TUPLE_HPP
+
 namespace utility {
 namespace tuple {
 /// \struct StaticIf
@@ -34,7 +35,7 @@ struct StaticIf<true, T> {
 
 /// \struct Tuple
 /// \brief is a fixed-size collection of heterogeneous values
-/// \tparam Ts...	-	the types of the elements that the tuple stores.
+/// \ztparam Ts...	-	the types of the elements that the tuple stores.
 /// Empty list is supported.
 template <class... Ts>
 struct Tuple {};
@@ -147,8 +148,6 @@ struct IndexList {};
 template <size_t MIN, size_t N, size_t... Is>
 struct RangeBuilder;
 
-// FIXME Doxygen has problems with recursive inheritance
-#ifndef EIGEN_PARSED_BY_DOXYGEN
 /// \brief base Step: Specialisation of the \ref RangeBuilder when the
 /// MIN==MAX. In this case the Is... is [0 to sizeof...(tuple elements))
 /// \tparam MIN is the starting index of the tuple
@@ -166,7 +165,6 @@ struct RangeBuilder<MIN, MIN, Is...> {
 /// \tparam Is... are the list of generated index so far
 template <size_t MIN, size_t N, size_t... Is>
 struct RangeBuilder : public RangeBuilder<MIN, N - 1, N - 1, Is...> {};
-#endif // EIGEN_PARSED_BY_DOXYGEN
 
 /// \brief IndexRange that returns a [MIN, MAX) index range
 /// \tparam MIN is the starting index in the tuple
@@ -234,4 +232,5 @@ Tuple<Args1..., Args2...> append(Tuple<Args1...> t1,Tuple<Args2...> t2) {
 }
 }  // tuple
 }  // utility
+
 #endif  // UNSUPPORTED_EIGEN_CXX11_SRC_TENSOR_TENSORSYCL_TUPLE_HPP
