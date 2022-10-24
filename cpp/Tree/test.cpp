@@ -1,4 +1,4 @@
-#include "treebuilder.hpp"
+#include "tree.hpp"
 
 
 #include "node.hpp"
@@ -17,7 +17,7 @@ using namespace Eigen;
 
 int main(){
 
-    Treebuilder* tb = new Treebuilder();
+    Tree* tb = new Tree();
     tb->example();
     
     std::cout << tb->root->is_leaf()<< std::endl;
