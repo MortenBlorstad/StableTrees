@@ -1,6 +1,8 @@
 from matplotlib import pyplot as plt
 import os
 
+from sklearn.metrics import mean_squared_error
+
 cur_file_path = os.path.dirname(os.path.abspath(__file__))
 
 import sys
@@ -55,31 +57,35 @@ def __plot(node: Node,x=0,y=-10,off_x = 100000,off_y = 15):
     return 
 
 if __name__ == "__main__":
-    from stable_trees import Tree
+    from stable_trees import Tree,Splitter
     import time
     from sklearn import datasets
     from sklearn.tree import DecisionTreeRegressor,plot_tree
     import numpy as np  
     #X  = np.array([[1,1],[1,2],[2,4],[2,3],[4,5]])
     #y = X[:,0]*2 + X[:,1]*0.5 
-    X,y= datasets.make_regression(100000,10, random_state=0)
+    X,y= datasets.make_regression(50000,10, random_state=0)
     start = time.time()
     clf = DecisionTreeRegressor(random_state=0)
     clf = clf.fit(X,y)
-    clf.predict(X)
+    y_pred = clf.predict(X)
+    mse = mean_squared_error(y, y_pred)
     end = time.time()
-    print("sklearn: ",end - start)
+    print(f"sklearn: time {end - start}, mse {mse}" )
+    
+   
     
     start = time.time()
     tree = Tree()
     tree.learn(X,y)
-    tree.predict(X)
+    y_pred = tree.predict(X)
+    mse = mean_squared_error(y, y_pred)
     end = time.time()
-    print("my impl: ",end - start)
+    print(f"my impl: time {end - start}, mse {mse}" )
     #treebuilder.example()
-    #root = tree.get_root()
-    #print(tree.predict(X),y))
-    #plot(root)
+    root = tree.get_root()
+    print(tree.predict(X),y)
+    plot(root)
     
     
    

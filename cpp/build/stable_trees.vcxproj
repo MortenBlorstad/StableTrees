@@ -87,7 +87,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <AdditionalIncludeDirectories>C:\Users\mb-92\OneDrive\Skrivebord\studie\StableTrees\cpp\thirdparty\eigen;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalOptions>%(AdditionalOptions) /external:I "C:/Users/mb-92/AppData/Local/Programs/Python/Python39/include" /external:I "C:/Users/mb-92/OneDrive/Skrivebord/studie/StableTrees/cpp/thirdparty/pybind11/include" /bigobj</AdditionalOptions>
+      <AdditionalOptions>%(AdditionalOptions) /external:I "C:/Users/mb-92/AppData/Local/Programs/Python/Python39/include" /external:I "C:/Users/mb-92/OneDrive/Skrivebord/studie/StableTrees/cpp/thirdparty/pybind11/include" /openmp, /openmp:llvm /bigobj</AdditionalOptions>
       <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
@@ -132,7 +132,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
       <AdditionalIncludeDirectories>C:\Users\mb-92\OneDrive\Skrivebord\studie\StableTrees\cpp\thirdparty\eigen;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalOptions>%(AdditionalOptions) /external:I "C:/Users/mb-92/AppData/Local/Programs/Python/Python39/include" /external:I "C:/Users/mb-92/OneDrive/Skrivebord/studie/StableTrees/cpp/thirdparty/pybind11/include" /bigobj</AdditionalOptions>
+      <AdditionalOptions>%(AdditionalOptions) /external:I "C:/Users/mb-92/AppData/Local/Programs/Python/Python39/include" /external:I "C:/Users/mb-92/OneDrive/Skrivebord/studie/StableTrees/cpp/thirdparty/pybind11/include" /openmp, /openmp:llvm /bigobj</AdditionalOptions>
       <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
       <ExceptionHandling>Sync</ExceptionHandling>
       <ExternalWarningLevel>TurnOffAllWarnings</ExternalWarningLevel>
@@ -180,7 +180,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">
     <ClCompile>
       <AdditionalIncludeDirectories>C:\Users\mb-92\OneDrive\Skrivebord\studie\StableTrees\cpp\thirdparty\eigen;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalOptions>%(AdditionalOptions) /external:I "C:/Users/mb-92/AppData/Local/Programs/Python/Python39/include" /external:I "C:/Users/mb-92/OneDrive/Skrivebord/studie/StableTrees/cpp/thirdparty/pybind11/include" /bigobj</AdditionalOptions>
+      <AdditionalOptions>%(AdditionalOptions) /external:I "C:/Users/mb-92/AppData/Local/Programs/Python/Python39/include" /external:I "C:/Users/mb-92/OneDrive/Skrivebord/studie/StableTrees/cpp/thirdparty/pybind11/include" /openmp, /openmp:llvm /bigobj</AdditionalOptions>
       <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
       <ExceptionHandling>Sync</ExceptionHandling>
       <ExternalWarningLevel>TurnOffAllWarnings</ExternalWarningLevel>
@@ -228,7 +228,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">
     <ClCompile>
       <AdditionalIncludeDirectories>C:\Users\mb-92\OneDrive\Skrivebord\studie\StableTrees\cpp\thirdparty\eigen;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalOptions>%(AdditionalOptions) /external:I "C:/Users/mb-92/AppData/Local/Programs/Python/Python39/include" /external:I "C:/Users/mb-92/OneDrive/Skrivebord/studie/StableTrees/cpp/thirdparty/pybind11/include" /bigobj</AdditionalOptions>
+      <AdditionalOptions>%(AdditionalOptions) /external:I "C:/Users/mb-92/AppData/Local/Programs/Python/Python39/include" /external:I "C:/Users/mb-92/OneDrive/Skrivebord/studie/StableTrees/cpp/thirdparty/pybind11/include" /openmp, /openmp:llvm /bigobj</AdditionalOptions>
       <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <ExceptionHandling>Sync</ExceptionHandling>

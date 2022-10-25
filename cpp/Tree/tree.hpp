@@ -28,13 +28,16 @@ class Tree{
         Tree(); 
         bool all_same(dVector &vec);
         bool all_same_features_values(dMatrix  &X);
-        Node* build_tree(dMatrix  &X, dVector &y);
+        Node* build_tree(dMatrix  &X, dVector &y, int depth);
         tuple<iVector, iVector> get_masks(dVector &feature, dVector &y, double value);
         void learn(dMatrix  &X, dVector &y);
         Node* example();
         Node* get_root();
         double predict_obs(dVector  &obs);
         dVector predict(dMatrix  &X);
+    private:
+        int max_depth = INT_MAX;
+        double min_split_sample = 2.0;
 
 
 };
@@ -84,7 +87,7 @@ tuple<iVector, iVector> Tree::get_masks(dVector &feature, dVector &y, double val
 }
 
 void Tree::learn(dMatrix  &X, dVector &y){
-    this->root = build_tree(X, y);
+    this->root = build_tree(X, y, 0);
 }
 
 double Tree::predict_obs(dVector  &obs){
@@ -116,14 +119,19 @@ dVector Tree::predict(dMatrix  &X){
 }
 
 
-Node* Tree::build_tree(dMatrix  &X, dVector &y){
-    
-    
-    if(all_same(y)){
+Node* Tree::build_tree(dMatrix  &X, dVector &y, int depth){
+    if (depth> this->max_depth){
+        return new Node(y.array().mean(),y.rows());
+    }else if(all_same(y)){
         return new Node(y.array()(0), y.rows());
     }else if(all_same_features_values(X)){
         return new Node(y.array().mean() ,y.rows());
+    }else if(y.rows()< this->min_split_sample){
+        return new Node(y.array().mean() ,y.rows());
     }else{
+
+
+
         double score;
         double split_value;
         int split_feature;
@@ -146,8 +154,8 @@ Node* Tree::build_tree(dMatrix  &X, dVector &y){
 
         
 
-        node->left_child = build_tree( X_left, y_left);
-        node->right_child = build_tree(X_right, y_right) ;
+        node->left_child = build_tree( X_left, y_left, depth+1);
+        node->right_child = build_tree(X_right, y_right,depth+1) ;
           
 
 

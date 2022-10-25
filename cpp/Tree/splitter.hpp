@@ -6,22 +6,24 @@
 //#include <C:\Users\mb-92\OneDrive\Skrivebord\studie\StableTrees\cpp\thirdparty\eigen\Eigen/Dense>
 #include<Eigen/Dense>
 #include <unordered_set>
+#include <concurrent_unordered_map.h>
+#include <omp.h>
 
 using Eigen::Dynamic;
 using dVector = Eigen::Matrix<double, Dynamic, 1>;
 using bVector = Eigen::Matrix<bool, Dynamic, 1>;
 using dMatrix = Eigen::Matrix<double, Dynamic, Dynamic>;
 
-
+using namespace concurrency;
 using namespace std;
 
-
+#include <thread>
+#include <chrono>
 
 class Splitter{
 
     public:
-        Splitter(); 
-        string type= "normal";
+        
         // double get_split( dMatrix &X, dVector &y);
         double sum_squared_error(dVector &y_true, double  y_pred);
         tuple<double,double,dVector,dVector > get_predictions(dVector &feature, dVector &y, double value);
@@ -29,6 +31,8 @@ class Splitter{
         tuple<double,double> select_split(dVector  &feature, dVector  &y);
         tuple<int,double,double>  find_best_split(dMatrix  &X, dVector  &y);
         tuple<double,double> select_split_from_all(dVector  &feature, dVector  &y);
+        int para();
+        int seq();
 
     //private:
         //double mse_criterion(dMatrix &feature, dVector &y, bVector &mask);
@@ -37,10 +41,7 @@ class Splitter{
 
 };
 
-Splitter::Splitter(){
-    this->type = "normal"; 
-    std::vector<int> mask;  
-}
+
 
 tuple<double,double, dVector, dVector> Splitter::get_predictions(dVector &feature, dVector &y, double value){
     double left_prediction = 0.0;
@@ -100,7 +101,6 @@ double Splitter::mse_criterion(dVector  &feature,dVector  &y, double  value){
 }
 
 
-
 tuple<double,double> Splitter::select_split_from_all(dVector  &feature, dVector  &y){
     double min_score = std::numeric_limits<double>::infinity();
     double score;
@@ -136,25 +136,50 @@ tuple<double,double> Splitter::select_split(dVector  &feature, dVector  &y){
 }
 
 tuple<int, double,double> Splitter::find_best_split(dMatrix  &X, dVector  &y){
-    double min_score = std::numeric_limits<double>::infinity();
-    double best_split_value;
-    double score;
-    double split_value;
-    int split_feature;
-    dVector feature; 
-    for(int i =0; i<X.cols(); i++){
-        feature = X.col(i);
-        tie(score, split_value) = select_split(feature, y);
+    
+    
+    
+        double min_score = std::numeric_limits<double>::infinity();
+        double best_split_value;
+        int split_feature;
+        int i;
+        dVector feature;
+        double score;
+        double split_value;
+        #pragma omp parallel for num_threads(4) shared(min_score,best_split_value,split_feature) private(i,score,split_value, feature)
+        for(int i =0; i<X.cols(); i++){
+            feature = X.col(i);
 
-        if(min_score>score){
-            min_score = score;
-            best_split_value = split_value;
-            split_feature = i;
+            tie(score, split_value) = select_split(feature, y);
+            
+            #pragma omp critical
+            if(min_score>score){
+                min_score = score;
+                best_split_value = split_value;
+                split_feature = i;
+            }
+            
         }
-    }
-
-    return tuple<int, double,double>(split_feature,min_score, best_split_value);
+        return tuple<int, double,double>(split_feature,min_score, best_split_value);
+    
+    
 }
+int Splitter::para(){
+    int i;
+    #pragma omp parallel for
+    for (i=0;i< 10; i++) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+    }
+    return 0;
+}
+int Splitter::seq(){
+    int i;
+    for (i=0;i< 10; i++) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+    } 
+    return 0;
+}
+
 
 
 #endif

@@ -59,7 +59,9 @@ PYBIND11_MODULE(stable_trees, m)
                             "y_true"_a, "y_pred"_a )
         .def("mse_criterion", &Splitter::mse_criterion)
         .def("find_best_split", &Splitter::find_best_split)
-        .def("select_split", &Splitter::select_split);
+        .def("select_split", &Splitter::select_split)
+        .def("para", &Splitter::para)
+        .def("seq", &Splitter::seq);
 
     
     py::class_<Tree>(m, "Tree")
@@ -73,10 +75,4 @@ PYBIND11_MODULE(stable_trees, m)
         .def("example", &Tree::example)
         .def("predict", &Tree::predict);
         
-
-
-  
-
-
-
 }
