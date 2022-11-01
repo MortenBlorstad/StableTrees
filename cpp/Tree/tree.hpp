@@ -1,10 +1,10 @@
 #pragma once
-#ifndef __TREEBUILDER_HPP_INCLUDED__
+#ifndef __TREE_HPP_INCLUDED__
 
-#define __TREEBUILDER_HPP_INCLUDED__
+#define __TREE_HPP_INCLUDED__
 
 //#include <C:\Users\mb-92\OneDrive\Skrivebord\studie\StableTrees\cpp\thirdparty\eigen\Eigen/Dense>
-#include<Eigen/Dense>
+#include <Eigen/Dense>
 #include "node.hpp"
 #include "splitter.hpp"
 
@@ -35,11 +35,10 @@ class Tree{
         Node* get_root();
         double predict_obs(dVector  &obs);
         dVector predict(dMatrix  &X);
-    private:
+        virtual void update(dMatrix &X, dVector &y);
+    protected:
         int max_depth = INT_MAX;
         double min_split_sample = 2.0;
-
-
 };
 
 Tree::Tree(){
@@ -171,6 +170,9 @@ Node* Tree::example(){
     this->root = node;
     return node;
 
+}
+void Tree::update(dMatrix &X, dVector &y){
+    this->learn(X,y);
 }
 
 Node* Tree::get_root(){

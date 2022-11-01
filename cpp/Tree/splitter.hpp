@@ -4,7 +4,7 @@
 #define __SLITTER_HPP_INCLUDED__
 
 //#include <C:\Users\mb-92\OneDrive\Skrivebord\studie\StableTrees\cpp\thirdparty\eigen\Eigen/Dense>
-#include<Eigen/Dense>
+#include <Eigen/Dense>
 #include <unordered_set>
 #include <concurrent_unordered_map.h>
 #include <omp.h>

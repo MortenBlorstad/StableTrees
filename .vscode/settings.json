@@ -86,6 +86,7 @@
         "xtree": "cpp",
         "xutility": "cpp",
         "alignedvector3": "cpp",
-        "dense": "cpp"
+        "dense": "cpp",
+        "mprealsupport": "cpp"
     }
 }

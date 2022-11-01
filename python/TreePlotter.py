@@ -65,7 +65,7 @@ if __name__ == "__main__":
     #X  = np.array([[1,1],[1,2],[2,4],[2,3],[4,5]])
     #y = X[:,0]*2 + X[:,1]*0.5 
     X,y= datasets.make_regression(50000,10, random_state=0)
-    start = time.time()
+    """start = time.time()
     clf = DecisionTreeRegressor(random_state=0)
     clf = clf.fit(X,y)
     y_pred = clf.predict(X)
@@ -85,7 +85,10 @@ if __name__ == "__main__":
     #treebuilder.example()
     root = tree.get_root()
     print(tree.predict(X),y)
-    plot(root)
+    plot(root)"""
+
+    
+
     
     
    

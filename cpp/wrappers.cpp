@@ -1,16 +1,7 @@
-#include <pybind11/eigen.h>
-#include <pybind11/pybind11.h>
 
+#include <pybind11\pybind11.h>
+#include <pybind11\eigen.h>
 #include <cstdio>
-
-
-#include <Eigen/Dense>
-
-
-using Eigen::Dynamic;
-using dVector = Eigen::Matrix<double, Dynamic, 1>;
-using bVector = Eigen::Matrix<bool, Dynamic, 1>;
-using dMatrix = Eigen::Matrix<double, Dynamic, Dynamic>;
 
 
 using namespace std;
@@ -19,7 +10,10 @@ using namespace std;
 #include "Tree/node.hpp"
 #include "Tree/splitter.hpp"
 #include "Tree/tree.hpp"
+#include "Tree/stabletree.hpp"
 
+#define STRINGIFY(x) #x
+#define MACRO_STRINGIFY(x) STRINGIFY(x)
 
 namespace py = pybind11;
 
@@ -73,6 +67,25 @@ PYBIND11_MODULE(stable_trees, m)
         .def("learn", &Tree::learn)
         .def("get_root", &Tree::get_root)
         .def("example", &Tree::example)
-        .def("predict", &Tree::predict);
-        
+        .def("predict", &Tree::predict)
+        .def("update", &Tree::update);
+
+    py::class_<StableTree>(m, "StableTree")
+        .def(py::init<>())
+        .def("all_same", &StableTree::all_same)
+        .def("all_same_features_values", &Tree::all_same_features_values )
+        .def("get_masks", &StableTree::get_masks)
+        .def("build_tree", &StableTree::build_tree)
+        .def("learn", &StableTree::learn)
+        .def("get_root", &StableTree::get_root)
+        .def("example", &StableTree::example)
+        .def("update", &StableTree::update);
+
+
+#ifdef VERSION_INFO
+    m.attr("__version__") = MACRO_STRINGIFY(VERSION_INFO);
+#else
+    m.attr("__version__") = "dev";
+#endif
+
 }
