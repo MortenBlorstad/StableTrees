@@ -53,13 +53,11 @@ PYBIND11_MODULE(stable_trees, m)
                             "y_true"_a, "y_pred"_a )
         .def("mse_criterion", &Splitter::mse_criterion)
         .def("find_best_split", &Splitter::find_best_split)
-        .def("select_split", &Splitter::select_split)
-        .def("para", &Splitter::para)
-        .def("seq", &Splitter::seq);
+        .def("select_split", &Splitter::select_split);
 
     
     py::class_<Tree>(m, "Tree")
-        .def(py::init<>())
+        .def(py::init<int , double >())
         .def("all_same", &Tree::all_same)
         .def("all_same_features_values", &Tree::all_same_features_values )
         .def("get_masks", &Tree::get_masks)
@@ -71,7 +69,7 @@ PYBIND11_MODULE(stable_trees, m)
         .def("update", &Tree::update);
 
     py::class_<StableTree>(m, "StableTree")
-        .def(py::init<>())
+        .def(py::init<int, double >())
         .def("all_same", &StableTree::all_same)
         .def("all_same_features_values", &Tree::all_same_features_values )
         .def("get_masks", &StableTree::get_masks)
@@ -79,13 +77,10 @@ PYBIND11_MODULE(stable_trees, m)
         .def("learn", &StableTree::learn)
         .def("get_root", &StableTree::get_root)
         .def("example", &StableTree::example)
-        .def("update", &StableTree::update);
+        .def("update", &StableTree::update)
+        .def("predict", &Tree::predict);
 
 
-#ifdef VERSION_INFO
-    m.attr("__version__") = MACRO_STRINGIFY(VERSION_INFO);
-#else
-    m.attr("__version__") = "dev";
-#endif
+
 
 }

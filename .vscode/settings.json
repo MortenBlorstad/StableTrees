@@ -87,6 +87,20 @@
         "xutility": "cpp",
         "alignedvector3": "cpp",
         "dense": "cpp",
-        "mprealsupport": "cpp"
+        "mprealsupport": "cpp",
+        "core": "cpp",
+        "superlusupport": "cpp",
+        "*.evaluator": "cpp",
+        "*.traits": "cpp",
+        "adolcforward": "cpp",
+        "autodiff": "cpp",
+        "bvh": "cpp",
+        "threadpool": "cpp",
+        "eulerangles": "cpp",
+        "kroneckerproduct": "cpp",
+        "numericaldiff": "cpp",
+        "openglsupport": "cpp",
+        "specialfunctions": "cpp",
+        "splines": "cpp"
     }
 }

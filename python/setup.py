@@ -39,4 +39,6 @@ setup(
     packages=find_packages(where="python"),
     zip_safe=False,
     python_requires=">=3.6",
+    ext_modules=[CMakeExtension("bgtfs_py_lib_wrapper")],
+    cmdclass=dict(build_ext=CMakeBuild),
 )

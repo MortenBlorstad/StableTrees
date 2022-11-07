@@ -14,10 +14,14 @@ using dVector = Eigen::Matrix<double, Dynamic, 1>;
 using bVector = Eigen::Matrix<bool, Dynamic, 1>;
 using iVector = Eigen::Matrix<int, Dynamic, 1>;
 using dMatrix = Eigen::Matrix<double, Dynamic, Dynamic>;
+using iMatrix = Eigen::Matrix<int, Dynamic, Dynamic>;
 
 
 using namespace std;
 using namespace Eigen;
+
+#include <numeric>      // std::iota
+#include <algorithm>    // std::sort, std::stable_sort
 
 
 class Tree{
@@ -25,7 +29,8 @@ class Tree{
     public:
         Splitter splitter;
         Node* root  = NULL;
-        Tree(); 
+        explicit Tree(int max_depth, double min_split_sample); 
+        explicit Tree(); 
         bool all_same(dVector &vec);
         bool all_same_features_values(dMatrix  &X);
         Node* build_tree(dMatrix  &X, dVector &y, int depth);
@@ -37,18 +42,29 @@ class Tree{
         dVector predict(dMatrix  &X);
         virtual void update(dMatrix &X, dVector &y);
     protected:
-        int max_depth = INT_MAX;
-        double min_split_sample = 2.0;
+        int max_depth;
+        double min_split_sample;
 };
-
 Tree::Tree(){
+    int max_depth = INT_MAX;
+    double min_split_sample = 2.0;
+}
+
+Tree::Tree(int max_depth, double min_split_sample){
     this->splitter = Splitter();
+    if(max_depth !=NULL){
+       this-> max_depth =  max_depth;
+    }else{
+        this-> max_depth =  INT_MAX;
+    }
+    this-> min_split_sample = min_split_sample;
+    printf("min_split_sample is %f \n", this-> min_split_sample);
 } 
 
 bool Tree::all_same(dVector &vec){
     bool same = true;
     for(int i=0; i< vec.rows(); i++){
-        if(vec[i]!=vec[0] ){
+        if(vec(i)!=vec(0) ){
             same=false;
             break;
         }
@@ -85,7 +101,10 @@ tuple<iVector, iVector> Tree::get_masks(dVector &feature, dVector &y, double val
     return tuple<iVector, iVector> (left_values_v, right_values_v);
 }
 
+
+
 void Tree::learn(dMatrix  &X, dVector &y){
+    
     this->root = build_tree(X, y, 0);
 }
 
@@ -93,8 +112,10 @@ double Tree::predict_obs(dVector  &obs){
     Node* node = this->root;
     while(node !=NULL){
         if(node->is_leaf()){
+            //printf("prediction %f \n", node->predict());
             return node->predict();
         }else{
+            //printf("feature %d, value %f, obs %f \n", node->split_feature, node->split_value,obs(node->split_feature));
             if(obs(node->split_feature) <= node->split_value){
                 node = node->left_child;
             }else{
@@ -129,7 +150,7 @@ Node* Tree::build_tree(dMatrix  &X, dVector &y, int depth){
         return new Node(y.array().mean() ,y.rows());
     }else{
 
-
+        
 
         double score;
         double split_value;
@@ -140,21 +161,43 @@ Node* Tree::build_tree(dMatrix  &X, dVector &y, int depth){
         dVector feature = X.col(split_feature);
         tie(mask_left, mask_right) = get_masks(feature, y, split_value);
         
-        if(mask_left.rows()<1  || mask_right.rows()<1){
-            printf("%d, %d, %d, %f \n", mask_left.rows(),mask_right.rows(), split_feature,split_value);
-            return new Node(y.array().mean() ,y.rows());
-        }
+        Node* node = new Node(split_value, score, split_feature, y.rows() , y.array().mean());
         
-        Node* node = new Node(split_value, score, split_feature, y.rows() , y.mean());
+        iVector keep_cols = iVector::LinSpaced(X.cols(), 0, X.cols()-1).array();
+        /*
+        printf("keep_cols \n");
+        for (int i = 0 - 1; i < keep_cols.rows(); i++) 
+            cout << keep_cols(i) << ", ";
+        cout << endl;
+
+        printf("keep_cols \n");
+        for (int i = 0 - 1; i < keep_cols.rows(); i++) 
+            cout << keep_cols(i) << ", ";
+        cout << endl;
+        */
         
-        iVector keep_cols = iVector::LinSpaced(X.cols(), 0, X.cols()).array();
+
         dMatrix X_left = X(mask_left,keep_cols); dVector y_left = y(mask_left,1);
-        dMatrix X_right = X(mask_right,keep_cols); dVector y_right = y(mask_right,1);
-
-        
-
         node->left_child = build_tree( X_left, y_left, depth+1);
+        /*printf("left X \n");
+        for (int i = 0; i < X_left.rows(); i++)
+            {
+            for (int j = 0; j < X_left.cols(); j++)
+            {
+                cout << X_left(i,j) << " ";
+            }
+                
+            // Newline for new row
+            cout << endl;
+            }
+        */
+
+        dMatrix X_right = X(mask_right,keep_cols); dVector y_right = y(mask_right,1);
         node->right_child = build_tree(X_right, y_right,depth+1) ;
+        
+       
+        
+        
           
 
 

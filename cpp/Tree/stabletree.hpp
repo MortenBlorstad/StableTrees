@@ -4,28 +4,33 @@
 
 class StableTree: public Tree{
     public:
+        StableTree(int max_depth, double min_split_sample);
         StableTree();
-        virtual void update(dMatrix &X, dVector &y);
+        virtual void update(dMatrix &X, dVector &y, double delta);
     private:
         tuple<Node*, bool> reevaluate_split(Node* node, dMatrix &X, dVector &y, double delta, int depth);
         Node* attempt_split(Node* node, dMatrix &X, dVector &y, int depth);
         Node* update_rec(Node* node, dMatrix &X, dVector &y,double delta, int depth);
-        double delta;
+        double hoeffding_bound(double delta, int n);
 
-    
 };
 
-
-StableTree::StableTree(){
+StableTree::StableTree():Tree(){
     Tree();
-    this->delta = 0.1;
 }
 
-void StableTree::update(dMatrix &X, dVector &y){
+StableTree::StableTree(int max_depth, double min_split_sample):Tree( max_depth,  min_split_sample){
+    Tree(max_depth, min_split_sample);
+    printf("min_split_sample is %f \n", this-> min_split_sample);
+}
+
+
+
+void StableTree::update(dMatrix &X, dVector &y, double delta){
     if(root == NULL){
         learn(X,y);
     }
-    root = update_rec(root, X, y, this->delta,0);
+    root = update_rec(root, X, y, delta,0);
 } 
 
 Node* StableTree::update_rec(Node* node, dMatrix &X, dVector &y,double delta,int depth){
@@ -38,6 +43,7 @@ Node* StableTree::update_rec(Node* node, dMatrix &X, dVector &y,double delta,int
 
     bool change;
     tie(node,change) = reevaluate_split(node,X,y,delta,depth);
+    //printf("change %d, depth: %d \n", change, depth);
     if(!change){
         iVector left_mask; iVector right_mask;
         dVector feature = X.col(node->split_feature);
@@ -56,9 +62,14 @@ Node* StableTree::update_rec(Node* node, dMatrix &X, dVector &y,double delta,int
 
 }
 
+double StableTree::hoeffding_bound(double delta, int n){
+    return sqrt(log(1/delta)/(2*n));
+}
+
 
 Node* StableTree::attempt_split(Node* node, dMatrix &X, dVector &y, int depth){
     if(y.rows() <2 || y.rows()<min_split_sample){
+        node->n_samples = y.rows();
         return node;
     }
     return build_tree(X,y,depth);
@@ -72,7 +83,9 @@ tuple<Node*, bool> StableTree::reevaluate_split(Node* node, dMatrix &X, dVector 
     double mse_old = node->get_split_score();
     bool changed = false;
     tie(split_feature, mse_new, split_value) = splitter.find_best_split(X,y);
-    if((mse_old+10e-4)/(mse_new+10e-4)> (1-delta)){
+    node->n_samples = y.rows();
+    double eps = this->hoeffding_bound(delta, node->n_samples);
+    if((mse_old+10e-4)/(mse_new+10e-4)> (1+eps)){
         node = build_tree(X,y,depth);
         changed = true;
     }
