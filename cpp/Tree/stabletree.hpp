@@ -21,7 +21,7 @@ StableTree::StableTree():Tree(){
 
 StableTree::StableTree(int max_depth, double min_split_sample):Tree( max_depth,  min_split_sample){
     Tree(max_depth, min_split_sample);
-    printf("min_split_sample is %f \n", this-> min_split_sample);
+    
 }
 
 

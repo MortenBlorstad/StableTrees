@@ -6,6 +6,7 @@
 //#include <C:\Users\mb-92\OneDrive\Skrivebord\studie\StableTrees\cpp\thirdparty\eigen\Eigen/Dense>
 #include <Eigen/Dense>
 #include <unordered_set>
+
 #include <omp.h>
 
 using Eigen::Dynamic;
@@ -56,7 +57,6 @@ tuple<double,double, dVector, dVector> Splitter::get_predictions(const dVector &
             right_prediction+=y(i);
             right_values.push_back(y(i));
         }
-    
     }
     if(left_values.size()>0){
         left_prediction/=left_values.size();
@@ -77,6 +77,7 @@ double Splitter::sum_squared_error(const dVector &y_true, double  y_pred){
 
 }
 
+
 double Splitter::mse_criterion(const dVector  &feature, const dVector  &y, double  value){
 
     double left_pred;double right_pred; dVector left_values; dVector right_values;
@@ -94,22 +95,39 @@ double Splitter::mse_criterion(const dVector  &feature, const dVector  &y, doubl
 
     }
     
-
-
-    return (right+left)/2;
+    return (right+left)/y.size();
 
 }
 
 
 tuple<double,double> Splitter::select_split_from_all(const dVector  &feature, const dVector  &y, const iVector sorted_index){
     double min_score = std::numeric_limits<double>::infinity();
-
+    float n = y.size();
     double best_split_value;
+
+    double y_L = 0;
+    double y_R = y.array().sum();
+    float N_L = 0;
+    float N_R = n;
+    double y_squared = y.array().square().sum();
     for (int i = 0; i < sorted_index.rows()-1; i++) {
         int low = sorted_index[i];
         int high = sorted_index[i+1];
-        double split_value =  (feature[low]+feature[high])/2;
-        double score = mse_criterion(feature, y, split_value);
+        double lowValue = feature[low];
+        double hightValue = feature[high];
+
+
+        double split_value =  (lowValue+hightValue)/2;
+        y_L+= y(low);
+        y_R-= y(low);
+        N_L+=1;
+        N_R-=1;
+        
+
+        double SSE_L= N_L*pow((y_L/N_L),2);
+        double SSE_R= N_R*pow((y_R/N_R),2);
+        double score = y_squared - SSE_L - SSE_R;
+
         if(min_score>score){
             min_score = score;
             best_split_value = split_value;
@@ -128,13 +146,20 @@ tuple<double,double> Splitter::select_split(const dVector  &feature,const dVecto
     double min_score = std::numeric_limits<double>::infinity();
     
     double best_split_value;
-    vector<double> percentile = { .1, 0.25, 0.5, 0.75, 0.9};
-
+    int n = feature.size();
+    int size = min(n,90);
+    dVector percentile = dVector::LinSpaced(size, 0.05, 0.95).array();
+    int lastInd = 0;
     for (int i = 0; i < percentile.size(); i++) {
         int N = sorted_index.rows();
         int ind = sorted_index(int(N*percentile[i]));
-        
-        double split_value  =  feature(ind);
+        ind = min(N-2,ind);
+        if(lastInd == ind){
+            continue;
+        }
+        lastInd = ind;
+        int upper_ind = ind +1;
+        double split_value  =  (feature(ind)+feature(upper_ind))/2;
         double score = mse_criterion(feature, y, split_value);
         if(min_score>score){
             min_score = score;
@@ -172,15 +197,37 @@ tuple<int, double,double> Splitter::find_best_split(const dMatrix  &X, const dVe
         */
 
         iMatrix X_sorted_indices = sorted_indices(X);
+        /*printf("X_sorted_indices \n");
+        for (int i = 0; i < X_sorted_indices.rows(); i++)
+            {
+            for (int j = 0; j < X_sorted_indices.cols(); j++)
+            {
+                cout << X_sorted_indices(i,j) << " ";
+            }
+                
+            // Newline for new row
+            cout << endl;
+            }*/
+
+
         #pragma omp parallel for ordered num_threads(4) shared(min_score,best_split_value,split_feature) private(i,score,split_value, feature)
         
         for(int i =0; i<X.cols(); i++){
             feature = X.col(i);
             iVector sorted_index = X_sorted_indices.col(i);
-            
+           /* std::unordered_set<double> q{};
+            if(i ==0){
+                for(int i = 0; i< feature.rows(); i++){
+                    q.insert(feature(i));
+                }
+            }
+            printf("%d \n", q.size());*/
+            /*for (auto it = q.begin(); it !=q.end(); ++it)
+                cout << ' ' << *it;
+            cout << endl;*/
             //double split_value;
             //double score;
-            tie(score, split_value) = select_split(feature, y, sorted_index);
+            tie(score, split_value) = select_split_from_all(feature, y, sorted_index);
             //printf("num obs %d,split_value %f , min_score %f \n", feature.size(),split_value,min_score);
             
             #pragma omp ordered
@@ -218,6 +265,7 @@ iMatrix Splitter::sorted_indices(dMatrix X){
     const int nrows = X.rows();
     const int ncols = X.cols();
     iMatrix X_sorted_indices(nrows,ncols);
+    
     for(int i = 0; i<ncols; i++){
         vector<int> sorted_ind = sort_index(X.col(i));
         for(int j = 0; j<nrows; j++){

@@ -1,6 +1,7 @@
 from sklearn.base import BaseEstimator 
 from matplotlib import pyplot as plt
 from sklearn.tree import DecisionTreeRegressor
+from sklearn.model_selection import train_test_split
 
 import os
 
@@ -12,7 +13,7 @@ import sys
 import numpy as np 
 sys.path.append(cur_file_path + '\\..\\..\\cpp\\build\\Release\\')
 sys.path.append('../python')
-from stable_trees import Node,Tree, StableTree
+from stable_trees import Node,Tree, StableTree, StableTreeReg,SemiRandomTree
 from abc import ABCMeta
 from abc import abstractmethod
 
@@ -145,3 +146,78 @@ class StableTree1(BaseRegressionTree):
         self.root = self.tree.get_root()
         return self
 
+
+class StableTree2(BaseRegressionTree):
+    def __init__(self, *, max_depth = None, min_samples_split = 2.0, random_state = None) -> None:
+        
+        self.root = None
+        super().__init__(max_depth, min_samples_split, random_state)
+        self.tree = StableTreeReg(self.max_depth,self.min_samples_split)
+        
+
+    def update(self, X,y):
+        X,y = self.check_input(X,y)
+        self.tree.update(X,y, "method1")
+        self.root = self.tree.get_root()
+        return self
+
+
+class StableTree3(BaseRegressionTree):
+    def __init__(self, *, max_depth = None, min_samples_split = 2.0, random_state = None) -> None:
+        
+        self.root = None
+        super().__init__(max_depth, min_samples_split, random_state)
+        self.tree = StableTreeReg(self.max_depth,self.min_samples_split)
+        
+
+    def update(self, X,y):
+        X,y = self.check_input(X,y)
+        self.tree.update(X,y, "method2")
+        self.root = self.tree.get_root()
+        return self
+
+from sklearn.ensemble import RandomForestRegressor
+class StableTree4(BaseRegressionTree):
+    def __init__(self, *, max_depth = None, min_samples_split = 2.0, random_state = None) -> None:
+        
+        self.root = None
+        super().__init__(max_depth, min_samples_split, random_state)
+        self.tree = StableTreeReg(self.max_depth,self.min_samples_split)
+        
+    def fit(self,X,y):
+        X,y = self.check_input(X,y)
+        rf = RandomForestRegressor(random_state=0).fit(X,y)
+        y_pred1 = rf.predict(X)
+        self.tree.learn(X,y)
+        y_pred2 = self.predict(X)
+        self.tree.update_method3(X,y, y_pred1,y_pred2)
+        self.root = self.tree.get_root()
+        return self
+        
+
+    def update(self, X,y):
+        X,y = self.check_input(X,y)
+        y_pred1 = self.predict(X)
+        rf = RandomForestRegressor(random_state=0).fit(X,y)
+        y_pred2 = rf.predict(X)
+        self.tree.update_method3(X,y, y_pred1,y_pred2)
+        self.root = self.tree.get_root()
+        return self
+
+class StableTree5(BaseRegressionTree):
+    def __init__(self, *, max_depth = None, min_samples_split = 2.0, random_state = None) -> None:
+        
+        self.root = None
+        super().__init__(max_depth, min_samples_split, random_state)
+        self.tree = SemiRandomTree(self.max_depth,self.min_samples_split,100)
+        
+    def fit(self,X,y):
+        X,y = self.check_input(X,y)
+        X_train, X_eval, y_train, y_eval = train_test_split(X,y,test_size=0.15, random_state=self.random_state)
+        self.tree.learn(X_train,y_train,X_eval,y_eval )
+        self.root = self.tree.get_root()
+        return self
+        
+
+    def update(self, X,y):
+        return self
