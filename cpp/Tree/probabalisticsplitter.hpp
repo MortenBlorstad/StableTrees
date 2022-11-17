@@ -26,26 +26,21 @@ using namespace std;
 class ProbabalisticSplitter: public Splitter{
 
     public:
-        ProbabalisticSplitter::ProbabalisticSplitter();
+        ProbabalisticSplitter::ProbabalisticSplitter(int seed);
         virtual tuple<vector<tuple<int, double,double>>,double>   select_split_from_all(const dVector  &feature, const dVector  &y, const iVector sorted_index, int feature_index);
         virtual tuple<int, double,double> find_best_split(const dMatrix  &X, const dVector  &y);
     private:
+        int seed;
         
-     
-        
-        
-        
-
-
-
+    
 };
 
-ProbabalisticSplitter::ProbabalisticSplitter():Splitter(){
+ProbabalisticSplitter::ProbabalisticSplitter(int seed):Splitter(){
     Splitter();
+    this->seed = seed;
 }
 
 tuple<vector<tuple<int,double,double>>,double> ProbabalisticSplitter::select_split_from_all(const dVector  &feature, const dVector  &y, const iVector sorted_index, int feature_index){
-    
     float n = y.size();
 
 
@@ -73,7 +68,8 @@ tuple<vector<tuple<int,double,double>>,double> ProbabalisticSplitter::select_spl
         double SSE_L= N_L*pow((y_L/N_L),2);
         double SSE_R= N_R*pow((y_R/N_R),2);
         double score = y_squared - SSE_L - SSE_R;
-        total+=score;
+
+        total+=pow(1/score,2.0);
         
         splits[i] = tuple<int, double,double>(feature_index, score, split_value);
         
@@ -95,9 +91,10 @@ tuple<int, double,double> ProbabalisticSplitter::find_best_split(const dMatrix  
         
 
         vector<tuple<int, double,double>> all_splits((y.size()-1)*X.cols());
+
         double total = 0;
 
-        #pragma omp parallel for ordered num_threads(4) shared(total,all_splits) private(feature)
+       // #pragma omp parallel for ordered num_threads(4) shared(total,all_splits) private(feature)
         
         for(int i =0; i<X.cols(); i++){
             feature = X.col(i);
@@ -107,25 +104,30 @@ tuple<int, double,double> ProbabalisticSplitter::find_best_split(const dMatrix  
             
            
             tie(splits,part_total) = select_split_from_all(feature, y, sorted_index, i);
+           
             
-            
-            #pragma omp ordered
-            {  
+            //#pragma omp ordered
+            //{  
                 total += part_total;
                 for(int j = 0; j<splits.size();j++){
-                    all_splits.push_back(splits[j]);
+                    
+                    all_splits[j+i*splits.size()] = splits[j];
                 }
             
-            }
+           // }
         }
         vector<double> chances(all_splits.size());
         
         for(int i = 0; i<all_splits.size();i++){
-            chances[i] = get<1>(all_splits[i]) /total;
+            chances[i] =  exp(get<1>(all_splits[i]));
         }
-        std::mt19937 gen(std::random_device{}());
+        
+        std::mt19937 gen(this->seed );
         std::discrete_distribution<std::size_t> d{chances.begin(), chances.end()};
-        tuple<int, double,double> sampled_value = all_splits[d(gen)];
+        size_t ind = d(gen);
+        tuple<int, double,double> sampled_value = all_splits[ind];
+        
+
         return sampled_value;
     
     

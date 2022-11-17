@@ -7,7 +7,7 @@
 #include <Eigen/Dense>
 #include "node.hpp"
 #include "splitter.hpp"
-
+#include "probabalisticsplitter.hpp"
 
 using Eigen::Dynamic;
 using dVector = Eigen::Matrix<double, Dynamic, 1>;
@@ -27,7 +27,7 @@ using namespace Eigen;
 class Tree{
 
     public:
-        Splitter splitter;
+        
         Node* root  = NULL;
         explicit Tree(int max_depth, double min_split_sample); 
         explicit Tree(); 
@@ -35,13 +35,15 @@ class Tree{
         bool all_same_features_values(dMatrix  &X);
         Node* build_tree(dMatrix  &X, dVector &y, int depth);
         tuple<iVector, iVector> get_masks(dVector &feature, dVector &y, double value);
-        void learn(dMatrix  &X, dVector &y);
+        virtual void learn(dMatrix  &X, dVector &y);
         Node* example();
         Node* get_root();
         double predict_obs(dVector  &obs);
         dVector predict(dMatrix  &X);
         virtual void update(dMatrix &X, dVector &y);
+        virtual tuple<int, double,double> find_split(dMatrix &X, dVector &y);
     protected:
+        Splitter splitter;
         int max_depth;
         double min_split_sample;
 };
@@ -60,6 +62,11 @@ Tree::Tree(int max_depth, double min_split_sample){
     this-> min_split_sample = min_split_sample;
     
 } 
+
+tuple<int, double,double>  Tree::find_split(dMatrix &X, dVector &y){
+    return Splitter().find_best_split(X, y);
+}
+
 
 bool Tree::all_same(dVector &vec){
     bool same = true;
@@ -104,7 +111,6 @@ tuple<iVector, iVector> Tree::get_masks(dVector &feature, dVector &y, double val
 
 
 void Tree::learn(dMatrix  &X, dVector &y){
-    
     this->root = build_tree(X, y, 0);
 }
 
@@ -163,7 +169,7 @@ Node* Tree::build_tree(dMatrix  &X, dVector &y, int depth){
     int split_feature;
     iVector mask_left;
     iVector mask_right;
-    tie(split_feature, score, split_value)  = splitter.find_best_split(X,y);
+    tie(split_feature, score, split_value)  = find_split(X,y);
     dVector feature = X.col(split_feature);
     tie(mask_left, mask_right) = get_masks(feature, y, split_value);
     if(mask_left.rows()== X.rows()){

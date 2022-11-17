@@ -13,7 +13,7 @@ import sys
 import numpy as np 
 sys.path.append(cur_file_path + '\\..\\..\\cpp\\build\\Release\\')
 sys.path.append('../python')
-from stable_trees import Node,Tree, StableTree, StableTreeReg,SemiRandomTree
+from stable_trees import Node,Tree, StableTree, StableTreeReg,MonteCarloTree
 from abc import ABCMeta
 from abc import abstractmethod
 
@@ -23,14 +23,14 @@ class BaseRegressionTree(BaseEstimator, metaclass=ABCMeta):
         def __init__(self, max_depth, min_samples_split, random_state) -> None:
             
             if max_depth is None:
-                self.max_depth = 2147483647
-            self.max_depth = int(self.max_depth)
+                max_depth = 2147483647
+            self.max_depth = int(max_depth)
 
             self.min_samples_split = float(min_samples_split)
 
             if random_state is None:
-                self.random_state = 0
-            self.random_state = int(self.random_state)
+                random_state = 0
+            self.random_state = int(random_state)
             
 
 
@@ -205,11 +205,11 @@ class StableTree4(BaseRegressionTree):
         return self
 
 class StableTree5(BaseRegressionTree):
-    def __init__(self, *, max_depth = None, min_samples_split = 2.0, random_state = None) -> None:
+    def __init__(self, *, max_depth = None, min_samples_split = 2.0, ntrees = 10,random_state = 0) -> None:
         
         self.root = None
         super().__init__(max_depth, min_samples_split, random_state)
-        self.tree = SemiRandomTree(self.max_depth,self.min_samples_split,100)
+        self.tree = MonteCarloTree(self.max_depth,self.min_samples_split,ntrees,random_state)
         
     def fit(self,X,y):
         X,y = self.check_input(X,y)

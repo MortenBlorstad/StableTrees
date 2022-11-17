@@ -16,7 +16,7 @@ using namespace std;
 #include "Tree/tree.hpp"
 #include "Tree/stabletree.hpp"
 #include "Tree/StableTreeReg.hpp"
-#include "Tree/SemiRandomTree.hpp"
+#include "Tree/MonteCarloTree.hpp"
 
 #define STRINGIFY(x) #x
 #define MACRO_STRINGIFY(x) STRINGIFY(x)
@@ -98,14 +98,11 @@ PYBIND11_MODULE(stable_trees, m)
             .def("update_method3", &StableTreeReg::update_method3)
             .def("predict", &StableTreeReg::predict);
 
-    py::class_<SemiRandomTree>(m, "SemiRandomTree")
-            .def(py::init<int, double, int>())
-            .def("learn", &SemiRandomTree::find_best_tree)
-            .def("get_root", &SemiRandomTree::get_root)
-            .def("update", &SemiRandomTree::update)
-            .def("predict", &SemiRandomTree::predict);
-
-
-
+    py::class_<MonteCarloTree>(m, "MonteCarloTree")
+            .def(py::init<int, double, int, int>())
+            .def("learn", &MonteCarloTree::learn)
+            .def("predict", &MonteCarloTree::predict)
+            .def("get_root", &MonteCarloTree::get_root);
+            
 
 }

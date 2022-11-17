@@ -17,13 +17,13 @@ if __name__ == "__main__":
     from sklearn import datasets
     from sklearn.tree import DecisionTreeRegressor,plot_tree
     import numpy as np  
-    X  = np.array([[1,1],[1,2],[2,4],[2,3],[4,5]])
+    X  = np.array([[1,1],[1,2],[2,4],[2,3],[4,5],[6,10], [4,6]])
     y = X[:,0]*2 + X[:,1]*0.5 
     
     #tree = BaseLineTree(min_samples_split =2)
     
 
-    # X,y= datasets.make_regression(2000,10, random_state=0)
+    X,y= datasets.make_regression(20,10, random_state=0)
     start = time.time()
     clf = DecisionTreeRegressor(random_state=0, min_samples_split=5)
     clf = clf.fit(X,y)
@@ -37,11 +37,16 @@ if __name__ == "__main__":
     # plt.show()
     
     start = time.time()
-    tree = StableTree5(min_samples_split =5)
+    trees = []
+    min_mse = np.inf
+  
+    tree = StableTree5(min_samples_split =5,ntrees = 10000 ,random_state=0)
     tree.fit(X,y)
-    
     y_pred = tree.predict(X)
     mse = mean_squared_error(y, y_pred)
+    
+
+
     end = time.time()
     print(f"my impl: time {end - start}, mse {mse}" )
     #tree.plot()
