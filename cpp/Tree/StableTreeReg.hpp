@@ -23,7 +23,6 @@ class StableTreeReg: public Tree{
 
 StableTreeReg::StableTreeReg():Tree(){
     Tree();
-    stable_splitter = StableSplitter();
 }
 
 StableTreeReg::StableTreeReg(int max_depth, double min_split_sample):Tree( max_depth,  min_split_sample){

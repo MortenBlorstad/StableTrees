@@ -17,6 +17,8 @@ using namespace std;
 #include "Tree/stabletree.hpp"
 #include "Tree/StableTreeReg.hpp"
 #include "Tree/MonteCarloTree.hpp"
+#include "Tree/probabalisticsplitter.hpp"
+#include "Tree/Method2.hpp"
 
 #define STRINGIFY(x) #x
 #define MACRO_STRINGIFY(x) STRINGIFY(x)
@@ -58,8 +60,11 @@ PYBIND11_MODULE(stable_trees, m)
         .def("sum_squared_error", &Splitter::sum_squared_error,
                             "y_true"_a, "y_pred"_a )
         .def("mse_criterion", &Splitter::mse_criterion)
-        .def("find_best_split", &Splitter::find_best_split)
-        .def("select_split", &Splitter::select_split);
+        .def("find_best_split", &Splitter::find_best_split);
+
+    py::class_<ProbabalisticSplitter>(m, "ProbabalisticSplitter")
+        .def(py::init<int>())
+        .def("find_best_split", &ProbabalisticSplitter::find_best_split);
 
     
     py::class_<Tree>(m, "Tree")
@@ -102,7 +107,14 @@ PYBIND11_MODULE(stable_trees, m)
             .def(py::init<int, double, int, int>())
             .def("learn", &MonteCarloTree::learn)
             .def("predict", &MonteCarloTree::predict)
+            .def("update", &MonteCarloTree::update)
             .def("get_root", &MonteCarloTree::get_root);
             
+    py::class_<Method2>(m, "Method2")
+            .def(py::init<int, double>())
+            .def("learn", &Method2::learn)
+            .def("predict", &Method2::predict)
+            .def("update", &Method2::update)
+            .def("get_root", &Method2::get_root);
 
 }

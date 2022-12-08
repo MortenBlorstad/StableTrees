@@ -59,6 +59,7 @@ Tree::Tree(int max_depth, double min_split_sample){
     }else{
         this-> max_depth =  INT_MAX;
     }
+
     this-> min_split_sample = min_split_sample;
     
 } 
@@ -147,20 +148,26 @@ dVector Tree::predict(dMatrix  &X){
 
 
 Node* Tree::build_tree(dMatrix  &X, dVector &y, int depth){
-    if (depth> this->max_depth){
+    if (depth>= this->max_depth){
         return new Node(y.array().mean(),y.rows());
     }
+    if(X.rows()<1 || y.rows()<1){
+        return NULL;
+    }
+    if(X.rows()<2 || y.rows()<2){
+        return new Node(y.array()(0), y.rows()); 
+    }
+    if(y.rows()< this->min_split_sample){
+        return new Node(y.array().mean(), y.rows());
+    }
     if(all_same(y)){
-        // printf("all the same \n");
         return new Node(y.array()(0), y.rows());
     }
     if(all_same_features_values(X)){
         return new Node(y.array().mean() ,y.rows());
     }
-    if(y.rows()< this->min_split_sample){
-        return new Node(y.array().mean() ,y.rows());
-    }
-
+    
+    //printf("y size %d, min_split_sample %d\n", y.size(),this->min_split_sample);
 
         
 
@@ -170,40 +177,41 @@ Node* Tree::build_tree(dMatrix  &X, dVector &y, int depth){
     iVector mask_left;
     iVector mask_right;
     tie(split_feature, score, split_value)  = find_split(X,y);
+    //printf("score %d\n", score);
+    //printf("score %f\n", score);
+    if(score == std::numeric_limits<double>::infinity()){
+        cout<<"\n Two Dimensional Array is : \n";
+        for(int r=0; r<X.rows(); r++)
+        {
+                for(int c=0; c<X.cols(); c++)
+                {
+                        cout<<" "<<X(r,c)<<" ";
+                }
+                cout<<"\n";
+        }
+         cout<<"\n one Dimensional Array is : \n";
+        
+        for(int c=0; c<y.size(); c++)
+        {
+                cout<<" "<<y(c)<<" ";
+        }
+        cout<<"\n";
+        
+    }
+   
+
     dVector feature = X.col(split_feature);
     tie(mask_left, mask_right) = get_masks(feature, y, split_value);
-    if(mask_left.rows()== X.rows()){
-        return new Node(y.array().mean(),y.rows());
-    }
+
+
     Node* node = new Node(split_value, score, split_feature, y.rows() , y.array().mean());
     
     iVector keep_cols = iVector::LinSpaced(X.cols(), 0, X.cols()-1).array();
-    /*
-    printf("keep_cols \n");
-    for (int i = 0 - 1; i < keep_cols.rows(); i++) 
-        cout << keep_cols(i) << ", ";
-    cout << endl;
-
-    printf("keep_cols \n");
-    for (int i = 0 - 1; i < keep_cols.rows(); i++) 
-        cout << keep_cols(i) << ", ";
-    cout << endl;
-    */
+    
     
     dMatrix X_left = X(mask_left,keep_cols); dVector y_left = y(mask_left,1);
     node->left_child = build_tree( X_left, y_left, depth+1);
-    /*printf("left X \n");
-    for (int i = 0; i < X_left.rows(); i++)
-        {
-        for (int j = 0; j < X_left.cols(); j++)
-        {
-            cout << X_left(i,j) << " ";
-        }
-            
-        // Newline for new row
-        cout << endl;
-        }
-    */
+   
     
     dMatrix X_right = X(mask_right,keep_cols); dVector y_right = y(mask_right,1);
     node->right_child = build_tree(X_right, y_right,depth+1) ;

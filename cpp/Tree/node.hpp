@@ -18,6 +18,7 @@ class Node{
         int split_feature= NULL;
         double split_score = NULL;
 
+
         
         Node(double _split_value,double _split_score, int _split_feature, int _n_samples, double _prediction);
         Node(double _prediction, int _n_samples);

@@ -6,7 +6,7 @@
 
 #include <Eigen/Dense>
 #include <unordered_set>
-#include "splitter.hpp"
+#include "splitterReg.hpp"
 #include "node.hpp"
 #include <omp.h>
 #include <random>
@@ -23,112 +23,78 @@ using namespace std;
 
 
 
-class ProbabalisticSplitter: public Splitter{
+class ProbabalisticSplitter: public SplitterReg{
 
     public:
         ProbabalisticSplitter::ProbabalisticSplitter(int seed);
-        virtual tuple<vector<tuple<int, double,double>>,double>   select_split_from_all(const dVector  &feature, const dVector  &y, const iVector sorted_index, int feature_index);
-        virtual tuple<int, double,double> find_best_split(const dMatrix  &X, const dVector  &y);
+        virtual tuple<int, double,double> find_best_split(const dMatrix  &X, const dVector  &y,const dVector &y_prev);
     private:
         int seed;
         
     
 };
 
-ProbabalisticSplitter::ProbabalisticSplitter(int seed):Splitter(){
-    Splitter();
+ProbabalisticSplitter::ProbabalisticSplitter(int seed):SplitterReg(){
+    SplitterReg();
     this->seed = seed;
 }
 
-tuple<vector<tuple<int,double,double>>,double> ProbabalisticSplitter::select_split_from_all(const dVector  &feature, const dVector  &y, const iVector sorted_index, int feature_index){
-    float n = y.size();
 
 
-    double y_L = 0;
-    double y_R = y.array().sum();
-    float N_L = 0;
-    float N_R = n;
-    double y_squared = y.array().square().sum();
-    double total = 0;
-    vector<tuple<int, double,double>> splits(y.size()-1);
-    for (int i = 0; i < sorted_index.rows()-1; i++) {
-        int low = sorted_index[i];
-        int high = sorted_index[i+1];
-        double lowValue = feature[low];
-        double hightValue = feature[high];
-
-
-        double split_value =  (lowValue+hightValue)/2;
-        y_L+= y(low);
-        y_R-= y(low);
-        N_L+=1;
-        N_R-=1;
-        
-
-        double SSE_L= N_L*pow((y_L/N_L),2);
-        double SSE_R= N_R*pow((y_R/N_R),2);
-        double score = y_squared - SSE_L - SSE_R;
-
-        total+=pow(1/score,2.0);
-        
-        splits[i] = tuple<int, double,double>(feature_index, score, split_value);
-        
-        
-
-    }
-  
-    
-    return tuple<vector<tuple<int, double,double>>,double>(splits,total);
-}
-
-
-
-tuple<int, double,double> ProbabalisticSplitter::find_best_split(const dMatrix  &X, const dVector  &y){
+tuple<int, double,double> ProbabalisticSplitter::find_best_split(const dMatrix  &X, const dVector  &y,const dVector &y_prev){
     
     
         dVector feature;
         iMatrix X_sorted_indices = sorted_indices(X);
         
 
-        vector<tuple<int, double,double>> all_splits((y.size()-1)*X.cols());
+        vector<tuple<int, double,double>> all_splits;
 
-        double total = 0;
+        double score;
+        double split_value;
+        int i;
 
-       // #pragma omp parallel for ordered num_threads(4) shared(total,all_splits) private(feature)
-        
+       #pragma omp parallel for ordered num_threads(4) shared(all_splits) private(i,score,split_value, feature)
+
         for(int i =0; i<X.cols(); i++){
             feature = X.col(i);
-            double part_total = 0;
-            vector<tuple<int,double,double>> splits(y.size()-1); 
             iVector sorted_index = X_sorted_indices.col(i);
             
-           
-            tie(splits,part_total) = select_split_from_all(feature, y, sorted_index, i);
-           
             
-            //#pragma omp ordered
-            //{  
-                total += part_total;
-                for(int j = 0; j<splits.size();j++){
+            tie(score, split_value) = select_split_from_all(feature, y, sorted_index, y_prev);
+            //printf("%d, %f, %f \n", i,score, split_value);
+            
+            #pragma omp ordered
+            {  
+                if(feature[sorted_index[0]] != feature[sorted_index[feature.rows()-1]] && score < std::numeric_limits<double>::infinity()){
                     
-                    all_splits[j+i*splits.size()] = splits[j];
+                    all_splits.push_back(tuple<int, double,double>(i,score,split_value));
                 }
             
-           // }
+            }
         }
         vector<double> chances(all_splits.size());
         
+        double total = 0;
         for(int i = 0; i<all_splits.size();i++){
-            chances[i] =  exp(get<1>(all_splits[i]));
+            total +=1/pow(get<1>(all_splits[i]),4.0);
         }
-        
-        std::mt19937 gen(this->seed );
+        for(int i = 0; i<all_splits.size();i++){
+            double chance = (1/pow(get<1>(all_splits[i]),4.0))/total;
+            
+            chances[i] =  chance;
+        }
+        std::mt19937 gen(this->seed);
         std::discrete_distribution<std::size_t> d{chances.begin(), chances.end()};
         size_t ind = d(gen);
-        tuple<int, double,double> sampled_value = all_splits[ind];
-        
+        auto&  sampled_value = all_splits.at(ind);
+        tie(i, score, split_value) = sampled_value;
 
-        return sampled_value;
+        /*for (auto& tup : all_splits) {
+            cout << get<1>(tup) << endl;
+        }*/
+        //printf("%d, %f, %f \n", get<0>(sampled_value),get<1>(sampled_value),get<2>(sampled_value) );
+        return tuple<int, double,double>(i,score,split_value);
     
     
 }

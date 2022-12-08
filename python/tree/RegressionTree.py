@@ -13,7 +13,7 @@ import sys
 import numpy as np 
 sys.path.append(cur_file_path + '\\..\\..\\cpp\\build\\Release\\')
 sys.path.append('../python')
-from stable_trees import Node,Tree, StableTree, StableTreeReg,MonteCarloTree
+from stable_trees import Node,Tree, StableTree, StableTreeReg,MonteCarloTree,Method2
 from abc import ABCMeta
 from abc import abstractmethod
 
@@ -36,7 +36,7 @@ class BaseRegressionTree(BaseEstimator, metaclass=ABCMeta):
 
         def check_input(self,  X, y):
             if X.ndim <2:
-                X = X.reshape(X.shape[0],-1)
+                X = np.atleast_2d(X)
             if np.issubdtype(X.dtype, np.number):
                 X = X.astype("double")
             else:
@@ -116,17 +116,31 @@ class BaseLineTree(BaseRegressionTree):
         self.root = None
         super().__init__(max_depth, min_samples_split, random_state)
         self.tree = Tree(self.max_depth,self.min_samples_split)
+    
     def update(self,X,y):
         return self.fit(X,y)
 
     
+class StableTreeM2(BaseRegressionTree):
+    def __init__(self, *, max_depth = None, min_samples_split = 2.0, random_state = None):
+        self.root = None
+        super().__init__(max_depth, min_samples_split, random_state)
+        self.tree = Method2(self.max_depth,self.min_samples_split)
+        
+
+    def update(self, X,y):
+        X,y = self.check_input(X,y)
+        self.tree.update(X,y)
+        self.root = self.tree.get_root()
+        return self
+
+
 
 class sklearnBase(DecisionTreeRegressor):
-    def __init__(self, *, criterion="mse", splitter="best", max_depth=None, min_samples_split=2,
-                 min_samples_leaf=1, min_weight_fraction_leaf=0, max_features=None, random_state=None, max_leaf_nodes=None, min_impurity_decrease=0, min_impurity_split=None, ccp_alpha=0):
 
+    def __init__(self, *, criterion="mse", splitter="best", max_depth=None, min_samples_split=2, min_samples_leaf=1, min_weight_fraction_leaf=0, max_features=None, random_state=None, max_leaf_nodes=None, min_impurity_decrease=0, min_impurity_split=None, ccp_alpha=0):
         super().__init__(criterion, splitter, max_depth, min_samples_split, min_samples_leaf, min_weight_fraction_leaf, max_features, random_state, max_leaf_nodes, min_impurity_decrease, min_impurity_split, ccp_alpha)
-    
+        
 
     def update(self,X,y):
         self.fit(X,y)
@@ -209,15 +223,26 @@ class StableTree5(BaseRegressionTree):
         
         self.root = None
         super().__init__(max_depth, min_samples_split, random_state)
-        self.tree = MonteCarloTree(self.max_depth,self.min_samples_split,ntrees,random_state)
+        self.ntrees = ntrees
+        self.tree = MonteCarloTree(self.max_depth,self.min_samples_split,self.ntrees,random_state)
         
     def fit(self,X,y):
         X,y = self.check_input(X,y)
-        X_train, X_eval, y_train, y_eval = train_test_split(X,y,test_size=0.15, random_state=self.random_state)
-        self.tree.learn(X_train,y_train,X_eval,y_eval )
+        self.tree.learn(X,y)
         self.root = self.tree.get_root()
         return self
         
+    def add_noise(self,X):
+        stds = np.std(X, axis=0)
+        noise = np.random.normal(0, stds/np.sqrt(X.shape[0]/4), size = X.shape)
+        return X+noise
+        
 
     def update(self, X,y):
+        X,y = self.check_input(X,y)
+        np.random.seed(self.random_state)
+        inds = np.random.choice(a = np.arange(X.shape[0]), size = 2*X.shape[0], replace = True)
+        X_eval = self.add_noise(X[inds,:]); y_eval = y[inds]
+        self.tree.update(X,y,X,y)
+        self.root = self.tree.get_root()
         return self
