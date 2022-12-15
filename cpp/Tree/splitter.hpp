@@ -126,7 +126,7 @@ tuple<double,double> Splitter::select_split_from_all(const dVector  &feature, co
         if(lowValue == largestValue){
             break;
         }
-        if(hightValue-lowValue<0.0001){
+        if(hightValue-lowValue<0.000001){
             continue;
         }
         

@@ -19,7 +19,7 @@ if __name__ == "__main__":
     import pandas as pd
 
     N = 2000
-    dataset_name =  "sim_claim_freq" #"diabetes" #"make_regression"  #
+    dataset_name =  "diabetes" #"make_regression"  #"sim_claim_freq" #
     if dataset_name == "sim_claim_freq":
         data = simulate_claim_frequencies(N)
         data = pd.DataFrame(data.groupby(['obj_id',"obj_age", "obj_size",	"obj_type_1", "obj_type_2", "obj_type_3"]).sev.count()-1).reset_index().rename(columns={'sev': 'freq'}).drop("obj_id", axis=1).to_numpy()
@@ -39,10 +39,10 @@ if __name__ == "__main__":
     params = clf.best_params_
     print(params)
     models = {  
-                 "baseline": BaseLineTree(),
-                 "sklearn": sklearnBase(random_state=0),
-                 "method2":StableTreeM2(),
-                 #"method1":StableTree1(delta=0.0001, min_samples_split=min_samples_split)
+                 "baseline": BaseLineTree(**params),
+                 "sklearn": sklearnBase(**params, random_state=0),
+                 "method2":StableTreeM2(**params),
+                 "method1":StableTree1(**params,delta=0.0001)
                  #"method2":StableTree2(min_samples_split=min_samples_split),
                  #"method3":StableTree3(min_samples_split=min_samples_split)
                 #"#method4":StableTree4(min_samples_split=min_samples_split)

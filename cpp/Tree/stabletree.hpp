@@ -12,6 +12,7 @@ class StableTree: public Tree{
         Node* attempt_split(Node* node, dMatrix &X, dVector &y, int depth);
         Node* update_rec(Node* node, dMatrix &X, dVector &y,double delta, int depth);
         double hoeffding_bound(double delta, int n);
+        int number_of_examples;
 
 };
 
@@ -21,7 +22,6 @@ StableTree::StableTree():Tree(){
 
 StableTree::StableTree(int max_depth, double min_split_sample):Tree( max_depth,  min_split_sample){
     Tree(max_depth, min_split_sample);
-    
 }
 
 
@@ -30,11 +30,12 @@ void StableTree::update(dMatrix &X, dVector &y, double delta){
     if(root == NULL){
         learn(X,y);
     }
+    number_of_examples = y.size();
     root = update_rec(root, X, y, delta,0);
 } 
 
 Node* StableTree::update_rec(Node* node, dMatrix &X, dVector &y,double delta,int depth){
-    if(X.size()<=0){
+    if(y.size()<=1){
         return node;
     }
     if(node->is_leaf()){
@@ -48,15 +49,13 @@ Node* StableTree::update_rec(Node* node, dMatrix &X, dVector &y,double delta,int
         iVector left_mask; iVector right_mask;
         dVector feature = X.col(node->split_feature);
         tie(left_mask,right_mask) = get_masks(feature,y, node->split_value);
-        iVector keep_cols = iVector::LinSpaced(X.cols(), 0, X.cols()).array();
-        if(left_mask.rows()){
-            dMatrix X_left = X(left_mask,keep_cols); dVector y_left = y(left_mask,1);
-            node->left_child = update_rec(node->left_child, X_left, y_left,delta,depth+1);
-        }
-        if(right_mask.rows()){
-            dMatrix X_right= X(right_mask,keep_cols); dVector y_right = y(right_mask,1);
-            node->right_child = update_rec(node->right_child, X_right, y_right,delta,depth+1);
-        }
+        iVector keep_cols = iVector::LinSpaced(X.cols(), 0, X.cols()-1).array();
+        
+        dMatrix X_left = X(left_mask,keep_cols); dVector y_left = y(left_mask,1);
+        node->left_child = update_rec(node->left_child, X_left, y_left,delta,depth+1);
+        dMatrix X_right= X(right_mask,keep_cols); dVector y_right = y(right_mask,1);
+        node->right_child = update_rec(node->right_child, X_right, y_right,delta,depth+1);
+        
     }
     return node;
 
@@ -84,10 +83,12 @@ tuple<Node*, bool> StableTree::reevaluate_split(Node* node, dMatrix &X, dVector 
     bool changed = false;
     tie(split_feature, mse_new, split_value) = splitter.find_best_split(X,y);
     node->n_samples = y.rows();
-    double eps = this->hoeffding_bound(delta, node->n_samples);
-    if((mse_old+10e-4)/(mse_new+10e-4)> (1+eps)){
+    double eps = this->hoeffding_bound(delta, (number_of_examples)/(node->n_samples));
+    if((mse_old+1)/(mse_new+1)> (1+eps)){
         node = build_tree(X,y,depth);
         changed = true;
+    }else{
+        node->split_score = mse_new;
     }
 
     return  tuple<Node*, bool>(node, changed);

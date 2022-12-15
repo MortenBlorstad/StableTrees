@@ -231,6 +231,7 @@ Node* Tree::example(){
 }
 void Tree::update(dMatrix &X, dVector &y){
     this->learn(X,y);
+    printf("%d, %f", this->max_depth, this->min_split_sample);
 }
 
 Node* Tree::get_root(){
