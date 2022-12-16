@@ -1,8 +1,0 @@
-Metadata-Version: 2.1
-Name: stabletrees
-Version: 0.1.0
-Summary: A example Python package
-Home-page: https://github.com/MortenBlorstad/StableTrees
-Author: Morten Blørstad
-Author-email: mblorstad@email.com
-Requires-Python: >=3.6
