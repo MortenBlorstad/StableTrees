@@ -25,14 +25,14 @@ ext_modules = [
 setup(
     name='stabletrees',
     version='0.1.0',    
-    description='A example Python package',
+    description='Regression tree with stable update',
     author='Morten Blørstad',
     author_email='mblorstad@email.com',
     url="https://github.com/MortenBlorstad/StableTrees",
     package_dir={"": "src"},
     packages=find_packages(where="./src"),
     ext_modules=ext_modules,
-    install_requires=['numpy'],
+    install_requires=['numpy', "scikit-learn", "matplotlib"],
     python_requires=">=3.6",
 
     
