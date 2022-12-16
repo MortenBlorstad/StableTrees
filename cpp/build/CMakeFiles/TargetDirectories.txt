@@ -1,4 +1,0 @@
-C:/Users/mb-92/OneDrive/Skrivebord/studie/StableTrees/cpp/build/CMakeFiles/stable_trees.dir
-C:/Users/mb-92/OneDrive/Skrivebord/studie/StableTrees/cpp/build/CMakeFiles/ALL_BUILD.dir
-C:/Users/mb-92/OneDrive/Skrivebord/studie/StableTrees/cpp/build/CMakeFiles/ZERO_CHECK.dir
-C:/Users/mb-92/OneDrive/Skrivebord/studie/StableTrees/cpp/build/thirdparty/pybind11/CMakeFiles/ALL_BUILD.dir

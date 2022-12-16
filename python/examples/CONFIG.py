@@ -1,2 +1,0 @@
-SEED = 0
-EPSILON = 1.1
