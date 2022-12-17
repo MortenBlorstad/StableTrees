@@ -86,6 +86,23 @@ PYBIND11_MODULE(_stabletrees, m)
             .def("update", &Poisson::update)
             .def("get_root", &Poisson::reset)
             .def("node_impurity", &Poisson::node_impurity);
+
+    py::class_<MSEReg>(m, "MSEReg")
+        .def(py::init<>())
+            .def("get_score", &MSEReg::get_score)
+            .def("init", &MSEReg::init)
+            .def("update", &MSEReg::update)
+            .def("get_root", &MSEReg::reset)
+            .def("node_impurity", &MSEReg::node_impurity);
+
+
+    py::class_<PoissonReg>(m, "PoissonReg")
+        .def(py::init<>())
+            .def("get_score", &PoissonReg::get_score)
+            .def("init", &PoissonReg::init)
+            .def("update", &PoissonReg::update)
+            .def("get_root", &PoissonReg::reset)
+            .def("node_impurity", &PoissonReg::node_impurity);
     
 
 

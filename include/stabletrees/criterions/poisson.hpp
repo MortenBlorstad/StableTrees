@@ -22,8 +22,8 @@ class Poisson : public Criterion{
         double sum_ylogy_l;
         double sum_ylogy_r;
         double sum_ylogy;
-    private:
         bool skip = false;
+
 };
 
 double Poisson::get_score(){
@@ -58,14 +58,14 @@ void Poisson::update(double y_i){
     n_l+=1;
     n_r-=1;
     sum_ylogy_l+= (y_i+eps)*log(y_i+eps);
-    sum_ylogy_l-= (y_i+eps)*log(y_i+eps);
+    sum_ylogy_r-= (y_i+eps)*log(y_i+eps);
 
     double y_bar_l = sum_y_l/n_l;
     double y_bar_r = sum_y_r/n_r;
 
-    double sum_ylogpred_l = (y_bar_l+eps)*log(y_bar_l+eps)*n_l;
-    double sum_ylogpred_r = (y_bar_r+eps)*log(y_bar_r+eps)*n_r;
-    score = (sum_ylogy_l-sum_ylogpred_l+ sum_ylogy_r - sum_ylogpred_r)/n;
+    double sum_ylogpred_l = sum_y_l*log(y_bar_l+eps);
+    double sum_ylogpred_r = sum_y_r*log(y_bar_r+eps);
+    score = (sum_ylogy_l-sum_ylogpred_l + sum_ylogy_r - sum_ylogpred_r)/n;
 }
 
 void Poisson::reset(){
@@ -77,5 +77,60 @@ void Poisson::reset(){
     sum_ylogy_r = sum_ylogy;
 
 }
+
+class PoissonReg : public Poisson{ 
+    public:
+        void init(double _n, const dVector &y, const dVector &yprev);
+        void update(double y_i,double yp_i);
+        void reset();
+
+    protected:
+        double sum_prev_ylogy_l;
+        double sum_prev_ylogy_r;
+        double sum_prev_ylogy;
+        double sum_yprev_l;
+        double sum_yprev_r;
+        double sum_yprev;
+
+};
+
+void PoissonReg::init(double _n, const dVector &y, const dVector &yprev){
+    Poisson::init(_n,y);
+    sum_prev_ylogy = (yprev.array()*log(yprev.array()+ eps)).sum();
+    sum_prev_ylogy_l = 0;
+    sum_prev_ylogy_r = sum_prev_ylogy;
+
+    sum_yprev = yprev.array().sum();
+    sum_yprev_l = 0;
+    sum_yprev_r = sum_yprev;
+}
+
+
+void PoissonReg::reset(){
+    Poisson::reset();
+    sum_prev_ylogy_l = 0;
+    sum_prev_ylogy_r = sum_prev_ylogy;
+    sum_yprev_l = 0;
+    sum_yprev_r = sum_yprev;
+}
+
+void PoissonReg::update(double y_i,double yp_i){
+    Poisson::update(y_i);
+    sum_yprev_l+=yp_i;
+    sum_yprev_r-=yp_i;
+    sum_prev_ylogy_l += (yp_i+eps)*log(yp_i+eps);
+    sum_prev_ylogy_r -= (yp_i+eps)*log(yp_i+eps);
+
+    double y_bar_l = sum_y_l/n_l;
+    double y_bar_r = sum_y_r/n_r;
+    double sum_prev_ylogpred_l = sum_yprev_l*log(y_bar_l+eps);
+    double sum_prev_ylogpred_r = sum_yprev_r*log(y_bar_r+eps);
+   
+
+    double reg = ( (sum_prev_ylogy_l - sum_prev_ylogpred_l - (sum_yprev_l - n_l*y_bar_l) ) + (sum_prev_ylogy_r - sum_prev_ylogpred_r  - (sum_yprev_r - n_r*y_bar_r) ) )/n;
+    printf("%f %f %f %f %f %f\n", reg, score, sum_yprev_l,sum_yprev_r, sum_prev_ylogy_l, sum_prev_ylogy_r);
+    score+=reg;
+}
+
 
 #endif
