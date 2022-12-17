@@ -10,9 +10,12 @@ using namespace std;
 #include <pybind11/stl.h>
 
 #include "node.hpp"
-#include "splitter.hpp"
-#include "tree.hpp"
-#include "method2.hpp"
+#include "splitters\splitter.hpp"
+#include "criterions\criterion.hpp"
+#include "trees\tree.hpp"
+#include "trees\method2.hpp"
+#include "criterions\MSE.hpp"
+#include "criterions\Poisson.hpp"
 
 
 #define STRINGIFY(x) #x
@@ -67,6 +70,24 @@ PYBIND11_MODULE(_stabletrees, m)
             .def("predict", &Method2::predict)
             .def("update", &Method2::update)
             .def("get_root", &Method2::get_root);
+
+    py::class_<MSE>(m, "MSE")
+        .def(py::init<>())
+            .def("get_score", &MSE::get_score)
+            .def("init", &MSE::init)
+            .def("update", &MSE::update)
+            .def("get_root", &MSE::reset)
+            .def("node_impurity", &MSE::node_impurity);
+
+    py::class_<Poisson>(m, "Poisson")
+        .def(py::init<>())
+            .def("get_score", &Poisson::get_score)
+            .def("init", &Poisson::init)
+            .def("update", &Poisson::update)
+            .def("get_root", &Poisson::reset)
+            .def("node_impurity", &Poisson::node_impurity);
+    
+
 
 #ifdef VERSION_INFO
     m.attr("__version__") = MACRO_STRINGIFY(VERSION_INFO);

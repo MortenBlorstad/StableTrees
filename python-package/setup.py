@@ -15,7 +15,9 @@ ext_modules = [
         cxx_std=14,
         include_dirs=[
             os.path.join(os.path.dirname(__file__), "../include/stabletrees"),
-            os.path.join(os.path.dirname(__file__), "../include/thirdparty/pybind11"),
+            os.path.join(os.path.dirname(__file__), "../include/stabletrees/trees"),
+            os.path.join(os.path.dirname(__file__), "../include/stabletrees/splitters"),
+            os.path.join(os.path.dirname(__file__), "../include/stabletrees/criterions"),
             os.path.join(os.path.dirname(__file__), "../include/thirdparty/eigen")
         ],
         define_macros=[("VERSION_INFO", __version__)],

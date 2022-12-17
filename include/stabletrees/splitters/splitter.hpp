@@ -6,6 +6,9 @@
 //#include <C:\Users\mb-92\OneDrive\Skrivebord\studie\StableTrees\cpp\thirdparty\eigen\Eigen/Dense>
 #include <Eigen/Dense>
 #include <unordered_set>
+#include "MSE.hpp"
+#include "criterion.hpp"
+#include "poisson.hpp"
 
 #include <omp.h>
 
@@ -24,7 +27,8 @@ using namespace std;
 class Splitter{
 
     public:
-        
+        Splitter();
+       // Splitter(int _citerion);
         // double get_split( dMatrix &X, dVector &y);
         double sum_squared_error(const dVector &y_true, double  y_pred);
         tuple<double,double,dVector,dVector > get_predictions(const dVector &feature, const dVector &y, double value);
@@ -35,66 +39,31 @@ class Splitter{
         vector<int> sort_index(const dVector &v);
     
 
-    //private:
-        //double mse_criterion(dMatrix &feature, dVector &y, bVector &mask);
-        //tuple<double,double> select_split(dVector&feature, dVector &y);
-        //tuple<int,double,double> select_split(dMatrix&X, dVector &y);
-
+    protected:
+        Criterion *criterion;
 };
 
 
 
-tuple<double,double, dVector, dVector> Splitter::get_predictions(const dVector &feature,const  dVector &y,double value){
-    double left_prediction = 0.0;
-    double right_prediction = 0.0;
-    std::vector<double> left_values;
-    std::vector<double> right_values;
-    for(int i=0; i<y.rows();i++){
-        if(feature(i)<=value){
-            left_prediction+=y(i);
-            left_values.push_back(y(i));
-        }else{
-            right_prediction+=y(i);
-            right_values.push_back(y(i));
-        }
+/*Splitter::Splitter(int _citerion){
+    switch(_citerion){
+        case 0:
+            MSE mse;
+            criterion = &mse;
+            break;
+        case 1:
+            Criterion crit;
+            criterion = &crit;
+            break;
+        default:
+            throw invalid_argument("Possible criterions are 'mse' and poisson.");
+            break;
     }
-    if(left_values.size()>0){
-        left_prediction/=left_values.size();
-    }
-    if(right_values.size()>0){
-        right_prediction/=right_values.size();
-    }
+}*/
 
-    dVector left_values_v = Eigen::Map<Eigen::VectorXd, Eigen::Unaligned>(left_values.data(), left_values.size());
-    dVector right_values_v = Eigen::Map<Eigen::VectorXd, Eigen::Unaligned>(right_values.data(), right_values.size());
-
-    return tuple<double,double,dVector, dVector>(left_prediction,right_prediction, left_values_v, right_values_v);
-}
-
-double Splitter::sum_squared_error(const dVector &y_true, double  y_pred){
-    return (y_true.array() - y_pred).pow(2.0).sum();
-}
-
-
-double Splitter::mse_criterion(const dVector  &feature, const dVector  &y, double  value){
-
-    double left_pred;double right_pred; dVector left_values; dVector right_values;
-    tie(left_pred, right_pred, left_values, right_values) = get_predictions(feature, y, value);
-    double left = 0.0;
-    double right = 0.0;
-    if(left_values.size() >0){
-
-        left = sum_squared_error(left_values,left_pred);
-
-    }
-    if (right_values.size()>0){
-
-        right = sum_squared_error( right_values ,right_pred);
-
-    }
-    
-    return (right+left)/y.size();
-
+Splitter::Splitter(){
+    Poisson mse;
+    criterion = &mse;
 }
 
 
@@ -119,22 +88,22 @@ tuple<double,double> Splitter::select_split_from_all(const dVector  &feature, co
         double hightValue = feature[high];
         
         double split_value =  (lowValue+hightValue)/2;
-        y_L += y(low);
-        y_R -= y(low);
-        N_L+=1;
-        N_R-=1;
+        //printf("%f \n", y[low]);
+        criterion->update(y[low]);
+        //printf("%f \n", criterion.get_score());
+
+
         if(lowValue == largestValue){
             break;
         }
         if(hightValue-lowValue<0.000001){
             continue;
         }
-        
-            
-    
-        double SSE_L= N_L*pow((y_L/N_L),2);
-        double SSE_R= N_R*pow((y_R/N_R),2);
-        double score = (y_squared - SSE_L - SSE_R)/n;
+        if(criterion->should_skip()){
+            continue;
+        }
+
+        double score = criterion->get_score();
 
         if(min_score>score){
             min_score = score;
@@ -151,7 +120,7 @@ tuple<double,double> Splitter::select_split_from_all(const dVector  &feature, co
 tuple<int, double,double> Splitter::find_best_split(const dMatrix  &X, const dVector  &y){
         
     
-    
+
         double min_score = std::numeric_limits<double>::infinity();
         double best_split_value;
         int split_feature;
@@ -159,13 +128,15 @@ tuple<int, double,double> Splitter::find_best_split(const dMatrix  &X, const dVe
         double score;
         double split_value;
         int i;
+        int n = y.size();
+        criterion->init(n,y);
         
 
         iMatrix X_sorted_indices = sorted_indices(X);
         
 
 
-        #pragma omp parallel for ordered num_threads(4) shared(min_score,best_split_value,split_feature) private(i,score,split_value, feature)
+        //#pragma omp parallel for ordered num_threads(4) shared(min_score,best_split_value,split_feature) private(i,score,split_value, feature)
         
         for(int i =0; i<X.cols(); i++){
             feature = X.col(i);
@@ -174,9 +145,9 @@ tuple<int, double,double> Splitter::find_best_split(const dMatrix  &X, const dVe
             tie(score, split_value) = select_split_from_all(feature, y, sorted_index);
             //printf("num obs %d,split_value %f , min_score %f \n", feature.size(),split_value,min_score);
             
-           #pragma omp ordered
-        {
-            if(feature[sorted_index[0]] != feature[sorted_index[feature.rows()-1]]){
+           //#pragma omp ordered
+        //{
+            if(feature[sorted_index[0]] != feature[sorted_index[n-1]]){
                //printf("%d, %f \n",i,score);
                 if(min_score>score){
                     min_score = score;
@@ -184,7 +155,8 @@ tuple<int, double,double> Splitter::find_best_split(const dMatrix  &X, const dVe
                     split_feature = i;
                 }
             }
-            }
+            //}
+            criterion->reset();
         }
         //printf("=== %d, %f, %f  \n ",split_feature,min_score, best_split_value);
         return tuple<int, double,double>(split_feature,min_score, best_split_value);
