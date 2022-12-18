@@ -7,10 +7,16 @@ from sklearn.tree import DecisionTreeRegressor
 from matplotlib import pyplot as plt
 import numpy as np
 
+criterions = {"mse":0, "poisson":1}
+
 class BaseRegressionTree(BaseEstimator, metaclass=ABCMeta):
     @abstractmethod
-    def __init__(self, max_depth, min_samples_split, random_state) -> None:
-        
+    def __init__(self,criterion = "mse", max_depth = None, min_samples_split = 2, random_state = None) -> None:
+        criterion = str(criterion).lower()
+        if criterion not in criterions.keys():
+            raise ValueError("Possible criterions are 'mse' and 'poisson'.")
+        self.criterion = criterion
+
         if max_depth is None:
             max_depth = 2147483647
         self.max_depth = int(max_depth)
@@ -96,20 +102,20 @@ class BaseRegressionTree(BaseEstimator, metaclass=ABCMeta):
 
 
 class BaseLineTree(BaseRegressionTree):
-    def __init__(self, *, max_depth = None, min_samples_split = 2.0, random_state = None):
+    def __init__(self, *,criterion = "mse", max_depth = None, min_samples_split = 2.0, random_state = None):
         
         self.root = None
-        super().__init__(max_depth, min_samples_split, random_state)
-        self.tree = Tree(self.max_depth,self.min_samples_split)
+        super().__init__(criterion,max_depth, min_samples_split, random_state)
+        self.tree = Tree(criterions[self.criterion], self.max_depth,self.min_samples_split)
     
     def update(self,X,y):
         return self.fit(X,y)
 
 class StableTree(BaseRegressionTree):
-    def __init__(self, *, max_depth = None, min_samples_split = 2.0, random_state = None):
+    def __init__(self, *,criterion = "mse", max_depth = None, min_samples_split = 2.0, random_state = None):
         self.root = None
-        super().__init__(max_depth, min_samples_split, random_state)
-        self.tree = Method2(self.max_depth,self.min_samples_split)
+        super().__init__(criterion,max_depth, min_samples_split, random_state)
+        self.tree = Method2(criterions[self.criterion], self.max_depth,self.min_samples_split)
         
 
     def update(self, X,y):

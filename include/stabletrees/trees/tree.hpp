@@ -29,7 +29,7 @@ class Tree{
     public:
         
         Node* root  = NULL;
-        explicit Tree(int max_depth, double min_split_sample); 
+        explicit Tree(int _criterion,int max_depth, double min_split_sample); 
         explicit Tree(); 
         bool all_same(dVector &vec);
         bool all_same_features_values(dMatrix  &X);
@@ -43,17 +43,20 @@ class Tree{
         virtual void update(dMatrix &X, dVector &y);
         virtual tuple<int, double,double> find_split(dMatrix &X, dVector &y);
     protected:
-        Splitter splitter;
+        //Splitter splitter;
         int max_depth;
+        int _criterion;
         double min_split_sample;
 };
 Tree::Tree(){
     int max_depth = INT_MAX;
     double min_split_sample = 2.0;
+    _criterion = 0;
+
 }
 
-Tree::Tree(int max_depth, double min_split_sample){
-    this->splitter = Splitter();
+Tree::Tree(int _criterion, int max_depth, double min_split_sample){
+    //this->splitter = Splitter(_criterion);
     if(max_depth !=NULL){
        this-> max_depth =  max_depth;
     }else{
@@ -61,11 +64,11 @@ Tree::Tree(int max_depth, double min_split_sample){
     }
 
     this-> min_split_sample = min_split_sample;
-    
+    this->_criterion = _criterion;
 } 
 
 tuple<int, double,double>  Tree::find_split(dMatrix &X, dVector &y){
-    return Splitter().find_best_split(X, y);
+    return Splitter(this->_criterion).find_best_split(X, y);
 }
 
 

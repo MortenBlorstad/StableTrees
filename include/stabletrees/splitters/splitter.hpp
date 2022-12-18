@@ -28,7 +28,7 @@ class Splitter{
 
     public:
         Splitter();
-       // Splitter(int _citerion);
+        Splitter(int _citerion);
         // double get_split( dMatrix &X, dVector &y);
         double sum_squared_error(const dVector &y_true, double  y_pred);
         tuple<double,double,dVector,dVector > get_predictions(const dVector &feature, const dVector &y, double value);
@@ -62,10 +62,21 @@ class Splitter{
 }*/
 
 Splitter::Splitter(){
-    Poisson mse;
+    MSE mse;
     criterion = &mse;
 }
 
+Splitter::Splitter(int _citerion){
+    if(_citerion == 0){
+        MSE crit;
+        criterion = &crit;
+    }else if(_citerion ==1){
+        Poisson crit;
+        criterion = &crit;
+    }else{
+        throw invalid_argument("Possible criterions are 'mse' and 'poisson'.");
+    }
+}
 
 tuple<double,double> Splitter::select_split_from_all(const dVector  &feature, const dVector  &y, const iVector sorted_index){
     //https://stats.stackexchange.com/questions/72212/updating-variance-of-a-dataset
@@ -73,11 +84,6 @@ tuple<double,double> Splitter::select_split_from_all(const dVector  &feature, co
     double n = y.size();
     double best_split_value;
     
-    double y_L = 0;
-    double y_R = y.array().sum();
-    double N_L = 0;
-    double N_R = n;
-    double y_squared = y.array().square().sum();
 
     double largestValue = feature(sorted_index[n-1]);
 

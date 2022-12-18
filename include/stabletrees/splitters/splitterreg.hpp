@@ -1,6 +1,5 @@
 #pragma once
 #ifndef __Splitter_HPP_INCLUDED__
-#pragma once
 #include "splitter.hpp"
 #include "node.hpp"
 #include <stdexcept>
@@ -8,15 +7,29 @@
 class SplitterReg: public Splitter{
     public:
         SplitterReg();
+        SplitterReg(int _citerion);
         tuple<int,double,double>  find_best_split(const dMatrix  &X, const dVector  &y,const dVector &y_prev);
         tuple<double,double> select_split_from_all(const dVector  &feature, const dVector  &y, const iVector sorted_index,const dVector &y_prev);
-
+    protected:
+        Criterion *criterion;
 };
 
-SplitterReg::SplitterReg():Splitter(){
-    Splitter();
+SplitterReg::SplitterReg(){
+    MSEReg crit;
+    criterion = &crit;
 }
 
+SplitterReg::SplitterReg(int _citerion){
+    if(_citerion == 0){
+        MSEReg crit;
+        criterion = &crit;
+    }else if(_citerion ==1){
+        PoissonReg crit;
+        criterion = &crit;
+    }else{
+        throw invalid_argument("Possible criterions are 'mse' and 'poisson'.");
+    }
+}
 
 
 tuple<double,double> SplitterReg::select_split_from_all(const dVector  &feature, const dVector  &y, const iVector sorted_index,const dVector &y_prev){
@@ -25,12 +38,6 @@ tuple<double,double> SplitterReg::select_split_from_all(const dVector  &feature,
     double n = y.size();
     double best_split_value;
     
-    double y_L = 0; // sum of y left
-    double y_R = y.array().sum(); // sum of y right
-    double N_L = 0; // number of elements left
-    double N_R = n; // number of elements right
-    double y_squared = y.array().square().sum(); // sum of squares
-
     double largestValue = feature(sorted_index[n-1]);
 
 
@@ -46,41 +53,27 @@ tuple<double,double> SplitterReg::select_split_from_all(const dVector  &feature,
         double hightValue = feature[high];
         
         double split_value =  (lowValue+hightValue)/2;
-
+        criterion->update(y[low],y_prev(low));
         
-        y_L += y(low);
-        y_R -= y(low);
-        yp_L += y_prev(low);
-        yp_R -= y_prev(low);
-        N_L+=1;
-        N_R-=1;
-
-        // skip if values are approx equal
-        if(hightValue-lowValue<0.0001){
-            continue;
-        }
+    
         // break if rest of the values are equal
         if(lowValue == largestValue){
             break;
         }
+        // skip if values are approx equal
+        if(hightValue-lowValue<0.000001){
+            continue;
+        }
+        if(criterion->should_skip()){
+            continue;
+        }
+        double score = criterion->get_score();
+
         
-        // compute MSE reduction
-        double y_L_bar = y_L/N_L;
-        double y_R_bar = y_R/N_R;
-        double SSE_L= N_L*pow(y_L_bar,2);
-        double SSE_R= N_R*pow(y_R_bar,2);
-        double score = (y_squared - SSE_L - SSE_R)/n;
-
-        // computee stability regularization term,  mean( (y_prev - y_bar)^2)
-        double R = (SSE_L+ SSE_R - 2*yp_L*y_L_bar - 2*yp_R*y_R_bar  + yp_squared) /n;
-
-        score = score + R;
-
         if(min_score>score){
             min_score = score;
             best_split_value = split_value;
         }
-
     }
   
     
@@ -97,21 +90,21 @@ tuple<int, double,double> SplitterReg::find_best_split(const dMatrix  &X, const 
         double score;
         double split_value;
         int i;
+        int n = y.size();
+        criterion->init(n,y,y_prev);
         
 
         iMatrix X_sorted_indices = sorted_indices(X);
-        
-
-
-        #pragma omp parallel for ordered num_threads(4) shared(min_score,best_split_value,split_feature) private(i,score,split_value, feature)
+    
+        //#pragma omp parallel for ordered num_threads(4) shared(min_score,best_split_value,split_feature) private(i,score,split_value, feature)
         
         for(int i =0; i<X.cols(); i++){
             feature = X.col(i);
             iVector sorted_index = X_sorted_indices.col(i);
             tie(score, split_value) = select_split_from_all(feature, y, sorted_index,y_prev);
             
-           #pragma omp ordered
-        {
+        //   #pragma omp ordered
+        //{
             if(feature[sorted_index[0]] != feature[sorted_index[feature.rows()-1]]){
                 if(min_score>score){
                     min_score = score;
@@ -119,7 +112,8 @@ tuple<int, double,double> SplitterReg::find_best_split(const dMatrix  &X, const 
                     split_feature = i;
                 }
             }
-            }
+           // }
+           criterion->reset();
         }
         return tuple<int, double,double>(split_feature,min_score, best_split_value);
     

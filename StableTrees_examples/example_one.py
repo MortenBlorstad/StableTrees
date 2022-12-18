@@ -10,7 +10,7 @@ EPSILON = 1.1
 X,y = make_regression(n_samples=1000, n_features=10, n_informative=5,noise=10,random_state=0)
 y = y + np.max(np.abs(y))
 
-parameters = {'max_depth':[None, 5, 10], 'min_samples_split':[2,4,8]}
+parameters = { 'max_depth':[None, 5, 10], 'min_samples_split':[2,4,8]}
 clf = GridSearchCV(DecisionTreeRegressor(random_state=0), parameters)
 clf.fit(X,y)
 params = clf.best_params_

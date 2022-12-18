@@ -53,7 +53,7 @@ PYBIND11_MODULE(_stabletrees, m)
 
     
     py::class_<Tree>(m, "Tree")
-        .def(py::init<int , double >())
+        .def(py::init<int, int , double >())
         .def("all_same", &Tree::all_same)
         .def("all_same_features_values", &Tree::all_same_features_values )
         .def("get_masks", &Tree::get_masks)
@@ -65,7 +65,7 @@ PYBIND11_MODULE(_stabletrees, m)
         .def("update", &Tree::update);
 
     py::class_<Method2>(m, "Method2")
-        .def(py::init<int, double>())
+        .def(py::init<int, int, double>())
             .def("learn", &Method2::learn)
             .def("predict", &Method2::predict)
             .def("update", &Method2::update)

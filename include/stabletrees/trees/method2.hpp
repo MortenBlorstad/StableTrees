@@ -3,23 +3,21 @@
 #include "splitterReg.hpp"
 class Method2: public Tree{
     public:
-        Method2(int max_depth, double min_split_sample);
+        Method2(int _criterion,int max_depth, double min_split_sample);
         Method2();
         virtual void update(dMatrix &X, dVector &y);
         
 
     private:
         Node* update_tree(dMatrix  &X, dVector &y, int depth, dVector &yprev);
-        SplitterReg stable_splitter;
-
 };
 
 Method2::Method2():Tree(){
     Tree();
 }
 
-Method2::Method2(int max_depth, double min_split_sample):Tree( max_depth,  min_split_sample){
-    Tree(max_depth, min_split_sample);
+Method2::Method2(int _criterion,int max_depth, double min_split_sample):Tree(_criterion, max_depth,  min_split_sample){
+    Tree(_criterion, max_depth, min_split_sample);
 }
    
     
@@ -32,8 +30,6 @@ void Method2::update(dMatrix &X, dVector &y) {
     } 
 }
 
-    
-    
 Node* Method2::update_tree(dMatrix  &X, dVector &y, int depth, dVector &yprev){
     if (depth>= this->max_depth){
         return new Node(y.array().mean(),y.rows());
@@ -60,7 +56,7 @@ Node* Method2::update_tree(dMatrix  &X, dVector &y, int depth, dVector &yprev){
     int split_feature;
     iVector mask_left;
     iVector mask_right;
-    tie(split_feature, score, split_value)  = stable_splitter.find_best_split(X,y, yprev);
+    tie(split_feature, score, split_value)  = SplitterReg(this->_criterion).find_best_split(X,y, yprev);
     dVector feature = X.col(split_feature);
     tie(mask_left, mask_right) = get_masks(feature, y, split_value);
 

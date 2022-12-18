@@ -18,8 +18,10 @@ using iMatrix = Eigen::Matrix<int, Dynamic, Dynamic>;
 class Criterion{
     public:
         explicit Criterion();
+        virtual void init(double n, const dVector &y,const dVector &yprev);
         virtual void init(double n, const dVector &y);
 
+        virtual void update(double y_i, double yp_i);
         virtual void update(double y_i);
         virtual void reset();
 
@@ -36,14 +38,9 @@ class Criterion{
         double n_r;
         double node_score;
         double score;
-        double eps = 0.000000000000001;
-
-
-
-
-
-    
+        double eps = 0.000000000000001;    
 };
+
 Criterion::Criterion(){
 
 }
@@ -56,13 +53,22 @@ double Criterion::node_impurity(const dVector &y){
 }
 
 void Criterion::update(double y_i){
-    printf("update empty\n");
+    sum_y_l+= y_i;
+    sum_y_r-=y_i;
+    n_l+=1;
+    n_r-=1;
+}
+
+void Criterion::update(double y_i, double yp_i){
 
 }
 
 
 void Criterion::reset(){
-
+    sum_y_l = 0;
+    sum_y_r = sum_y;
+    n_r = n;
+    n_l = 0;
 }
 
 double Criterion::get_score(){
@@ -77,8 +83,8 @@ void Criterion::init(double _n, const dVector &y){
     n_r = n;
 }
 
+void Criterion::init(double _n, const dVector &y, const dVector &yprev){
 
-
-
+}
 
 #endif

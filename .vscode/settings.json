@@ -1,8 +1,0 @@
-{
-    "files.associations": {
-        "random": "cpp",
-        "cmath": "cpp",
-        "complex": "cpp",
-        "valarray": "cpp"
-    }
-}

@@ -50,13 +50,10 @@ bool Poisson::should_skip(){
 }
     
 void Poisson::update(double y_i){
-    sum_y_l+= y_i;
-    sum_y_r-=y_i;
+    Criterion::update(y_i);
     if(sum_y_l<=eps || sum_y_r<=eps){
         skip = true;
     }
-    n_l+=1;
-    n_r-=1;
     sum_ylogy_l+= (y_i+eps)*log(y_i+eps);
     sum_ylogy_r-= (y_i+eps)*log(y_i+eps);
 
@@ -69,10 +66,7 @@ void Poisson::update(double y_i){
 }
 
 void Poisson::reset(){
-    sum_y_l = 0;
-    sum_y_r = sum_y;
-    n_r = n;
-    n_l = 0;
+    Criterion::reset();
     sum_ylogy_l = 0;
     sum_ylogy_r = sum_ylogy;
 
@@ -128,7 +122,6 @@ void PoissonReg::update(double y_i,double yp_i){
    
 
     double reg = ( (sum_prev_ylogy_l - sum_prev_ylogpred_l - (sum_yprev_l - n_l*y_bar_l) ) + (sum_prev_ylogy_r - sum_prev_ylogpred_r  - (sum_yprev_r - n_r*y_bar_r) ) )/n;
-    printf("%f %f %f %f %f %f\n", reg, score, sum_yprev_l,sum_yprev_r, sum_prev_ylogy_l, sum_prev_ylogy_r);
     score+=reg;
 }
 

@@ -40,10 +40,7 @@ double MSE::node_impurity(const dVector &y){
 
     
 void MSE::update(double y_i){
-    sum_y_l+= y_i;
-    sum_y_r-=y_i;
-    n_l+=1;
-    n_r-=1;
+    Criterion::update(y_i);
     double y_bar_l = sum_y_l/n_l;
     double y_bar_r = sum_y_r/n_r;
     double SSE_L = n_l*( pow(y_bar_l,2.0) );
@@ -53,10 +50,7 @@ void MSE::update(double y_i){
 }
 
 void MSE::reset(){
-    sum_y_l = 0;
-    sum_y_r = sum_y;
-    n_r = n;
-    n_l = 0;
+    Criterion::reset();
 }
 
 
