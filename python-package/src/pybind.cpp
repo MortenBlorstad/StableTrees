@@ -14,6 +14,7 @@ using namespace std;
 #include "criterions\criterion.hpp"
 #include "trees\tree.hpp"
 #include "trees\method2.hpp"
+#include "trees\method1.hpp"
 #include "criterions\MSE.hpp"
 #include "criterions\Poisson.hpp"
 
@@ -69,6 +70,13 @@ PYBIND11_MODULE(_stabletrees, m)
             .def("predict", &Method2::predict)
             .def("update", &Method2::update)
             .def("get_root", &Method2::get_root);
+
+    py::class_<Method1>(m, "Method1")
+        .def(py::init<int, int, double>())
+            .def("learn", &Method1::learn)
+            .def("predict", &Method1::predict)
+            .def("update", &Method1::update)
+            .def("get_root", &Method1::get_root);
 
     py::class_<MSE>(m, "MSE")
         .def(py::init<>())

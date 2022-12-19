@@ -1,4 +1,4 @@
-from stabletrees import BaseLineTree, StableTree
+from stabletrees import BaseLineTree, StableTree1,StableTree2
 from sklearn.datasets import make_regression
 from sklearn.metrics import mean_squared_error
 from sklearn.model_selection import train_test_split,GridSearchCV,RepeatedKFold
@@ -17,7 +17,8 @@ params = clf.best_params_
 print(params)
 models = {  
                 "baseline": BaseLineTree(**params),
-                "method2":StableTree(**params)
+                "method1":StableTree1(**params),
+                "method2":StableTree2(**params)
         }
 stability = {name:[] for name in models.keys()}
 standard_stability = {name:[] for name in models.keys()}

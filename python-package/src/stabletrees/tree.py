@@ -1,5 +1,5 @@
 
-from _stabletrees import Node, Tree, Method2
+from _stabletrees import Node, Tree, Method1, Method2
 from abc import ABCMeta
 from abc import abstractmethod
 from sklearn.base import BaseEstimator 
@@ -111,7 +111,30 @@ class BaseLineTree(BaseRegressionTree):
     def update(self,X,y):
         return self.fit(X,y)
 
-class StableTree(BaseRegressionTree):
+
+
+class StableTree1(BaseRegressionTree):
+    """
+        Method 1: update method replaces subtrees in the original tree with new ones if the improvement is above a threshold
+    """
+    def __init__(self, *,criterion = "mse", max_depth = None, min_samples_split = 2.0, random_state = None, delta=0.1):
+        self.root = None
+        super().__init__(criterion,max_depth, min_samples_split, random_state)
+        self.tree = Method1(criterions[self.criterion], self.max_depth,self.min_samples_split)
+        self.delta = delta
+        
+
+    def update(self, X,y):
+        X,y = self.check_input(X,y)
+        self.tree.update(X,y,self.delta )
+        self.root = self.tree.get_root()
+        return self
+
+
+class StableTree2(BaseRegressionTree):
+    """
+        Method 2: update method build a new tree using the prediction from the previous tree as regularization.
+    """
     def __init__(self, *,criterion = "mse", max_depth = None, min_samples_split = 2.0, random_state = None):
         self.root = None
         super().__init__(criterion,max_depth, min_samples_split, random_state)
