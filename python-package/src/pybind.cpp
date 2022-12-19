@@ -39,7 +39,7 @@ PYBIND11_MODULE(_stabletrees, m)
     )pbdoc";
 
     py::class_<Node>(m, "Node")
-        .def(py::init<double,double, int, int, double>())
+        .def(py::init<double,double, double, int, int, double>())
         .def(py::init<double, int>())
         .def("is_leaf", &Node::is_leaf)
         .def("set_left_node", &Node::set_left_node)
@@ -47,9 +47,9 @@ PYBIND11_MODULE(_stabletrees, m)
         .def("get_right_node", &Node::get_right_node)
         .def("get_left_node", &Node::get_left_node)
         .def("predict", &Node::predict)
-        .def("text", &Node::text)
         .def("nsamples", &Node::nsamples)
-        .def("get_split_score", &Node::get_split_score);
+        .def("get_split_score", &Node::get_split_score)
+        .def("get_impurity", &Node::get_impurity);
 
     
     py::class_<Tree>(m, "Tree")
@@ -60,7 +60,6 @@ PYBIND11_MODULE(_stabletrees, m)
         .def("build_tree", &Tree::build_tree)
         .def("learn", &Tree::learn)
         .def("get_root", &Tree::get_root)
-        .def("example", &Tree::example)
         .def("predict", &Tree::predict)
         .def("update", &Tree::update);
 

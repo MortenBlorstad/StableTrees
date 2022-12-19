@@ -29,37 +29,15 @@ class Splitter{
     public:
         Splitter();
         Splitter(int _citerion);
-        // double get_split( dMatrix &X, dVector &y);
-        double sum_squared_error(const dVector &y_true, double  y_pred);
-        tuple<double,double,dVector,dVector > get_predictions(const dVector &feature, const dVector &y, double value);
-        double mse_criterion(const dVector  &feature,const dVector  &y, double  value);
-        tuple<int,double,double>  find_best_split(const dMatrix  &X, const dVector  &y);
+        tuple<int,double,double,double>  find_best_split(const dMatrix  &X, const dVector  &y);
         tuple<double,double> select_split_from_all(const dVector  &feature, const dVector  &y, const iVector sorted_index);
+    
+    protected:
         iMatrix sorted_indices(dMatrix X);
         vector<int> sort_index(const dVector &v);
-    
-
-    protected:
         Criterion *criterion;
 };
 
-
-
-/*Splitter::Splitter(int _citerion){
-    switch(_citerion){
-        case 0:
-            MSE mse;
-            criterion = &mse;
-            break;
-        case 1:
-            Criterion crit;
-            criterion = &crit;
-            break;
-        default:
-            throw invalid_argument("Possible criterions are 'mse' and poisson.");
-            break;
-    }
-}*/
 
 Splitter::Splitter(){
     MSE mse;
@@ -123,7 +101,7 @@ tuple<double,double> Splitter::select_split_from_all(const dVector  &feature, co
 }
 
 
-tuple<int, double,double> Splitter::find_best_split(const dMatrix  &X, const dVector  &y){
+tuple<int, double, double,double> Splitter::find_best_split(const dMatrix  &X, const dVector  &y){
         
     
 
@@ -136,7 +114,7 @@ tuple<int, double,double> Splitter::find_best_split(const dMatrix  &X, const dVe
         int i;
         int n = y.size();
         criterion->init(n,y);
-        
+        double impurity = criterion->node_score;
 
         iMatrix X_sorted_indices = sorted_indices(X);
         
@@ -165,7 +143,7 @@ tuple<int, double,double> Splitter::find_best_split(const dMatrix  &X, const dVe
             criterion->reset();
         }
         //printf("=== %d, %f, %f  \n ",split_feature,min_score, best_split_value);
-        return tuple<int, double,double>(split_feature,min_score, best_split_value);
+        return tuple<int,double, double,double>(split_feature,impurity,min_score, best_split_value);
     
     
 }

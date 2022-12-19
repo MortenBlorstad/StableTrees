@@ -36,12 +36,11 @@ class Tree{
         Node* build_tree(dMatrix  &X, dVector &y, int depth);
         tuple<iVector, iVector> get_masks(dVector &feature, dVector &y, double value);
         virtual void learn(dMatrix  &X, dVector &y);
-        Node* example();
         Node* get_root();
         double predict_obs(dVector  &obs);
         dVector predict(dMatrix  &X);
         virtual void update(dMatrix &X, dVector &y);
-        virtual tuple<int, double,double> find_split(dMatrix &X, dVector &y);
+        virtual tuple<int,double, double,double> find_split(dMatrix &X, dVector &y);
     protected:
         //Splitter splitter;
         int max_depth;
@@ -67,7 +66,7 @@ Tree::Tree(int _criterion, int max_depth, double min_split_sample){
     this->_criterion = _criterion;
 } 
 
-tuple<int, double,double>  Tree::find_split(dMatrix &X, dVector &y){
+tuple<int,double, double,double>  Tree::find_split(dMatrix &X, dVector &y){
     return Splitter(this->_criterion).find_best_split(X, y);
 }
 
@@ -175,11 +174,12 @@ Node* Tree::build_tree(dMatrix  &X, dVector &y, int depth){
         
 
     double score;
+    double impurity;
     double split_value;
     int split_feature;
     iVector mask_left;
     iVector mask_right;
-    tie(split_feature, score, split_value)  = find_split(X,y);
+    tie(split_feature,impurity, score, split_value)  = find_split(X,y);
     //printf("score %d\n", score);
     //printf("score %f\n", score);
     if(score == std::numeric_limits<double>::infinity()){
@@ -207,7 +207,7 @@ Node* Tree::build_tree(dMatrix  &X, dVector &y, int depth){
     tie(mask_left, mask_right) = get_masks(feature, y, split_value);
 
 
-    Node* node = new Node(split_value, score, split_feature, y.rows() , y.array().mean());
+    Node* node = new Node(split_value, impurity, score, split_feature, y.rows() , y.array().mean());
     
     iVector keep_cols = iVector::LinSpaced(X.cols(), 0, X.cols()-1).array();
     
@@ -224,14 +224,6 @@ Node* Tree::build_tree(dMatrix  &X, dVector &y, int depth){
 
 }
 
-Node* Tree::example(){
-    std::cout << "ww" << std::endl;
-    Node* node = new Node(0.0, 0.0, 1, 0 , 0.0);
-    node->left_child = new Node(0.0, 0.0, 1, 0 , 0.0);
-    this->root = node;
-    return node;
-
-}
 void Tree::update(dMatrix &X, dVector &y){
     this->learn(X,y);
     printf("%d, %f", this->max_depth, this->min_split_sample);

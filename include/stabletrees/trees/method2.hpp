@@ -53,15 +53,16 @@ Node* Method2::update_tree(dMatrix  &X, dVector &y, int depth, dVector &yprev){
 
     double score;
     double split_value;
+    double impurity;
     int split_feature;
     iVector mask_left;
     iVector mask_right;
-    tie(split_feature, score, split_value)  = SplitterReg(this->_criterion).find_best_split(X,y, yprev);
+    tie(split_feature, impurity, score, split_value)  = SplitterReg(this->_criterion).find_best_split(X,y, yprev);
     dVector feature = X.col(split_feature);
     tie(mask_left, mask_right) = get_masks(feature, y, split_value);
 
 
-    Node* node = new Node(split_value, score, split_feature, y.rows() , y.array().mean());
+    Node* node = new Node(split_value,impurity, score, split_feature, y.rows() , y.array().mean());
     
     iVector keep_cols = iVector::LinSpaced(X.cols(), 0, X.cols()-1).array();
     

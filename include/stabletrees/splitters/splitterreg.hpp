@@ -8,7 +8,7 @@ class SplitterReg: public Splitter{
     public:
         SplitterReg();
         SplitterReg(int _citerion);
-        tuple<int,double,double>  find_best_split(const dMatrix  &X, const dVector  &y,const dVector &y_prev);
+        tuple<int,double, double,double>  find_best_split(const dMatrix  &X, const dVector  &y,const dVector &y_prev);
         tuple<double,double> select_split_from_all(const dVector  &feature, const dVector  &y, const iVector sorted_index,const dVector &y_prev);
     protected:
         Criterion *criterion;
@@ -81,7 +81,7 @@ tuple<double,double> SplitterReg::select_split_from_all(const dVector  &feature,
 }
 
 
-tuple<int, double,double> SplitterReg::find_best_split(const dMatrix  &X, const dVector  &y,const dVector &y_prev){
+tuple<int, double, double,double> SplitterReg::find_best_split(const dMatrix  &X, const dVector  &y,const dVector &y_prev){
         
         double min_score = std::numeric_limits<double>::infinity();
         double best_split_value;
@@ -92,7 +92,7 @@ tuple<int, double,double> SplitterReg::find_best_split(const dMatrix  &X, const 
         int i;
         int n = y.size();
         criterion->init(n,y,y_prev);
-        
+        double impurity = criterion->node_score;
 
         iMatrix X_sorted_indices = sorted_indices(X);
     
@@ -115,7 +115,7 @@ tuple<int, double,double> SplitterReg::find_best_split(const dMatrix  &X, const 
            // }
            criterion->reset();
         }
-        return tuple<int, double,double>(split_feature,min_score, best_split_value);
+        return tuple<int, double, double, double>(split_feature,impurity,min_score, best_split_value);
     
     
 }

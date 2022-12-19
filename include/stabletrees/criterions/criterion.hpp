@@ -29,6 +29,8 @@ class Criterion{
         virtual bool should_skip();
 
         double get_score();
+        double node_score;
+        
     protected:
         double sum_y_l;
         double sum_y_r;
@@ -36,7 +38,6 @@ class Criterion{
         double n;
         double n_l;
         double n_r;
-        double node_score;
         double score;
         double eps = 0.000000000000001;    
 };

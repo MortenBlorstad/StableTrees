@@ -12,15 +12,16 @@ class Node{
     public:
         Node* left_child;
         Node* right_child;
-        double split_value= NULL;
-        double prediction= NULL;
-        int n_samples= NULL;
-        int split_feature= NULL;
-        double split_score = NULL;
+        double split_value= NULL; // split value
+        double prediction= NULL; // node's prediction 
+        int n_samples= NULL; // number of sample in node
+        int split_feature= NULL; //  index of feature to split
+        double split_score = NULL; // split reduduction
+        double impurity; // node impurity
 
 
         
-        Node(double _split_value,double _split_score, int _split_feature, int _n_samples, double _prediction);
+        Node(double _split_value,double _impurity, double _split_score, int _split_feature, int _n_samples, double _prediction);
         Node(double _prediction, int _n_samples);
 
         Node* get_left_node();
@@ -29,14 +30,15 @@ class Node{
         void set_right_node(Node* node);
         bool is_leaf();
         double predict();
-        string text();
         int nsamples();
         double get_split_score();
+        double get_impurity();
     
     };
 
-Node::Node(double _split_value, double _split_score, int _split_feature,int _n_samples, double _prediction){
+Node::Node(double _split_value, double _impurity, double _split_score, int _split_feature,int _n_samples, double _prediction){
     split_value = _split_value;
+    impurity = _impurity;
     split_score = _split_score;
     n_samples = _n_samples;
     split_feature = _split_feature;
@@ -72,25 +74,17 @@ Node* Node::get_right_node(){
     return this->right_child ;
 }
 
-string Node::text(){
-    char text [50];
-    if(!is_leaf()){
-        
-        sprintf (text, "X_%d <= %f", this->split_feature, this->split_value);
-
-    }else{
-        sprintf (text, "%f",this->prediction);
-    }
-
-    return text;
-}
-
 int Node::nsamples(){
     return this->n_samples;
 }
 
 double Node::get_split_score(){
     return this-> split_score;
+}
+
+double Node::get_impurity()
+{
+    return this-> impurity;
 }
 
 bool Node::is_leaf(){
