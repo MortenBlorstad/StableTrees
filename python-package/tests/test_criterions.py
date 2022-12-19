@@ -67,7 +67,7 @@ class TestPoisson(unittest.TestCase):
         crit = Poisson()
         crit.init(n,y)
         self.assertTrue(crit.get_score()==0)
-        self.assertTrue(crit.node_impurity(y)== 2*np.mean(y*np.log(y/y.mean())- (y-y.mean())  ))
+        self.assertTrue(np.round(crit.node_impurity(y),4)== np.round(2*np.mean(y*np.log(y/y.mean())- (y-y.mean())  ),4 ))
 
     def test_update(self):
         X,y = self.get_testset_one()
@@ -88,7 +88,7 @@ class TestPoisson(unittest.TestCase):
         crit = PoissonReg()
         crit.init(n,y,yprev)
         self.assertTrue(crit.get_score()==0)
-        self.assertTrue(crit.node_impurity(y)== 2*np.mean(y*np.log(y/y.mean())- (y-y.mean())  ))
+        self.assertTrue(np.round(crit.node_impurity(y),4)== np.round(2*np.mean(y*np.log(y/y.mean())- (y-y.mean())  ),4 ))
 
     def test_update_with_reg(self):
         X,y = self.get_testset_one()

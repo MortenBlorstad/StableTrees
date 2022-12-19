@@ -9,7 +9,7 @@ import pandas as pd
 
 SEED = 0
 EPSILON = 1.1
-parameters = {'max_depth':[None, 5, 10], 'min_samples_split':[2,4,8]}
+parameters = {"criterion" : ["poisson"], 'max_depth':[None, 5, 10], 'min_samples_split':[2,4,8]}
 clf = GridSearchCV(DecisionTreeRegressor(random_state=0), parameters)
 
 # from examples in R package ISLR2, https://cran.r-project.org/web/packages/ISLR2/ISLR2.pdf
@@ -34,16 +34,12 @@ for ds,target, feature in zip(datasets,targets, features):
     print(data.describe())
     y = data[target].to_numpy()
     X = data.drop(target, axis=1).to_numpy()
-    X12, X_test, y12, y_test = train_test_split(X,y, test_size=0.3, random_state=0)
-    X1, X2, y1, y2 = train_test_split(X12,y12, test_size=0.5, random_state=0)
-    clf.fit(X1,y1)
-    params = clf.best_params_
-    print(params)
+   
     # initial model 
     models = {  
-                 "baseline": BaseLineTree(**params),
-                 "method1":StableTree1(**params,delta=0.25),
-                 "method2":StableTree2(**params)
+                 "baseline": BaseLineTree(),
+                 "method1":StableTree1(delta=0.25),
+                 "method2":StableTree2()
             }
     stability = {name:[] for name in models.keys()}
     standard_stability = {name:[] for name in models.keys()}
@@ -58,7 +54,14 @@ for ds,target, feature in zip(datasets,targets, features):
         X_12, y_12 = X[train_index],y[train_index]
         X_test,y_test = X[test_index],y[test_index]
         X1,X2,y1,y2 =  train_test_split(X_12, y_12, test_size=0.5, random_state=SEED)
-        
+        clf.fit(X1,y1)
+        params = clf.best_params_
+        # initial model 
+        models = {  
+                 "baseline": BaseLineTree(**params),
+                 "method1":StableTree1(**params,delta=0.25),
+                 "method2":StableTree2(**params)
+                }
         for name, model in models.items():
             model.fit(X1,y1)
 

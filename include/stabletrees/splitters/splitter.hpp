@@ -72,7 +72,6 @@ tuple<double,double> Splitter::select_split_from_all(const dVector  &feature, co
         double hightValue = feature[high];
         
         double split_value =  (lowValue+hightValue)/2;
-        //printf("%f \n", y[low]);
         criterion->update(y[low]);
         //printf("%f \n", criterion.get_score());
 
@@ -104,8 +103,9 @@ tuple<double,double> Splitter::select_split_from_all(const dVector  &feature, co
 tuple<int, double, double,double> Splitter::find_best_split(const dMatrix  &X, const dVector  &y){
         
     
-
+        
         double min_score = std::numeric_limits<double>::infinity();
+        
         double best_split_value;
         int split_feature;
         dVector feature;
@@ -113,11 +113,13 @@ tuple<int, double, double,double> Splitter::find_best_split(const dMatrix  &X, c
         double split_value;
         int i;
         int n = y.size();
+  
         criterion->init(n,y);
+
         double impurity = criterion->node_score;
 
         iMatrix X_sorted_indices = sorted_indices(X);
-        
+ 
 
 
         //#pragma omp parallel for ordered num_threads(4) shared(min_score,best_split_value,split_feature) private(i,score,split_value, feature)
@@ -132,7 +134,7 @@ tuple<int, double, double,double> Splitter::find_best_split(const dMatrix  &X, c
            //#pragma omp ordered
         //{
             if(feature[sorted_index[0]] != feature[sorted_index[n-1]]){
-               //printf("%d, %f \n",i,score);
+                //printf("%d, %f \n",i,score);
                 if(min_score>score){
                     min_score = score;
                     best_split_value = split_value;

@@ -49,6 +49,11 @@ Node* Method2::update_tree(dMatrix  &X, dVector &y, int depth, dVector &yprev){
     if(all_same_features_values(X)){
         return new Node(y.array().mean() ,y.rows());
     }
+    if(this->_criterion ==1){
+        if(y.rows()==2 && (y.array()(0) ==0.0  || y.array()(1) ==0.0  ) ){
+            return new Node(y.array().mean() ,y.rows());
+        }
+    }
 
 
     double score;
@@ -78,6 +83,8 @@ Node* Method2::update_tree(dMatrix  &X, dVector &y, int depth, dVector &yprev){
     return node;
     
 }
+
+
 
 
 

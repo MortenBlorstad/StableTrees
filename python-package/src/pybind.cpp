@@ -78,6 +78,7 @@ PYBIND11_MODULE(_stabletrees, m)
             .def("update", &Method1::update)
             .def("get_root", &Method1::get_root);
 
+
     py::class_<MSE>(m, "MSE")
         .def(py::init<>())
             .def("get_score", &MSE::get_score)
@@ -110,6 +111,12 @@ PYBIND11_MODULE(_stabletrees, m)
             .def("update", &PoissonReg::update)
             .def("get_root", &PoissonReg::reset)
             .def("node_impurity", &PoissonReg::node_impurity);
+
+
+    py::class_<Splitter>(m, "Splitter")
+        .def(py::init<int>())
+            .def("find_best_split", &Splitter::find_best_split)
+            .def("select_split_from_all", &Splitter::select_split_from_all);
     
 
 
