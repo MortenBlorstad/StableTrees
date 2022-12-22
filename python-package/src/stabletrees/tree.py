@@ -11,7 +11,7 @@ criterions = {"mse":0, "poisson":1}
 
 class BaseRegressionTree(BaseEstimator, metaclass=ABCMeta):
     @abstractmethod
-    def __init__(self,criterion = "mse", max_depth = None, min_samples_split = 2, random_state = None) -> None:
+    def __init__(self,criterion : str = "mse", max_depth : int = None, min_samples_split : int = 2, random_state : int = None) -> None:
         criterion = str(criterion).lower()
         if criterion not in criterions.keys():
             raise ValueError("Possible criterions are 'mse' and 'poisson'.")
@@ -29,7 +29,7 @@ class BaseRegressionTree(BaseEstimator, metaclass=ABCMeta):
         
 
 
-    def check_input(self,  X, y):
+    def check_input(self,  X : np.ndarray ,y : np.ndarray):
         if X.ndim <2:
             X = np.atleast_2d(X)
         if np.issubdtype(X.dtype, np.number):
@@ -47,16 +47,16 @@ class BaseRegressionTree(BaseEstimator, metaclass=ABCMeta):
         return X,y
 
     @abstractmethod
-    def update(self,X,y):
+    def update(self,X : np.ndarray ,y : np.ndarray):
         pass
 
-    def fit(self,X, y): 
+    def fit(self,X : np.ndarray ,y : np.ndarray): 
         X,y = self.check_input(X,y)
         self.tree.learn(X,y)
         self.root = self.tree.get_root()
         return self
     
-    def predict(self, X):
+    def predict(self, X: np.ndarray) -> np.ndarray:
         return self.tree.predict(X)
 
     def plot(self):
@@ -102,22 +102,49 @@ class BaseRegressionTree(BaseEstimator, metaclass=ABCMeta):
 
 
 class BaseLineTree(BaseRegressionTree):
-    def __init__(self, *,criterion = "mse", max_depth = None, min_samples_split = 2.0, random_state = None):
+    """
+        Baseline: update method - same as the fit method. 
+        Parameters
+    ----------
+    criterion : string, {'mse', 'poisson'}, default = 'mse'
+                Function to optimize when selecting split feature and value.
+    max_depth : int, default = None.
+                Hyperparameter to determine the max depth of the tree.
+                If None, then nodes are expanded until all leaves are pure or until all leaves contain less than
+                min_samples_split samples.
+    min_samples_split : int,  default = 2.
+                Hyperparameter to determine the minimum number of samples required in order to split a internel node.
+    """
+
+    def __init__(self, *,criterion : str = "mse", max_depth : int = None, min_samples_split : int = 2, random_state : int = None) -> None:
         
         self.root = None
         super().__init__(criterion,max_depth, min_samples_split, random_state)
         self.tree = Tree(criterions[self.criterion], self.max_depth,self.min_samples_split)
     
-    def update(self,X,y):
+    def update(self,X : np.ndarray ,y : np.ndarray):
         return self.fit(X,y)
-
+    
 
 
 class StableTree1(BaseRegressionTree):
     """
         Method 1: update method replaces subtrees in the original tree with new ones if the improvement is above a threshold
+        Parameters
+    ----------
+    criterion : string, {'mse', 'poisson'}, default = 'mse'
+                Function to optimize when selecting split feature and value.
+    max_depth : int, default = None.
+                Hyperparameter to determine the max depth of the tree.
+                If None, then nodes are expanded until all leaves are pure or until all leaves contain less than
+                min_samples_split samples.
+    min_samples_split : int,  default = 2.
+                Hyperparameter to determine the minimum number of samples required in order to split a internel node.
+    delta : float, default = 0.1.
+            Level of significance. When determine whether or not to replace a node, it is used to bound the true 
+            mean of the improvement ratio such that the it is at least estimated improvement - epsilon, r_bar - epsion.  
     """
-    def __init__(self, *,criterion = "mse", max_depth = None, min_samples_split = 2.0, random_state = None, delta=0.1):
+    def __init__(self, *,criterion:str = "mse",max_depth : float = None, min_samples_split: int = 2, random_state : int = None, delta : float=0.1):
         self.root = None
         super().__init__(criterion,max_depth, min_samples_split, random_state)
         self.tree = Method1(criterions[self.criterion], self.max_depth,self.min_samples_split)
@@ -130,12 +157,26 @@ class StableTree1(BaseRegressionTree):
         self.root = self.tree.get_root()
         return self
 
-
+DecisionTreeRegressor()
 class StableTree2(BaseRegressionTree):
     """
-        Method 2: update method build a new tree using the prediction from the previous tree as regularization.
+    A regression tree that uses stability regularization when updating the tree. Method 2: update method build a new tree using the prediction from the previous tree as regularization.
+    
+    Parameters
+    ----------
+    criterion : string, {'mse', 'poisson'}, default = 'mse'
+                Function to optimize when selecting split feature and value.
+    max_depth : int, default = None.
+                Hyperparameter to determine the max depth of the tree.
+                If None, then nodes are expanded until all leaves are pure or until all leaves contain less than
+                min_samples_split samples.
+    min_samples_split : int,  default = 2.
+                Hyperparameter to determine the minimum number of samples required in order to split a internel node.
+
     """
-    def __init__(self, *,criterion = "mse", max_depth = None, min_samples_split = 2.0, random_state = None):
+    
+    def __init__(self, *,criterion = "mse", max_depth = None, min_samples_split = 2, random_state = None):
+        
         self.root = None
         super().__init__(criterion,max_depth, min_samples_split, random_state)
         self.tree = Method2(criterions[self.criterion], self.max_depth,self.min_samples_split)

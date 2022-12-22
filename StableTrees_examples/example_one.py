@@ -9,7 +9,14 @@ import pandas as pd
 
 SEED = 0
 EPSILON = 1.1
-parameters = {"criterion" : ["poisson"], 'max_depth':[None, 5, 10], 'min_samples_split':[2,4,8]}
+
+def S1(pred1, pred2):
+    return np.std(np.log((pred2+EPSILON)/(pred1+EPSILON)))
+
+def S2(pred1, pred2):
+    return np.mean(abs(pred1- pred2))
+
+parameters = {'max_depth':[None, 5, 10], 'min_samples_split':[2,4,8]}
 clf = GridSearchCV(DecisionTreeRegressor(random_state=0), parameters)
 
 # from examples in R package ISLR2, https://cran.r-project.org/web/packages/ISLR2/ISLR2.pdf
@@ -74,15 +81,15 @@ for ds,target, feature in zip(datasets,targets, features):
             pred2_train =  model.predict(X_12)
 
             orig_mse[name].append(mean_squared_error(pred2_orig,y1))
-            orig_stability[name].append(np.std(np.log((pred1_orig+EPSILON)/(pred2_orig+EPSILON))))
-            orig_standard_stability[name].append(np.mean(abs(pred1_orig- pred2_orig)))
+            orig_stability[name].append(S1(pred1_orig,pred2_orig))
+            orig_standard_stability[name].append(S2(pred1_orig,pred2_orig))
 
             train_mse[name].append(mean_squared_error(pred2_train,y_12))
-            train_stability[name].append(np.std(np.log((pred1_train+EPSILON)/(pred2_train+EPSILON))))
-            train_standard_stability[name].append(np.mean(abs(pred1_train- pred2_train)))
+            train_stability[name].append(S1(pred1_train,pred2_train))
+            train_standard_stability[name].append(S2(pred1_train,pred2_train))
             mse[name].append(mean_squared_error(y_test,pred2))
-            stability[name].append(np.std(np.log((pred1+EPSILON)/(pred2+EPSILON))))
-            standard_stability[name].append(np.mean(abs(pred1- pred2)))
+            stability[name].append(S1(pred1,pred2))
+            standard_stability[name].append(S2(pred1,pred2))
         
 
     print(ds)
