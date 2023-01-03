@@ -18,6 +18,7 @@ ext_modules = [
             os.path.join(os.path.dirname(__file__), "../include/stabletrees/trees"),
             os.path.join(os.path.dirname(__file__), "../include/stabletrees/splitters"),
             os.path.join(os.path.dirname(__file__), "../include/stabletrees/criterions"),
+            os.path.join(os.path.dirname(__file__), "../include/stabletrees/optimism"),
             os.path.join(os.path.dirname(__file__), "../include/thirdparty/eigen"),
             "/usr/include/eigen3",
             "/usr/local/include/eigen3",

@@ -17,6 +17,8 @@ using namespace std;
 #include "trees\method1.hpp"
 #include "criterions\MSE.hpp"
 #include "criterions\Poisson.hpp"
+#include "optimism\cir.hpp"
+
 
 
 #define STRINGIFY(x) #x
@@ -117,6 +119,10 @@ PYBIND11_MODULE(_stabletrees, m)
         .def(py::init<int>())
             .def("find_best_split", &Splitter::find_best_split)
             .def("select_split_from_all", &Splitter::select_split_from_all);
+
+    m.def("rnchisq", &rnchisq);
+    m.def("cir_sim_vec",&cir_sim_vec);
+    m.def("cir_sim_mat",&cir_sim_mat);
     
 
 

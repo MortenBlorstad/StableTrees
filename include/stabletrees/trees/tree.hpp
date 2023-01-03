@@ -3,7 +3,7 @@
 
 #define __TREE_HPP_INCLUDED__
 
-//#include <C:\Users\mb-92\OneDrive\Skrivebord\studie\StableTrees\cpp\thirdparty\eigen\Eigen/Dense>
+
 #include <Eigen/Dense>
 #include "node.hpp"
 #include "splitter.hpp"
