@@ -14,9 +14,9 @@ class TestMSE(unittest.TestCase):
     def test_init(self):
         X,y = self.get_testset_one()
         n = len(y)
-        print(n)
-        splitter = Splitter(0)
-        print(splitter)
+       
+        splitter = Splitter(0,False)
+        
         feature_index, impurity, score, split_value = splitter.find_best_split(X,y)
         
         self.assertTrue(feature_index==0)

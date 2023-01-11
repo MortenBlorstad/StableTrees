@@ -3,11 +3,11 @@
 #include "splitterReg.hpp"
 class Method2: public Tree{
     public:
-        Method2(int _criterion,int max_depth, double min_split_sample);
+        Method2(int _criterion,int max_depth, double min_split_sample,int min_samples_leaf,bool adaptive_complexity);
         Method2();
         virtual void update(dMatrix &X, dVector &y);
+        tuple<bool,int,double, double,double> find_split_update(dMatrix &X, dVector &y, dVector &yprev);
         
-
     private:
         Node* update_tree(dMatrix  &X, dVector &y, int depth, dVector &yprev);
 };
@@ -16,11 +16,21 @@ Method2::Method2():Tree(){
     Tree();
 }
 
-Method2::Method2(int _criterion,int max_depth, double min_split_sample):Tree(_criterion, max_depth,  min_split_sample){
-    Tree(_criterion, max_depth, min_split_sample);
+Method2::Method2(int _criterion,int max_depth, double min_split_sample,int min_samples_leaf, bool adaptive_complexity):Tree(_criterion, max_depth,  min_split_sample,min_samples_leaf, adaptive_complexity){
+    Tree(_criterion, max_depth, min_split_sample,min_samples_leaf, adaptive_complexity);
+    
 }
    
-    
+
+tuple<bool, int,double, double,double> Method2::find_split_update(dMatrix &X, dVector &y, dVector &yprev){
+    SplitterReg splitter = SplitterReg(min_samples_leaf,_criterion);
+    if(adaptive_complexity){
+        splitter.cir_sim = cir_sim;
+        splitter.grid_end = grid_end;
+    }
+    return splitter.find_best_split(X, y, yprev);
+}
+
 void Method2::update(dMatrix &X, dVector &y) {
     if(this->root == NULL){
         this->learn(X,y);
@@ -55,14 +65,17 @@ Node* Method2::update_tree(dMatrix  &X, dVector &y, int depth, dVector &yprev){
         }
     }
 
-
+    bool any_split;
     double score;
     double split_value;
     double impurity;
     int split_feature;
     iVector mask_left;
     iVector mask_right;
-    tie(split_feature, impurity, score, split_value)  = SplitterReg(this->_criterion).find_best_split(X,y, yprev);
+    tie(any_split, split_feature, impurity, score, split_value)  = find_split_update(X,y, yprev);
+    if(!any_split){
+        return new Node(y.array().mean() ,y.rows());
+    }
     dVector feature = X.col(split_feature);
     tie(mask_left, mask_right) = get_masks(feature, y, split_value);
 

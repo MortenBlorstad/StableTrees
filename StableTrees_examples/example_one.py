@@ -16,7 +16,7 @@ def S1(pred1, pred2):
 def S2(pred1, pred2):
     return np.mean(abs(pred1- pred2))
 
-parameters = {'max_depth':[None, 5, 10], 'min_samples_split':[2,4,8]}
+parameters = {'max_depth':[None, 5, 10], 'min_samples_split':[2,4,8], "min_samples_leaf": [3,5]}
 clf = GridSearchCV(DecisionTreeRegressor(random_state=0), parameters)
 
 # from examples in R package ISLR2, https://cran.r-project.org/web/packages/ISLR2/ISLR2.pdf
@@ -39,12 +39,16 @@ for ds,target, feature in zip(datasets,targets, features):
         data = pd.concat([data.select_dtypes(['int','float']),cat_data],axis=1)
 
     print(data.describe())
+    
     y = data[target].to_numpy()
     X = data.drop(target, axis=1).to_numpy()
+    #if ds == "College":
+    #    y = np.log(y)
    
     # initial model 
     models = {  
                  "baseline": BaseLineTree(),
+                 "baseline2": BaseLineTree(adaptive_complexity=True),
                  "method1":StableTree1(delta=0.25),
                  "method2":StableTree2()
             }
@@ -66,12 +70,13 @@ for ds,target, feature in zip(datasets,targets, features):
         # initial model 
         models = {  
                  "baseline": BaseLineTree(**params),
-                 "method1":StableTree1(**params,delta=0.25),
+                 #"baseline2": BaseLineTree(adaptive_complexity=True, min_samples_split=5),
+                 "method1":StableTree1(**params, delta=0.25),
                  "method2":StableTree2(**params)
                 }
         for name, model in models.items():
             model.fit(X1,y1)
-
+            
             pred1 = model.predict(X_test)
             pred1_train = model.predict(X_12)
             pred1_orig= model.predict(X1)

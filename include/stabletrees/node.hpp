@@ -31,6 +31,8 @@ class Node{
         bool is_leaf();
         double predict();
         int nsamples();
+        int get_split_feature();
+        double get_split_value();
         double get_split_score();
         double get_impurity();
     
@@ -64,6 +66,14 @@ void Node::set_right_node(Node* node){
 
 double Node::predict(){
     return this->prediction;
+}
+int Node::get_split_feature(){
+    return this->split_feature;
+}
+
+
+double Node::get_split_value(){
+    return this->split_value;
 }
 
 Node* Node::get_left_node(){

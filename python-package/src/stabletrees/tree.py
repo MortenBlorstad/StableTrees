@@ -11,7 +11,7 @@ criterions = {"mse":0, "poisson":1}
 
 class BaseRegressionTree(BaseEstimator, metaclass=ABCMeta):
     @abstractmethod
-    def __init__(self,criterion : str = "mse", max_depth : int = None, min_samples_split : int = 2, random_state : int = None) -> None:
+    def __init__(self,criterion : str = "mse", max_depth : int = None, min_samples_split : int = 2,min_samples_leaf:int = 1, adaptive_complexity : bool = False, random_state : int = None) -> None:
         criterion = str(criterion).lower()
         if criterion not in criterions.keys():
             raise ValueError("Possible criterions are 'mse' and 'poisson'.")
@@ -26,7 +26,9 @@ class BaseRegressionTree(BaseEstimator, metaclass=ABCMeta):
         if random_state is None:
             random_state = 0
         self.random_state = int(random_state)
-        
+
+        self.adaptive_complexity = adaptive_complexity
+        self.min_samples_leaf = min_samples_leaf
 
 
     def check_input(self,  X : np.ndarray ,y : np.ndarray):
@@ -82,13 +84,13 @@ class BaseRegressionTree(BaseEstimator, metaclass=ABCMeta):
         if node.is_leaf():
             plt.plot(x+10, y-5, alpha=1) 
             plt.plot(x-10, y-5, alpha=1) 
-            plt.text(x, y,f"{node.text()}", fontsize=8,ha='center') 
+            plt.text(x, y,f"{node.predict():.3f}", fontsize=8,ha='center') 
             return
         
         
     
         x_left, y_left = x-off_x,y-off_y
-        plt.text(x, y,f"{node.text()}", fontsize=8,ha='center')
+        plt.text(x, y,f"X_{node.get_split_feature()}<={node.get_split_value():.4f}\n", fontsize=8,ha='center')
         plt.text(x, y-2,f"impurity: {node.get_split_score():.3f}", fontsize=8,ha='center')
         plt.text(x, y-4,f"nsamples: {node.nsamples()}", fontsize=8,ha='center')
         plt.annotate("", xy=(x_left, y_left+4), xytext=(x-2, y-4),
@@ -116,11 +118,12 @@ class BaseLineTree(BaseRegressionTree):
                 Hyperparameter to determine the minimum number of samples required in order to split a internel node.
     """
 
-    def __init__(self, *,criterion : str = "mse", max_depth : int = None, min_samples_split : int = 2, random_state : int = None) -> None:
+    def __init__(self, *,criterion : str = "mse", max_depth : int = None, min_samples_split : int = 2,min_samples_leaf:int = 1,
+                    adaptive_complexity : bool = False, random_state : int = None) -> None:
         
         self.root = None
-        super().__init__(criterion,max_depth, min_samples_split, random_state)
-        self.tree = Tree(criterions[self.criterion], self.max_depth,self.min_samples_split)
+        super().__init__(criterion,max_depth, min_samples_split,min_samples_leaf, adaptive_complexity, random_state)
+        self.tree = Tree(criterions[self.criterion], self.max_depth,self.min_samples_split,self.min_samples_leaf, self.adaptive_complexity)
     
     def update(self,X : np.ndarray ,y : np.ndarray):
         return self.fit(X,y)
@@ -144,10 +147,11 @@ class StableTree1(BaseRegressionTree):
             Level of significance. When determine whether or not to replace a node, it is used to bound the true 
             mean of the improvement ratio such that the it is at least estimated improvement - epsilon, r_bar - epsion.  
     """
-    def __init__(self, *,criterion:str = "mse",max_depth : float = None, min_samples_split: int = 2, random_state : int = None, delta : float=0.1):
+    def __init__(self, *,criterion:str = "mse",max_depth : float = None, min_samples_split: int = 2,min_samples_leaf:int = 1,
+                  adaptive_complexity : bool = False, random_state : int = None, delta : float=0.1):
         self.root = None
-        super().__init__(criterion,max_depth, min_samples_split, random_state)
-        self.tree = Method1(criterions[self.criterion], self.max_depth,self.min_samples_split)
+        super().__init__(criterion,max_depth, min_samples_split,min_samples_leaf,adaptive_complexity, random_state)
+        self.tree = Method1(criterions[self.criterion], self.max_depth,self.min_samples_split,self.min_samples_leaf, self.adaptive_complexity)
         self.delta = delta
         
 
@@ -175,11 +179,11 @@ class StableTree2(BaseRegressionTree):
 
     """
     
-    def __init__(self, *,criterion = "mse", max_depth = None, min_samples_split = 2, random_state = None):
+    def __init__(self, *,criterion = "mse", max_depth = None, min_samples_split = 2,min_samples_leaf:int = 1, adaptive_complexity : bool = False, random_state = None):
         
         self.root = None
-        super().__init__(criterion,max_depth, min_samples_split, random_state)
-        self.tree = Method2(criterions[self.criterion], self.max_depth,self.min_samples_split)
+        super().__init__(criterion,max_depth, min_samples_split,min_samples_leaf,adaptive_complexity, random_state)
+        self.tree = Method2(criterions[self.criterion], self.max_depth,self.min_samples_split,self.min_samples_leaf, self.adaptive_complexity)
         
 
     def update(self, X,y):

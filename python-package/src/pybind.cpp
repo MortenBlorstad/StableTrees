@@ -52,11 +52,13 @@ PYBIND11_MODULE(_stabletrees, m)
         .def("predict", &Node::predict)
         .def("nsamples", &Node::nsamples)
         .def("get_split_score", &Node::get_split_score)
-        .def("get_impurity", &Node::get_impurity);
+        .def("get_impurity", &Node::get_impurity)
+        .def("get_split_feature", &Node::get_split_feature)
+        .def("get_split_value", &Node::get_split_value);
 
     
     py::class_<Tree>(m, "Tree")
-        .def(py::init<int, int , double >())
+        .def(py::init<int, int , double,int, bool >())
         .def("all_same", &Tree::all_same)
         .def("all_same_features_values", &Tree::all_same_features_values )
         .def("get_masks", &Tree::get_masks)
@@ -67,14 +69,14 @@ PYBIND11_MODULE(_stabletrees, m)
         .def("update", &Tree::update);
 
     py::class_<Method2>(m, "Method2")
-        .def(py::init<int, int, double>())
+        .def(py::init<int, int, double, int,bool>())
             .def("learn", &Method2::learn)
             .def("predict", &Method2::predict)
             .def("update", &Method2::update)
             .def("get_root", &Method2::get_root);
 
     py::class_<Method1>(m, "Method1")
-        .def(py::init<int, int, double>())
+        .def(py::init<int, int, double,int, bool>())
             .def("learn", &Method1::learn)
             .def("predict", &Method1::predict)
             .def("update", &Method1::update)
@@ -115,10 +117,10 @@ PYBIND11_MODULE(_stabletrees, m)
             .def("node_impurity", &PoissonReg::node_impurity);
 
 
-    py::class_<Splitter>(m, "Splitter")
-        .def(py::init<int>())
-            .def("find_best_split", &Splitter::find_best_split)
-            .def("select_split_from_all", &Splitter::select_split_from_all);
+    // py::class_<Splitter>(m, "Splitter")
+    //     .def(py::init<double, int,bool>())
+    //         .def("find_best_split", &Splitter::find_best_split)
+    //         .def("select_split_from_all", &Splitter::select_split_from_all);
 
     m.def("rnchisq", &rnchisq);
     m.def("cir_sim_vec",&cir_sim_vec);

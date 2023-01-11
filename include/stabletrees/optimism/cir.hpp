@@ -9,15 +9,10 @@
 
 using Eigen::Dynamic;
 
-template <class T>
-using Tvec = Eigen::Matrix<T,Dynamic,1>;
 
-template <class T>
-using Tmat = Eigen::Matrix<T,Dynamic,Dynamic>;
-
-template<class T>
-using Tavec = Eigen::Array<T,Eigen::Dynamic,1>;  
-
+using dVector = Eigen::Matrix<double,Dynamic,1>;
+using dMatrix = Eigen::Matrix<double,Dynamic,Dynamic>;
+using dArray = Eigen::Array<double,Eigen::Dynamic,1>;
 using namespace std; 
 
 
@@ -58,11 +53,12 @@ double rnchisq(double df, double lambda)
 }
 
 
+
 /*
  * cir_sim_vec:
  * Returns cir simulation on transformed equidistant grid tau = f(u)
  */
-Tvec<double> cir_sim_vec(int m)
+dVector cir_sim_vec(int m)
 {
     std::gamma_distribution<> rgamma(0.5, 2.0 );
     std::mt19937 gen(seed);
@@ -71,13 +67,13 @@ Tvec<double> cir_sim_vec(int m)
     
     // Find original time of sim: assumption equidistant steps on u\in(0,1)
     double delta_time = 1.0 / ( m+1.0 );
-    Tvec<double> u_cirsim = Tvec<double>::LinSpaced(m, delta_time, 1.0-delta_time);
+    dVector u_cirsim = dVector::LinSpaced(m, delta_time, 1.0-delta_time);
     
     // Transform to CIR time
-    Tvec<double> tau = 0.5 * log( (u_cirsim.array()*(1-EPS))/(EPS*(1.0-u_cirsim.array())) );
+    dVector tau = 0.5 * log( (u_cirsim.array()*(1-EPS))/(EPS*(1.0-u_cirsim.array())) );
     
     // Find cir delta
-    Tvec<double> tau_delta = tau.tail(m-1) - tau.head(m-1);
+    dVector tau_delta = tau.tail(m-1) - tau.head(m-1);
     
     // Parameters of CIR
     double a = 2.0;
@@ -86,7 +82,7 @@ Tvec<double> cir_sim_vec(int m)
     double ncchisq;
     double c = 0.0;
 
-    Tvec<double> res(m);
+    dVector res(m);
     res[0] = rgamma(gen);
     
     // Simulate remaining observatins
@@ -106,10 +102,10 @@ Tvec<double> cir_sim_vec(int m)
  * cir_sim_mat:
  * Returns 1000 by 1000 cir simulations
  */
-Tmat<double> cir_sim_mat(int nsim, int nobs)
+dMatrix cir_sim_mat(int nsim, int nobs)
 {
     //int n=100, m=200;
-    Tmat<double> res(nsim, nobs);
+    dMatrix res(nsim, nobs);
     
     for(int i=0; i<nsim; i++){
         res.row(i) = cir_sim_vec(nobs);
@@ -125,7 +121,7 @@ Tmat<double> cir_sim_mat(int nsim, int nobs)
  * Returns interpolated observations between an observation vector, u, 
  * and pre-simlated cir observations in cir_sim
  */
-Tmat<double> interpolate_cir(const Tvec<double>&u, const Tmat<double>& cir_sim)
+dMatrix interpolate_cir(const dVector&u, const dMatrix& cir_sim)
 {
     // cir long-term mean is 2.0 -- but do not use this! 
     double EPS = 1e-12;
@@ -137,15 +133,15 @@ Tmat<double> interpolate_cir(const Tvec<double>&u, const Tmat<double>& cir_sim)
     
     // Find original time of sim: assumption equidistant steps on u\in(0,1)
     double delta_time = 1.0 / ( cir_obs+1.0 );
-    Tvec<double> u_cirsim = Tvec<double>::LinSpaced(cir_obs, delta_time, 1.0-delta_time);
+    dVector u_cirsim = dVector::LinSpaced(cir_obs, delta_time, 1.0-delta_time);
     
     // Transform to CIR time
-    Tvec<double> tau_sim = 0.5 * log( (u_cirsim.array()*(1-EPS))/(EPS*(1.0-u_cirsim.array())) );
-    Tvec<double> tau = 0.5 * log( (u.array()*(1-EPS))/(EPS*(1.0-u.array())) );
+    dVector tau_sim = 0.5 * log( (u_cirsim.array()*(1-EPS))/(EPS*(1.0-u_cirsim.array())) );
+    dVector tau = 0.5 * log( (u.array()*(1-EPS))/(EPS*(1.0-u.array())) );
     
     // Find indices and weights of for simulations
-    Tvec<int> lower_ind(n_timesteps), upper_ind(n_timesteps);
-    Tvec<double> lower_weight(n_timesteps), upper_weight(n_timesteps);
+    dVector lower_ind(n_timesteps), upper_ind(n_timesteps);
+    dVector lower_weight(n_timesteps), upper_weight(n_timesteps);
     
     // Surpress to lower boundary
     for( ; i<n_timesteps; i++ ){
@@ -187,7 +183,7 @@ Tmat<double> interpolate_cir(const Tvec<double>&u, const Tmat<double>& cir_sim)
     }
     
     // Populate the return matrix
-    Tmat<double> cir_interpolated(n_sim, n_timesteps);
+    dMatrix cir_interpolated(n_sim, n_timesteps);
     cir_interpolated.setZero();
     
     for(i=0; i<n_sim; i++){
@@ -205,7 +201,7 @@ Tmat<double> interpolate_cir(const Tvec<double>&u, const Tmat<double>& cir_sim)
  * rmax_cir:
  * Simulates maximum of cir observations on an observation vector u
  */
-Tavec<double> rmax_cir(const Tvec<double>& u, const Tmat<double>& cir_sim)
+dArray rmax_cir(const dVector& u, const dMatrix& cir_sim)
 {
     // Simulate maximum of observations on a cir process
     // u: split-points on 0-1
@@ -214,17 +210,17 @@ Tavec<double> rmax_cir(const Tvec<double>& u, const Tmat<double>& cir_sim)
     int nsplits = u.size();
     int simsplits = cir_sim.cols();
     int nsims = cir_sim.rows();
-    Tvec<double> max_cir_obs(nsims);
+    dVector max_cir_obs(nsims);
     
     if(nsplits < simsplits){
         double EPS = 1e-12;
         //int nsplits = u.size();
         
         // Transform interval: 0.5*log( (b*(1-a)) / (a*(1-b)) )
-        Tvec<double> tau = 0.5 * log( (u.array()*(1-EPS))/(EPS*(1.0-u.array())) );
+        dVector tau = 0.5 * log( (u.array()*(1-EPS))/(EPS*(1.0-u.array())) );
         
         // Interpolate cir-simulations 
-        Tmat<double> cir_obs = interpolate_cir(u, cir_sim);
+        dMatrix cir_obs = interpolate_cir(u, cir_sim);
 
         // Calculate row-wise maximum (max of each cir process)
         max_cir_obs = cir_obs.rowwise().maxCoeff();
@@ -240,7 +236,7 @@ Tavec<double> rmax_cir(const Tvec<double>& u, const Tmat<double>& cir_sim)
  * Estimates shape and scale for a Gamma distribution
  * Note: Approximately!
  */
-Tvec<double> estimate_shape_scale(const Tvec<double> &max_cir)
+dVector estimate_shape_scale(const dVector &max_cir)
 {
     
     // Fast estimation through mean and var
@@ -254,14 +250,14 @@ Tvec<double> estimate_shape_scale(const Tvec<double> &max_cir)
     // Surpress scale to minimum be 1.0? not necessary, bug elsewhere
     //double scale = std::max(1.0, var/mean);
     double scale = var / mean;
-    Tvec<double> res(2);
+    dVector res(2);
     res << shape, scale;
     return res;
     
 }
 
 // Empirical cdf p_n(X\leq x)
-double pmax_cir(double x, Tvec<double>& obs){
+double pmax_cir(double x, dVector& obs){
     
     // Returns proportion of values in obs less or equal to x
     int n = obs.size();
@@ -275,7 +271,7 @@ double pmax_cir(double x, Tvec<double>& obs){
 }
 
 // Composite simpson's rule -- requires n even (grid.size() odd)
-double simpson(Tvec<double>& fval, Tvec<double>& grid){
+double simpson(dVector& fval, dVector& grid){
     
     // fval is f(x) on evenly spaced grid
     

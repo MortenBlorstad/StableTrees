@@ -17,14 +17,14 @@ class Poisson : public Criterion{
         void reset();
         double node_impurity(const dVector &y);
         double get_score();
-        bool should_skip();
+        bool should_skip(int min_samples_leaf);
     protected:
         double sum_ylogy_l;
         double sum_ylogy_r;
         double sum_ylogy;
-        bool skip = false;
 
 };
+
 
 double Poisson::get_score(){
     return score;
@@ -45,17 +45,21 @@ double Poisson::node_impurity(const dVector &y){
     return 2*((y.array()+eps)*log((y.array()+eps)/(pred+eps)) - (y.array()-pred)).mean();
 }
 
-bool Poisson::should_skip(){
+bool Poisson::should_skip(int min_samples_leaf){
+    bool skip = false;
+    if(Criterion::should_skip(min_samples_leaf)){
+        skip = true;
+    }
+    if(sum_y_l<=eps || sum_y_r<=eps){
+        skip = true;
+    }
+    
     return skip;
 }
     
 void Poisson::update(double y_i){
     Criterion::update(y_i);
-    if(sum_y_l<=eps || sum_y_r<=eps){
-        skip = true;
-    }else{
-        skip = false;
-    }
+    
     sum_ylogy_l+= (y_i+eps)*log(y_i+eps);
     sum_ylogy_r-= (y_i+eps)*log(y_i+eps);
 
@@ -89,6 +93,7 @@ class PoissonReg : public Poisson{
         double sum_yprev;
 
 };
+
 
 void PoissonReg::init(double _n, const dVector &y, const dVector &yprev){
     Poisson::init(_n,y);

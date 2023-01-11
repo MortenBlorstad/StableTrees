@@ -29,7 +29,7 @@ class Tree{
     public:
         
         Node* root  = NULL;
-        explicit Tree(int _criterion,int max_depth, double min_split_sample); 
+        explicit Tree(int _criterion,int max_depth, double min_split_sample,int min_samples_leaf, bool adaptive_complexity); 
         explicit Tree(); 
         bool all_same(dVector &vec);
         bool all_same_features_values(dMatrix  &X);
@@ -40,34 +40,53 @@ class Tree{
         double predict_obs(dVector  &obs);
         dVector predict(dMatrix  &X);
         virtual void update(dMatrix &X, dVector &y);
-        virtual tuple<int,double, double,double> find_split(dMatrix &X, dVector &y);
+        virtual tuple<bool,int,double, double,double> find_split(dMatrix &X, dVector &y);
+        
     protected:
-        //Splitter splitter;
+
         int max_depth;
+        bool adaptive_complexity;
         int _criterion;
         double min_split_sample;
+        int min_samples_leaf;
+        double total_obs;
+        dMatrix cir_sim;
+        double grid_end;
 };
 Tree::Tree(){
     int max_depth = INT_MAX;
     double min_split_sample = 2.0;
     _criterion = 0;
+    adaptive_complexity = false;
+    this->min_samples_leaf = 1;
 
 }
 
-Tree::Tree(int _criterion, int max_depth, double min_split_sample){
+Tree::Tree(int _criterion, int max_depth, double min_split_sample,int min_samples_leaf, bool adaptive_complexity){
     //this->splitter = Splitter(_criterion);
     if(max_depth !=NULL){
        this-> max_depth =  max_depth;
     }else{
         this-> max_depth =  INT_MAX;
     }
-
     this-> min_split_sample = min_split_sample;
+    this->min_samples_leaf = min_samples_leaf;
     this->_criterion = _criterion;
+    this->adaptive_complexity = adaptive_complexity;
+    if(adaptive_complexity){
+        cir_sim = cir_sim_mat(100, 100);
+        grid_end = 1.5*cir_sim.maxCoeff();
+    }
+
 } 
 
-tuple<int,double, double,double>  Tree::find_split(dMatrix &X, dVector &y){
-    return Splitter(this->_criterion).find_best_split(X, y);
+tuple<bool,int,double, double,double>  Tree::find_split(dMatrix &X, dVector &y){
+    Splitter splitter = Splitter(min_samples_leaf,total_obs,_criterion, adaptive_complexity);
+    if(adaptive_complexity){
+        splitter.cir_sim = cir_sim;
+        splitter.grid_end = grid_end;
+    }
+    return splitter.find_best_split(X, y);
 }
 
 
@@ -114,6 +133,7 @@ tuple<iVector, iVector> Tree::get_masks(dVector &feature, dVector &y, double val
 
 
 void Tree::learn(dMatrix  &X, dVector &y){
+    total_obs = y.size();
     this->root = build_tree(X, y, 0);
 }
 
@@ -177,14 +197,18 @@ Node* Tree::build_tree(dMatrix  &X, dVector &y, int depth){
     //printf("y size %d, min_split_sample %d\n", y.size(),this->min_split_sample);
 
         
-
+    bool any_split;
     double score;
     double impurity;
     double split_value;
     int split_feature;
     iVector mask_left;
     iVector mask_right;
-    tie(split_feature,impurity, score, split_value)  = find_split(X,y);
+    tie(any_split, split_feature,impurity, score, split_value)  = find_split(X,y);
+    //printf("%d %d %f \n", any_split,split_feature, impurity);
+    if(!any_split){
+        return new Node(y.array().mean() ,y.rows());
+    }
     //printf("score %d\n", score);
     //printf("score %f\n", score);
     if(score == std::numeric_limits<double>::infinity()){

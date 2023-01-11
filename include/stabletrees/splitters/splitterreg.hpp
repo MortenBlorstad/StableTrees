@@ -7,9 +7,9 @@
 class SplitterReg: public Splitter{
     public:
         SplitterReg();
-        SplitterReg(int _citerion);
-        tuple<int,double, double,double>  find_best_split(const dMatrix  &X, const dVector  &y,const dVector &y_prev);
-        tuple<double,double> select_split_from_all(const dVector  &feature, const dVector  &y, const iVector sorted_index,const dVector &y_prev);
+        SplitterReg(int min_samples_leaf, int _citerion);
+        tuple<bool, int,double, double,double>  find_best_split(const dMatrix  &X, const dVector  &y,const dVector &y_prev);
+        tuple<bool, double,double> select_split_from_all(const dVector  &feature, const dVector  &y, const iVector sorted_index,const dVector &y_prev);
     protected:
         Criterion *criterion;
 };
@@ -17,9 +17,10 @@ class SplitterReg: public Splitter{
 SplitterReg::SplitterReg(){
     MSEReg crit;
     criterion = &crit;
+    this->min_samples_leaf = 1;
 }
 
-SplitterReg::SplitterReg(int _citerion){
+SplitterReg::SplitterReg(int min_samples_leaf, int _citerion){
     if(_citerion == 0){
         MSEReg crit;
         criterion = &crit;
@@ -29,10 +30,11 @@ SplitterReg::SplitterReg(int _citerion){
     }else{
         throw invalid_argument("Possible criterions are 'mse' and 'poisson'.");
     }
+    this->min_samples_leaf = min_samples_leaf;
 }
 
 
-tuple<double,double> SplitterReg::select_split_from_all(const dVector  &feature, const dVector  &y, const iVector sorted_index,const dVector &y_prev){
+tuple<bool, double,double> SplitterReg::select_split_from_all(const dVector  &feature, const dVector  &y, const iVector sorted_index,const dVector &y_prev){
     //https://stats.stackexchange.com/questions/72212/updating-variance-of-a-dataset
     double min_score = std::numeric_limits<double>::infinity();
     double n = y.size();
@@ -41,11 +43,8 @@ tuple<double,double> SplitterReg::select_split_from_all(const dVector  &feature,
     double largestValue = feature(sorted_index[n-1]);
 
 
-    double yp_L = 0; // sum of predictions from tree 1, left
-    double yp_R = y_prev.array().sum();  // sum of predictions from tree 1, right
-    double yp_squared = y_prev.array().square().sum();  // sum of squares of predictions from tree
-
-
+  
+    bool any_split = false;
     for (int i = 0; i < n-1; i++) {
         int low = sorted_index[i];
         int high = sorted_index[i+1];
@@ -64,9 +63,10 @@ tuple<double,double> SplitterReg::select_split_from_all(const dVector  &feature,
         if(hightValue-lowValue<0.000001){
             continue;
         }
-        if(criterion->should_skip()){
+        if(criterion->should_skip(min_samples_leaf)){
             continue;
         }
+        any_split = true;
         double score = criterion->get_score();
 
         
@@ -77,17 +77,18 @@ tuple<double,double> SplitterReg::select_split_from_all(const dVector  &feature,
     }
   
     
-    return tuple<double,double>(min_score,best_split_value);
+    return tuple<bool,double,double>(any_split,min_score,best_split_value);
 }
 
 
-tuple<int, double, double,double> SplitterReg::find_best_split(const dMatrix  &X, const dVector  &y,const dVector &y_prev){
+tuple<bool, int, double, double,double> SplitterReg::find_best_split(const dMatrix  &X, const dVector  &y,const dVector &y_prev){
         
         double min_score = std::numeric_limits<double>::infinity();
         double best_split_value;
         int split_feature;
         dVector feature;
         double score;
+        bool any_split;
         double split_value;
         int i;
         int n = y.size();
@@ -101,7 +102,7 @@ tuple<int, double, double,double> SplitterReg::find_best_split(const dMatrix  &X
         for(int i =0; i<X.cols(); i++){
             feature = X.col(i);
             iVector sorted_index = X_sorted_indices.col(i);
-            tie(score, split_value) = select_split_from_all(feature, y, sorted_index,y_prev);
+            tie(any_split, score, split_value) = select_split_from_all(feature, y, sorted_index,y_prev);
             
         //   #pragma omp ordered
         //{
@@ -115,7 +116,7 @@ tuple<int, double, double,double> SplitterReg::find_best_split(const dMatrix  &X
            // }
            criterion->reset();
         }
-        return tuple<int, double, double, double>(split_feature,impurity,min_score, best_split_value);
+        return tuple<bool, int, double, double, double>(any_split, split_feature,impurity,min_score, best_split_value);
     
     
 }

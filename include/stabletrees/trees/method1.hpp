@@ -4,7 +4,7 @@
 
 class Method1: public Tree{
     public:
-        Method1(int _criterion,int max_depth, double min_split_sample);
+        Method1(int _criterion,int max_depth, double min_split_sample,int min_samples_leaf, bool adaptive_complexity);
         Method1();
         virtual void update(dMatrix &X, dVector &y, double delta);
     private:
@@ -20,8 +20,8 @@ Method1::Method1():Tree(){
     Tree();
 }
 
-Method1::Method1(int _criterion, int max_depth, double min_split_sample):Tree(_criterion, max_depth,  min_split_sample){
-    Tree(_criterion, max_depth,  min_split_sample);
+Method1::Method1(int _criterion, int max_depth, double min_split_sample,int min_samples_leaf, bool adaptive_complexity):Tree(_criterion, max_depth,  min_split_sample,min_samples_leaf, adaptive_complexity){
+    Tree(_criterion, max_depth,  min_split_sample, min_samples_leaf, adaptive_complexity);
 }
 
 
@@ -73,14 +73,15 @@ Node* Method1::attempt_split(Node* node, dMatrix &X, dVector &y, int depth){
 }
 
 tuple<Node*, bool> Method1::reevaluate_split(Node* node, dMatrix &X, dVector &y, double delta, int depth){
-    
+    bool any_split;
     double new_score;
     double new_impurity;
     double split_value;
     int split_feature;
     double old_score = node->get_split_score();
     bool changed = false;
-    tie(split_feature,new_impurity, new_score, split_value) = Splitter(this->_criterion).find_best_split(X,y);
+    
+    tie(any_split,split_feature,new_impurity, new_score, split_value) = find_split(X,y);
     node->n_samples = y.rows();
     double eps = this->hoeffding_bound(delta, (number_of_examples)/(node->n_samples));
     if((old_score+1)/(new_score+1)> (1+eps)){

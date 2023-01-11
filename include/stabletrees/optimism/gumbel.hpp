@@ -6,17 +6,18 @@
 
 #include <Eigen/Dense>
 
+#define _USE_MATH_DEFINES
+ 
+#include <cmath>
+
+
 using Eigen::Dynamic;
 
-template <class T>
-using Tvec = Eigen::Matrix<T,Dynamic,1>;
+using dVector = Eigen::Matrix<double,Dynamic,1>;
+using dArray = Eigen::Array<double,Eigen::Dynamic,1>;
+using dMatrix = Eigen::Matrix<double,Dynamic,Dynamic>;
 
-template <class T>
-using Tmat = Eigen::Matrix<T,Dynamic,Dynamic>;
-
-template<class T>
-using Tavec = Eigen::Array<T,Eigen::Dynamic,1>;   
-
+const double PI = 3.14159265358979323846;
 
 // Distribution function templated
 template<class T>
@@ -45,11 +46,10 @@ T pgumbel(double q, T location, T scale, bool lower_tail, bool log_p){
 }
 
 // Gradient of estimating equation for scale
-double grad_scale_est_obj(double scale, Tavec<double> &x){
+double grad_scale_est_obj(double scale, dArray &x){
     
     int n = x.size();
-    Tavec<double> exp_x_beta = (-1.0*x/scale).exp();
-    //exp_x_beta = exp_x_beta.array().exp();
+    dArray exp_x_beta = (-1.0*x.array()/scale).exp();
     double f = scale + (x*exp_x_beta).sum()/exp_x_beta.sum() - x.sum()/n;
     double grad = 2.0*f* ( 1.0 + 
                          ( (x*x*exp_x_beta).sum() * exp_x_beta.sum() - 
@@ -60,7 +60,7 @@ double grad_scale_est_obj(double scale, Tavec<double> &x){
 }
 
 // ML Estimate of scale
-double scale_estimate(Tavec<double> &x){
+double scale_estimate(dArray &x){
     
     // Start in variance estimate -- already pretty good
     int n = x.size();
@@ -69,7 +69,7 @@ double scale_estimate(Tavec<double> &x){
     for(int i=0; i<n; i++){
         var += (x[i]-mean)*(x[i]-mean)/n;
     }
-    double scale_est = sqrt(var*6.0)/M_PI;
+    double scale_est = sqrt(var*6.0)/PI;
     
     // do some gradient iterations to obtain ML estimate
     int NITER = 50; // max iterations
@@ -96,14 +96,14 @@ double scale_estimate(Tavec<double> &x){
 }
 
 // ML Estimates
-Tvec<double> par_gumbel_estimates(Tavec<double> &x){
+dVector par_gumbel_estimates(dArray &x){
     
     int n = x.size();
     
     double scale_est = scale_estimate(x);
     double location_est = scale_est * ( log((double)n) - log( (-1.0*x/scale_est).exp().sum() ) );
     
-    Tvec<double> res(2);
+    dVector res(2);
     res << location_est, scale_est;
     
     return res;
