@@ -413,7 +413,6 @@ public:
     void reset_node(); // if no-split, reset j, s_j, E[S] and child nodes
     
     void print_child_branches(const std::string& prefix, const node* nptr, bool isLeft);
-    void print_child_branches_2(const std::string& prefix, const node* nptr, bool isLeft);
 };
 
 /*
@@ -822,6 +821,34 @@ void node::split_node(Tvec<double> &g, Tvec<double> &h, Tvec<int> &ind, Tmat<dou
     
 }
 
+void node::print_child_branches(const std::string& prefix, const node* nptr, bool isLeft){
+    
+    if(nptr != NULL)
+    {
+        
+        std::cout << prefix;
+        
+        std::cout << (isLeft ? "├──" : "└──" );
+        
+        // print the value of the node
+        // if leaf, print prediction, else print split info.
+        if(nptr->left == NULL){
+            // is leaf: node prediction
+            std::cout << nptr->node_prediction << std::endl;
+        }else{
+            // not leaf: split information
+            std::cout << "(" << nptr->split_feature << ", " << nptr->split_value << ")" << std::endl;
+        }
+        
+        // enter the next tree level - left and right branch
+        print_child_branches( prefix + (isLeft ? "|   " : "    "), nptr->left, true);
+        print_child_branches( prefix + (isLeft ? "|   " : "    "), nptr->right, false);
+        
+    }
+    
+    
+}
+
 
 
 
@@ -850,7 +877,7 @@ public:
     double getFeatureMapOptimism();
     double getTreeOptimism(); // sum of the conditional and feature map optimism
     int getNumLeaves();
-    void print_tree(int type);
+    void print_tree();
     void importance(Tvec<double> &importance_vector, double learning_rate);
     int get_tree_depth();
     double get_tree_max_optimism();
@@ -1302,6 +1329,13 @@ double tree_expected_test_reduction(GBTREE* tree, double learning_rate){
     return scaled_expected_test_reduction;
 }
 
+void GBTREE::print_tree(){
+    // Horizontal printing of the tree
+    // Prints ( col_num , split_val ) for nodes not leaves
+    // Prints node_prediction for all leaves
+    root->print_child_branches("", root, false);
+}
+
 
 // ---------------- EXPOSING CLASSES TO R ----------
 RCPP_EXPOSED_CLASS(GBTREE)
@@ -1310,7 +1344,6 @@ RCPP_EXPOSED_CLASS(GBTREE)
         using namespace Rcpp;
         class_<GBTREE>("GBTREE")
             .constructor()
-            .constructor<int>()
             .method("getRoot", &GBTREE::getRoot)
             .method("train", &GBTREE::train)
             .method("predict_obs", &GBTREE::predict_obs)

@@ -8,7 +8,3 @@ library(ggplot2)
 Rcpp::sourceCpp("approximate_bayesian_tree_update.cpp")
 
 
-
-
-
-
