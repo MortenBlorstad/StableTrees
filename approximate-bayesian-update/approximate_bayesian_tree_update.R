@@ -42,6 +42,13 @@ y.pred <- y0.hat + tree$predict_data(x)
 plot(x, y)
 points(x, y.pred, col="red")
 
-
 ##### extract triplet [pred, var(w), var(y)] 
-
+y.pred.var <- tree$prediction_variance(x)
+y.var <- tree$response_variance(x)
+par(mfrow=c(1,4))
+plot(x, y, main="pred")
+points(x, y.pred, col="red")
+plot(x, y.pred.var, main="w.var")
+plot(x, y.var, main="y.var")
+plot(x, y.var/y.pred.var, main="ratio")
+par(mfrow=c(1,1))

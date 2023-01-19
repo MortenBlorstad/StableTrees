@@ -455,7 +455,7 @@ void node::createLeaf(double node_prediction, double node_tr_loss, double local_
     // Does this have to do with CLT and var(mean) = var(y)/n?
     // Consider eq 20 in paper... should this not be opposite? trying opposite
     double prob_split_complement = 1.0 - (double)obs_in_node / obs_in_parent; // if left: p(right, not left), oposite for right
-    this->p_split_CRt = prob_node * CRt;
+    this->p_split_CRt = CRt * obs_in_node / obs_in_parent;
     this->obs_in_node = obs_in_node;
     this->g_sum_in_node = _g_sum_in_node;
     this->h_sum_in_node = _h_sum_in_node;
@@ -464,6 +464,16 @@ void node::createLeaf(double node_prediction, double node_tr_loss, double local_
     
     this->node_variance = this->p_split_CRt / (_h_sum_in_node/obs_in_node);
     this->response_variance = gradient_variance / 4; // this is MSE specific
+    
+    Rcpp::Rcout << 
+        "\n"
+        << "CRt: " << CRt << "\n"
+        << "_h_sum_in_node: " << _h_sum_in_node << "\n"
+        << "obs_in_node: " << obs_in_node << "\n"
+                << "p_split_CRt: " << this->p_split_CRt << "\n"
+                << "w var: " << this->node_variance << "\n"
+                <<"y var: " << this->response_variance << "\n"
+        << std::endl;
     
     //return n;
 }
@@ -531,6 +541,7 @@ bool node::split_information(const Tvec<double> &g, const Tvec<double> &h, const
     int split_feature =0, n_indices = ind.size(), n_left = 0, n_right = 0, n_features = X.cols(), n_sim = cir_sim.rows();
     double split_val=0.0, observed_reduction=0.0, split_score=0.0, w_l=0.0, w_r=0.0, tr_loss_l=0.0, tr_loss_r=0.0;
     double Gl_final, Gr_final, Hl_final, Hr_final;
+    double left_gradient_variance, right_gradient_variance;
     
     // Return value
     bool any_split = false;
@@ -630,6 +641,9 @@ bool node::split_information(const Tvec<double> &g, const Tvec<double> &h, const
                     Gr_final = Gr;
                     Hl_final = Hl;
                     Hr_final = Hr;
+                    
+                    left_gradient_variance = Gl2 - 2.0*Gl + Gl*Gl / n_left;
+                    right_gradient_variance = Gr2 - 2.0*Gr + Gr*Gr / n_right;
                 }
                 
             }
@@ -694,11 +708,11 @@ bool node::split_information(const Tvec<double> &g, const Tvec<double> &h, const
         // 6. Update split information in child nodes
         left->createLeaf(w_l, tr_loss_l, local_opt_l, this->CRt, 
                          n_left, n_left+n_right, n, Gl_final, Hl_final,
-                         Gl2/n_left 
+                         left_gradient_variance
                          ); // Update createLeaf()
         right->createLeaf(w_r, tr_loss_r, local_opt_r, this->CRt,
                           n_right, n_left+n_right, n, Gr_final, Hr_final,
-                          Gr2/n_right
+                          right_gradient_variance
                           );
         //Rcpp::Rcout << "p_left_CRt: " << left->p_split_CRt << "\n" <<  "p_right_CRt:"  << right->p_split_CRt << std::endl;
         
@@ -901,6 +915,11 @@ public:
     int get_tree_depth();
     double get_tree_max_optimism();
     double get_tree_min_hess_sum();
+    
+    double prediction_variance_obs(Tvec<double> &x);
+    Tvec<double> prediction_variance(Tmat<double> &X);
+    double response_variance_obs(Tvec<double> &x);
+    Tvec<double> response_variance(Tmat<double> &X);
 };
 
 
@@ -935,7 +954,7 @@ void GBTREE::train(Tvec<double> &g, Tvec<double> &h, Tmat<double> &X, Tmat<doubl
         double local_optimism = (G2 - 2.0*gxh*(G/H) + G*G*H2/(H*H)) / (H*n);
         
         node* root_ptr = new node;
-        root_ptr->createLeaf(-G/H, -G*G/(2*H*n), local_optimism, local_optimism, n, n, n, G, H);
+        root_ptr->createLeaf(-G/H, -G*G/(2*H*n), local_optimism, local_optimism, n, n, n, G, H, G2/n);
         root = root_ptr;
         //root = root->createLeaf(-G/H, -G*G/(2*H*n), local_optimism, local_optimism, n, n, n);
     }
@@ -984,6 +1003,82 @@ Tvec<double> GBTREE::predict_data(Tmat<double> &X){
     }
     return res;
     
+}
+
+Tvec<double> GBTREE::prediction_variance(Tmat<double> &X){
+    
+    int n = X.rows();
+    Tvec<double> res(n), x(n);
+    
+    for(int i=0; i<n; i++){
+        x = X.row(i);
+        res[i] = prediction_variance_obs(x);
+    }
+    return res;
+    
+}
+
+double GBTREE::prediction_variance_obs(Tvec<double> &x){
+    
+    node* current = this->root;
+    
+    if(current == NULL){
+        return 0;
+    }
+    
+    
+    while(current != NULL){
+        if(current->left == NULL && current ->right == NULL){
+            return current->node_variance;
+        }
+        else{
+            
+            if(x[current->split_feature] <= current->split_value){
+                current = current->left;
+            }else{
+                current = current->right;
+            }
+        }
+    }
+    return 0;
+}
+
+Tvec<double> GBTREE::response_variance(Tmat<double> &X){
+    
+    int n = X.rows();
+    Tvec<double> res(n), x(n);
+    
+    for(int i=0; i<n; i++){
+        x = X.row(i);
+        res[i] = response_variance_obs(x);
+    }
+    return res;
+    
+}
+
+double GBTREE::response_variance_obs(Tvec<double> &x){
+    
+    node* current = this->root;
+    
+    if(current == NULL){
+        return 0;
+    }
+    
+    
+    while(current != NULL){
+        if(current->left == NULL && current ->right == NULL){
+            return current->response_variance;
+        }
+        else{
+            
+            if(x[current->split_feature] <= current->split_value){
+                current = current->left;
+            }else{
+                current = current->right;
+            }
+        }
+    }
+    return 0;
 }
 
 double GBTREE::getTreeScore(){
@@ -1367,6 +1462,8 @@ RCPP_EXPOSED_CLASS(GBTREE)
             .method("train", &GBTREE::train)
             .method("predict_obs", &GBTREE::predict_obs)
             .method("predict_data", &GBTREE::predict_data)
+            .method("prediction_variance", &GBTREE::prediction_variance)
+            .method("response_variance", &GBTREE::response_variance)
             .method("getTreeScore", &GBTREE::getTreeScore)
             .method("getNumLeaves", &GBTREE::getNumLeaves)
             .method("print_tree", &GBTREE::print_tree)
