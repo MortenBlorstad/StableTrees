@@ -175,6 +175,7 @@ Tvec<double> cir_sim_vec(int m)
  * cir_sim_mat:
  * Returns 1000 by 1000 cir simulations
  */
+// [[Rcpp::export("cir_sim_mat")]]
 Tmat<double> cir_sim_mat(int nsim, int nobs)
 {
     //int n=100, m=200;
@@ -388,6 +389,10 @@ public:
     double g_sum_in_node;
     double h_sum_in_node;
     
+    // for approximate bayesian update
+    double node_variance; // p(q(x)=t) * C(t|q) * E[S_max] / E[h]
+    double response_variance; // Var(y|q(x)=t)
+    
     node* left;
     node* right;
     
@@ -396,7 +401,9 @@ public:
     
     void createLeaf(double node_prediction, double node_tr_loss, double local_optimism, double CRt,
                     int obs_in_node, int obs_in_parent, int obs_tot, 
-                    double _g_sum_in_node, double _h_sum_in_node);
+                    double _g_sum_in_node, double _h_sum_in_node,
+                    double gradient_variance
+                    );
     
     node* getLeft();
     node* getRight();
@@ -435,20 +442,28 @@ public:
 // METHODS
 void node::createLeaf(double node_prediction, double node_tr_loss, double local_optimism, double CRt,
                       int obs_in_node, int obs_in_parent, int obs_tot,
-                      double _g_sum_in_node, double _h_sum_in_node)
+                      double _g_sum_in_node, double _h_sum_in_node,
+                      double gradient_variance
+                      )
 {
     //node* n = new node;
     this->node_prediction = node_prediction;
     this->node_tr_loss = node_tr_loss;
     this->local_optimism = local_optimism;
     this->prob_node = (double)obs_in_node / obs_tot; // prob_node;
+    // NOTE TO BERENT + MORTEN -- THINK ABOUT THE NEXT TWO LINES
+    // Does this have to do with CLT and var(mean) = var(y)/n?
+    // Consider eq 20 in paper... should this not be opposite? trying opposite
     double prob_split_complement = 1.0 - (double)obs_in_node / obs_in_parent; // if left: p(right, not left), oposite for right
-    this->p_split_CRt = prob_split_complement * CRt;
+    this->p_split_CRt = prob_node * CRt;
     this->obs_in_node = obs_in_node;
     this->g_sum_in_node = _g_sum_in_node;
     this->h_sum_in_node = _h_sum_in_node;
     this->left = NULL;
     this->right = NULL;
+    
+    this->node_variance = this->p_split_CRt / (_h_sum_in_node/obs_in_node);
+    this->response_variance = gradient_variance / 4; // this is MSE specific
     
     //return n;
 }
@@ -678,9 +693,13 @@ bool node::split_information(const Tvec<double> &g, const Tvec<double> &h, const
         
         // 6. Update split information in child nodes
         left->createLeaf(w_l, tr_loss_l, local_opt_l, this->CRt, 
-                         n_left, n_left+n_right, n, Gl_final, Hl_final); // Update createLeaf()
+                         n_left, n_left+n_right, n, Gl_final, Hl_final,
+                         Gl2/n_left 
+                         ); // Update createLeaf()
         right->createLeaf(w_r, tr_loss_r, local_opt_r, this->CRt,
-                          n_right, n_left+n_right, n, Gr_final, Hr_final);
+                          n_right, n_left+n_right, n, Gr_final, Hr_final,
+                          Gr2/n_right
+                          );
         //Rcpp::Rcout << "p_left_CRt: " << left->p_split_CRt << "\n" <<  "p_right_CRt:"  << right->p_split_CRt << std::endl;
         
         // 7. update childs to left right
