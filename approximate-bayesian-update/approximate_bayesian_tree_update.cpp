@@ -443,7 +443,7 @@ public:
 void node::createLeaf(double node_prediction, double node_tr_loss, double local_optimism, double CRt,
                       int obs_in_node, int obs_in_parent, int obs_tot,
                       double _g_sum_in_node, double _h_sum_in_node,
-                      double gradient_variance
+                      double parent_expected_max_S
                       )
 {
     //node* n = new node;
@@ -453,29 +453,20 @@ void node::createLeaf(double node_prediction, double node_tr_loss, double local_
     this->prob_node = (double)obs_in_node / obs_tot; // prob_node;
     // NOTE TO BERENT + MORTEN -- THINK ABOUT THE NEXT TWO LINES
     // Does this have to do with CLT and var(mean) = var(y)/n?
-    // Consider eq 20 in paper... should this not be opposite? trying opposite
+    // Consider eq 20 in paper... should this not be opposite?
     double prob_split_complement = 1.0 - (double)obs_in_node / obs_in_parent; // if left: p(right, not left), oposite for right
-    this->p_split_CRt = CRt * obs_in_node / obs_in_parent;
+    this->p_split_CRt = CRt * prob_split_complement;
     this->obs_in_node = obs_in_node;
     this->g_sum_in_node = _g_sum_in_node;
     this->h_sum_in_node = _h_sum_in_node;
     this->left = NULL;
     this->right = NULL;
     
-    this->node_variance = this->p_split_CRt / (_h_sum_in_node/obs_in_node);
-    this->response_variance = gradient_variance / 4; // this is MSE specific
-    
-    Rcpp::Rcout << 
-        "\n"
-        << "CRt: " << CRt << "\n"
-        << "_h_sum_in_node: " << _h_sum_in_node << "\n"
-        << "obs_in_node: " << obs_in_node << "\n"
-                << "p_split_CRt: " << this->p_split_CRt << "\n"
-                << "w var: " << this->node_variance << "\n"
-                <<"y var: " << this->response_variance << "\n"
-        << std::endl;
-    
-    //return n;
+    // Node variance has additional variance induced by split-profiling
+    // Therefore CLT equation not used
+    this->node_variance = obs_tot * parent_expected_max_S * this->prob_node * (local_optimism / _h_sum_in_node );
+    double conditional_variance_without_profiling = obs_tot * (local_optimism / _h_sum_in_node );
+    this->response_variance = obs_in_node * this->prob_node * conditional_variance_without_profiling;
 }
 
 
@@ -633,7 +624,7 @@ bool node::split_information(const Tvec<double> &g, const Tvec<double> &h, const
                     tr_loss_r = -Gr*Gr / (Hr*2.0*n);
                     n_left = i+1;
                     n_right = n_indices - (i+1);
-                    // Eq. 25 in paper
+                    // Eq. 30 in paper
                     local_opt_l = (Gl2 - 2.0*gxhl*(Gl/Hl) + Gl*Gl*Hl2/(Hl*Hl)) / (Hl*(i+1));
                     local_opt_r = (Gr2 - 2.0*gxhr*(Gr/Hr) + Gr*Gr*Hr2/(Hr*Hr)) / (Hr*(n_indices-(i+1)));
                     // Store more information
@@ -708,11 +699,11 @@ bool node::split_information(const Tvec<double> &g, const Tvec<double> &h, const
         // 6. Update split information in child nodes
         left->createLeaf(w_l, tr_loss_l, local_opt_l, this->CRt, 
                          n_left, n_left+n_right, n, Gl_final, Hl_final,
-                         left_gradient_variance
+                         this->expected_max_S
                          ); // Update createLeaf()
         right->createLeaf(w_r, tr_loss_r, local_opt_r, this->CRt,
                           n_right, n_left+n_right, n, Gr_final, Hr_final,
-                          right_gradient_variance
+                          this->expected_max_S
                           );
         //Rcpp::Rcout << "p_left_CRt: " << left->p_split_CRt << "\n" <<  "p_right_CRt:"  << right->p_split_CRt << std::endl;
         
@@ -920,6 +911,8 @@ public:
     Tvec<double> prediction_variance(Tmat<double> &X);
     double response_variance_obs(Tvec<double> &x);
     Tvec<double> response_variance(Tmat<double> &X);
+    double prediction_weight_obs(Tvec<double> &x);
+    Tvec<double> prediction_weight(Tmat<double> &X);
 };
 
 
@@ -954,7 +947,7 @@ void GBTREE::train(Tvec<double> &g, Tvec<double> &h, Tmat<double> &X, Tmat<doubl
         double local_optimism = (G2 - 2.0*gxh*(G/H) + G*G*H2/(H*H)) / (H*n);
         
         node* root_ptr = new node;
-        root_ptr->createLeaf(-G/H, -G*G/(2*H*n), local_optimism, local_optimism, n, n, n, G, H, G2/n);
+        root_ptr->createLeaf(-G/H, -G*G/(2*H*n), local_optimism, local_optimism, n, n, n, G, H, 1.0);
         root = root_ptr;
         //root = root->createLeaf(-G/H, -G*G/(2*H*n), local_optimism, local_optimism, n, n, n);
     }
@@ -1068,6 +1061,46 @@ double GBTREE::response_variance_obs(Tvec<double> &x){
     while(current != NULL){
         if(current->left == NULL && current ->right == NULL){
             return current->response_variance;
+        }
+        else{
+            
+            if(x[current->split_feature] <= current->split_value){
+                current = current->left;
+            }else{
+                current = current->right;
+            }
+        }
+    }
+    return 0;
+}
+
+Tvec<double> GBTREE::prediction_weight(Tmat<double> &X){
+    
+    int n = X.rows();
+    Tvec<double> res(n), x(n);
+    
+    for(int i=0; i<n; i++){
+        x = X.row(i);
+        res[i] = prediction_weight_obs(x);
+    }
+    return res;
+    
+}
+
+double GBTREE::prediction_weight_obs(Tvec<double> &x){
+    
+    node* current = this->root;
+    
+    if(current == NULL){
+        return 0;
+    }
+    
+    
+    while(current != NULL){
+        if(current->left == NULL && current ->right == NULL){
+            // Divide by obs_in_node to obtain average (i.e. y_var/w_var) when we start sampling
+            // assuming we expect to sample current->obs_in_node observations in this region of the space of x
+            return current->response_variance / current->node_variance / current->obs_in_node;
         }
         else{
             
@@ -1464,6 +1497,7 @@ RCPP_EXPOSED_CLASS(GBTREE)
             .method("predict_data", &GBTREE::predict_data)
             .method("prediction_variance", &GBTREE::prediction_variance)
             .method("response_variance", &GBTREE::response_variance)
+            .method("prediction_weight", &GBTREE::prediction_weight)
             .method("getTreeScore", &GBTREE::getTreeScore)
             .method("getNumLeaves", &GBTREE::getNumLeaves)
             .method("print_tree", &GBTREE::print_tree)
