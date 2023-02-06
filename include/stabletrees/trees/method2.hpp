@@ -3,27 +3,28 @@
 #include "splitterReg.hpp"
 class Method2: public Tree{
     public:
-        Method2(int _criterion,int max_depth, double min_split_sample,int min_samples_leaf,bool adaptive_complexity);
+        Method2(double lambda, int _criterion,int max_depth, double min_split_sample,int min_samples_leaf,bool adaptive_complexity);
         Method2();
         virtual void update(dMatrix &X, dVector &y);
         tuple<bool,int,double, double,double> find_split_update(dMatrix &X, dVector &y, dVector &yprev);
         
     private:
         Node* update_tree(dMatrix  &X, dVector &y, int depth, dVector &yprev);
+        double lambda;
 };
 
 Method2::Method2():Tree(){
     Tree();
+    lambda = 0.5;
 }
 
-Method2::Method2(int _criterion,int max_depth, double min_split_sample,int min_samples_leaf, bool adaptive_complexity):Tree(_criterion, max_depth,  min_split_sample,min_samples_leaf, adaptive_complexity){
+Method2::Method2(double lambda, int _criterion,int max_depth, double min_split_sample,int min_samples_leaf, bool adaptive_complexity):Tree(_criterion, max_depth,  min_split_sample,min_samples_leaf, adaptive_complexity){
     Tree(_criterion, max_depth, min_split_sample,min_samples_leaf, adaptive_complexity);
-    
+    this->lambda = lambda;
 }
-   
 
 tuple<bool, int,double, double,double> Method2::find_split_update(dMatrix &X, dVector &y, dVector &yprev){
-    SplitterReg splitter = SplitterReg(min_samples_leaf,_criterion);
+    SplitterReg splitter = SplitterReg(lambda,min_samples_leaf,_criterion);
     if(adaptive_complexity){
         splitter.cir_sim = cir_sim;
         splitter.grid_end = grid_end;
@@ -77,7 +78,7 @@ Node* Method2::update_tree(dMatrix  &X, dVector &y, int depth, dVector &yprev){
         return new Node(y.array().mean() ,y.rows());
     }
     dVector feature = X.col(split_feature);
-    tie(mask_left, mask_right) = get_masks(feature, y, split_value);
+    tie(mask_left, mask_right) = get_masks(feature, split_value);
 
 
     Node* node = new Node(split_value,impurity, score, split_feature, y.rows() , y.array().mean());

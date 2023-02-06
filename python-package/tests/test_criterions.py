@@ -53,6 +53,7 @@ class TestMSE(unittest.TestCase):
             score = np.round(mse.get_score(),4)
             if i <len(correct_scores):
                 self.assertTrue(score == correct_scores[i])
+        
 
 
 class TestPoisson(unittest.TestCase):

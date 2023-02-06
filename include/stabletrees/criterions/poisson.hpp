@@ -12,6 +12,7 @@ using namespace std;
 
 class Poisson : public Criterion{ 
     public:
+        ~Poisson();
         void init(double _n, const dVector &y);
         void update(double y_i);
         void reset();
@@ -24,6 +25,13 @@ class Poisson : public Criterion{
         double sum_ylogy;
 
 };
+
+Poisson::~Poisson(){
+    Criterion::~Criterion();
+    sum_ylogy_l = NULL;
+    sum_ylogy_r = NULL;
+    sum_ylogy = NULL;
+}
 
 
 double Poisson::get_score(){
@@ -83,6 +91,7 @@ class PoissonReg : public Poisson{
         void init(double _n, const dVector &y, const dVector &yprev);
         void update(double y_i,double yp_i);
         void reset();
+        ~PoissonReg();
 
     protected:
         double sum_prev_ylogy_l;
@@ -94,7 +103,15 @@ class PoissonReg : public Poisson{
 
 };
 
-
+PoissonReg::~PoissonReg(){
+    Poisson::~Poisson();
+    sum_prev_ylogy_l = NULL;
+    sum_prev_ylogy_r = NULL;
+    sum_prev_ylogy = NULL;
+    sum_yprev_l = NULL;
+    sum_yprev_r = NULL;
+    sum_yprev = NULL;
+}
 void PoissonReg::init(double _n, const dVector &y, const dVector &yprev){
     Poisson::init(_n,y);
     sum_prev_ylogy = (yprev.array()*log(yprev.array()+ eps)).sum();

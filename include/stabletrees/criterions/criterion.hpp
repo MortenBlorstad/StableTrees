@@ -6,6 +6,7 @@
 
 
 #include <Eigen/Dense>
+
 using namespace std;
 
 using Eigen::Dynamic;
@@ -21,33 +22,46 @@ class Criterion{
         explicit Criterion();
         virtual void init(double n, const dVector &y,const dVector &yprev);
         virtual void init(double n, const dVector &y);
+        virtual void init(double n, const dVector &y, dMatrix leaf_info);
 
         virtual void update(double y_i, double yp_i);
+        virtual void update(double y_i, const iVector &sorted_index,const dArray &feature_sample, const dMatrix &leaf_info, double split_value);
         virtual void update(double y_i);
+
         virtual void reset();
 
         virtual double node_impurity(const dVector &y);
         virtual bool should_skip(int min_samples_leaf);
+        void set_lambda(double lambda);
 
         double get_score();
         double node_score;
         double observed_reduction;
+        double score_reg;
+
         double num_splits = 0;
         double optimism;
-        
+        double local_opt_l;
+        double local_opt_r;
+        double lambda; //only used in Regulazation criterions
+        virtual ~Criterion();
+        double n_l;
+        double n_r;
+        double n;
+        double G;
+        double H;
         
         
     protected:
         double sum_y_l;
         double sum_y_r;
         double sum_y;
-        double n;
-        double n_l;
-        double n_r;
-        double G; double G_l;
-        double H; double H_l;
+        
+        double G_l;
+        double H_l;
         double G2; double H2; double gxh;
         double pred;
+        
         
         
         
@@ -58,6 +72,30 @@ class Criterion{
 
 Criterion::Criterion(){
 
+}
+
+Criterion::~Criterion(){
+    node_score = NULL;
+    observed_reduction = NULL;
+    num_splits = NULL;
+    optimism = NULL;
+    lambda = NULL; //only used in Regulazation criterions
+    sum_y_l = NULL;
+    sum_y_r = NULL;
+    sum_y = NULL;
+    n = NULL;
+    n_l = NULL;
+    n_r = NULL;
+    G = NULL;  G_l = NULL;
+    H = NULL;  H_l = NULL;
+    G2 = NULL;  H2 = NULL;  gxh = NULL;
+    pred = NULL;
+    score = NULL;
+    eps = NULL; 
+}
+
+void Criterion::set_lambda(double lambda){
+    this->lambda = lambda;
 }
 
 bool Criterion::should_skip(int min_samples_leaf){
@@ -80,6 +118,10 @@ void Criterion::update(double y_i){
 
 void Criterion::update(double y_i, double yp_i){
 
+}
+
+void Criterion::update(double y_i, const iVector &sorted_index,const dArray &feature_sample, const dMatrix &leaf_info, double split_value){
+    
 }
 
 
@@ -111,5 +153,7 @@ void Criterion::init(double _n, const dVector &y){
 void Criterion::init(double _n, const dVector &y, const dVector &yprev){
 
 }
+void Criterion::init(double n, const dVector &y, dMatrix leaf_info){
 
+}
 #endif

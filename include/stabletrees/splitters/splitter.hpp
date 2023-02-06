@@ -32,12 +32,13 @@ class Splitter{
         Splitter();
         Splitter(int min_samples_leaf, double _total_obs, bool _adaptive_complexity);
         Splitter(int min_samples_leaf,double _total_obs, int _citerion, bool _adaptive_complexity);
-        tuple<bool,int,double,double,double>  find_best_split(const dMatrix  &X, const dVector  &y);
-        tuple<bool,double,double> select_split_from_all(const dVector  &feature, const dVector  &y, const iVector sorted_index);
+        virtual tuple<bool,int,double,double,double,double>  find_best_split(const dMatrix  &X, const dVector  &y);
+        virtual tuple<bool,double,double> select_split_from_all(const dVector  &feature, const dVector  &y, const iVector sorted_index);
         dMatrix cir_sim;
         double grid_end; 
-    protected:
+        virtual ~Splitter();
         iMatrix sorted_indices(dMatrix X);
+    protected:
         vector<int> sort_index(const dVector &v);
         Criterion * criterion;
         double total_obs;
@@ -50,16 +51,13 @@ class Splitter{
 };
 
 Splitter::Splitter(){
-    MSE mse;
-    criterion = &mse;
+    criterion = new MSE();
     adaptive_complexity = false;
     this->min_samples_leaf = 1;
 }
 
 Splitter::Splitter(int min_samples_leaf,double _total_obs, bool _adaptive_complexity){
-
-    MSE mse;
-    criterion = &mse;
+    criterion = new MSE();
     total_obs = _total_obs;
     adaptive_complexity =_adaptive_complexity;
     this->min_samples_leaf = min_samples_leaf;
@@ -67,17 +65,25 @@ Splitter::Splitter(int min_samples_leaf,double _total_obs, bool _adaptive_comple
 
 Splitter::Splitter(int min_samples_leaf, double _total_obs, int _citerion, bool _adaptive_complexity){
     if(_citerion == 0){
-        MSE crit;
-        criterion = &crit;
+        criterion = new MSE();
     }else if(_citerion ==1){
-        Poisson crit;
-        criterion = &crit;
+        criterion = new Poisson();
     }else{
         throw invalid_argument("Possible criterions are 'mse' and 'poisson'.");
     }
     total_obs = _total_obs;
     adaptive_complexity =_adaptive_complexity;
     this->min_samples_leaf = min_samples_leaf;
+}
+
+Splitter::~Splitter(){
+    delete criterion;
+    total_obs = NULL;
+    adaptive_complexity = NULL;
+    min_samples_leaf = NULL;
+    grid_end = NULL;
+    
+    grid_size = NULL;
 }
 
 tuple<bool,double,double> Splitter::select_split_from_all(const dVector  &feature, const dVector  &y, const iVector sorted_index){
@@ -110,7 +116,7 @@ tuple<bool,double,double> Splitter::select_split_from_all(const dVector  &featur
         if(lowValue == largestValue){
             break;
         }
-        if(hightValue-lowValue<0.000001){
+        if(hightValue-lowValue<0.0000001){
             continue;
         }
         
@@ -167,7 +173,7 @@ tuple<bool,double,double> Splitter::select_split_from_all(const dVector  &featur
 }
 
 
-tuple<bool, int, double, double,double> Splitter::find_best_split(const dMatrix  &X, const dVector  &y){
+tuple<bool, int, double, double,double,double> Splitter::find_best_split(const dMatrix  &X, const dVector  &y){
         
         
         double min_score = std::numeric_limits<double>::infinity();
@@ -176,11 +182,11 @@ tuple<bool, int, double, double,double> Splitter::find_best_split(const dMatrix 
         int split_feature;
         dVector feature;
         double score;
-        bool any_split;
+        bool any_split_;
         double split_value;
         int i;
         int n = y.size();
-        
+        bool any_split;
         if(adaptive_complexity){
             grid = dVector::LinSpaced( grid_size, 0.0, grid_end );
             gum_cdf_mmcir_grid = dArray::Ones(grid_size);
@@ -203,13 +209,15 @@ tuple<bool, int, double, double,double> Splitter::find_best_split(const dMatrix 
             feature = X.col(i);
             iVector sorted_index = X_sorted_indices.col(i);
           
-            tie(any_split, score, split_value) = select_split_from_all(feature, y, sorted_index);
+            tie(any_split_, score, split_value) = select_split_from_all(feature, y, sorted_index);
             
             
            //#pragma omp ordered
         //{
+            
             if(feature[sorted_index[0]] != feature[sorted_index[n-1]]){
-                if(min_score>score){
+                if(any_split_ && min_score>score){
+                    any_split = true;
                     min_score = score;
                     best_split_value = split_value;
                     split_feature = i;
@@ -218,19 +226,29 @@ tuple<bool, int, double, double,double> Splitter::find_best_split(const dMatrix 
             //}
             criterion->reset();
         }
-        
-        if(any_split && n/total_obs!=1.0 && adaptive_complexity){
+        //&& n/total_obs!=1.0
+        double w_var = 0.0;
+        if(any_split && n/total_obs!=1.0  && adaptive_complexity){
             dVector gum_cdf_mmcir_complement = dVector::Ones(grid_size) - gum_cdf_mmcir_grid.matrix();
             double expected_max_S = simpson( gum_cdf_mmcir_complement, grid );
-            double CRt = - criterion->optimism * (n/total_obs)  *expected_max_S;
-            double expected_reduction = criterion->observed_reduction + CRt;
-            //printf("%f %f %f %f %f %f\n", expected_reduction, criterion->observed_reduction, CRt, criterion->optimism, total_obs,criterion->node_score);
+            double CRt = criterion->optimism * (n/total_obs)  *expected_max_S;
+            //double C = CRt*(criterion->n_r/criterion->n) + CRt*(criterion->n_r/criterion->n);
+            double expected_reduction = 1.0*(2.0-1.0)*criterion->observed_reduction*((n/total_obs) ) - 1.0*CRt;
+            w_var = criterion->optimism/(criterion->H/criterion->n);
+            // std::cout << "local_optimism: " <<  criterion->optimism<< std::endl;
+            // std::cout << "CRt: " <<  CRt << std::endl;
+            // std::cout << "n:  " <<  n  <<std::endl;
+            // std::cout << "prob_node:  " <<  n/total_obs << std::endl;
+            // std::cout << "expected_max_S:  " <<  expected_max_S << std::endl;
+            // std::cout << "observed_reduction:  " <<  criterion->observed_reduction << std::endl;
+            // std::cout << "expected_reduction:  " <<  expected_reduction << "\n" <<std::endl;
+            //printf("%f %f %f %f %f %f %f %f \n", expected_reduction, criterion->observed_reduction, CRt,C, criterion->optimism, n/total_obs, criterion->node_score,expected_max_S);
             if(expected_reduction<0.0){
                 any_split = false;
             }
         }
         
-        return tuple<bool, int, double, double,double>(any_split, split_feature,impurity,min_score, best_split_value);
+        return tuple<bool, int, double, double,double,double>(any_split, split_feature,impurity,min_score, best_split_value,w_var);
         
     
 }

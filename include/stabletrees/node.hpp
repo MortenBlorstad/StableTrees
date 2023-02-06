@@ -18,10 +18,12 @@ class Node{
         int split_feature= NULL; //  index of feature to split
         double split_score = NULL; // split reduduction
         double impurity; // node impurity
+        double y_var;// variance to the response variable in a node
+        double w_var;// variance to the prediction in a node
 
-
-        
         Node(double _split_value,double _impurity, double _split_score, int _split_feature, int _n_samples, double _prediction);
+        Node(double _split_value,double _impurity, double _split_score, int _split_feature, int _n_samples, double _prediction, double y_var, double w_var);
+        Node(double _prediction, int _n_samples, double y_var, double w_var);
         Node(double _prediction, int _n_samples);
 
         Node* get_left_node();
@@ -35,8 +37,65 @@ class Node{
         double get_split_value();
         double get_split_score();
         double get_impurity();
-    
-    };
+        Node* copy();
+        ~Node();
+        std::string toString();
+
+    private:
+        Node* copy_rec(Node* node);
+        void delete_node(Node* node);
+
+};
+
+    std::string Node::toString() {
+        if(is_leaf()){
+            return "(prediction: " + std::to_string(predict())+ ", nsamples: " + std::to_string(nsamples()) + ")";
+        }else{
+            return "(feature: " + std::to_string(get_split_feature()) + " <= " + std::to_string(get_split_value()) + ", nsamples: " + std::to_string(nsamples()) + ")";
+        }
+}
+
+    Node* Node::copy_rec(Node* node){
+
+        if(node==NULL){
+            return NULL;
+        }
+        if(node->is_leaf()){
+            Node* leaf = new Node(node->prediction, node->n_samples);
+            leaf->left_child = copy_rec(node->left_child);
+            leaf->right_child = copy_rec(node->right_child);
+            return leaf;
+        }
+        Node* current = new Node(node->split_value, node->impurity,node->split_score, node->split_feature, node->n_samples, node->prediction);
+        current->left_child = copy_rec(node->left_child);
+        current->right_child = copy_rec(node->right_child);
+
+        return current;    
+    }
+
+
+    Node* Node::copy(){
+       return copy_rec(this);
+    }
+
+
+void Node::delete_node(Node* node){
+    if(node == NULL) return;
+    delete_node(node->left_child);
+    delete_node(node->right_child);
+    split_value = NULL;
+    impurity = NULL;
+    split_score = NULL;
+    n_samples = NULL;
+    split_feature = NULL;
+    left_child=NULL;
+    right_child=NULL;
+    prediction = NULL;
+    node = NULL;
+}
+Node::~Node(){
+    delete_node(this);
+}
 
 Node::Node(double _split_value, double _impurity, double _split_score, int _split_feature,int _n_samples, double _prediction){
     split_value = _split_value;
@@ -48,6 +107,28 @@ Node::Node(double _split_value, double _impurity, double _split_score, int _spli
     right_child=NULL;
     prediction = _prediction;
 
+}
+Node::Node(double _split_value, double _impurity, double _split_score, int _split_feature,int _n_samples, double _prediction, double y_var,double w_var){
+    split_value = _split_value;
+    impurity = _impurity;
+    split_score = _split_score;
+    n_samples = _n_samples;
+    split_feature = _split_feature;
+    left_child=NULL;
+    right_child=NULL;
+    prediction = _prediction;
+    this->y_var = y_var;
+    this->w_var = w_var;
+
+}
+
+Node::Node(double _prediction, int _n_samples, double y_var,double w_var){
+    n_samples = _n_samples;
+    prediction = _prediction;
+    left_child=NULL;
+    right_child=NULL;
+    this->y_var = y_var;
+    this->w_var = w_var;
 }
 
 Node::Node(double _prediction, int _n_samples){

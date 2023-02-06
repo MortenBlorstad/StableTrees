@@ -1,13 +1,16 @@
 #pragma once
 #ifndef __Splitter_HPP_INCLUDED__
+
 #include "splitter.hpp"
 #include "node.hpp"
 #include <stdexcept>
 
+
 class SplitterReg: public Splitter{
     public:
         SplitterReg();
-        SplitterReg(int min_samples_leaf, int _citerion);
+        SplitterReg(double lambda, int min_samples_leaf, int _citerion);
+        ~SplitterReg();
         tuple<bool, int,double, double,double>  find_best_split(const dMatrix  &X, const dVector  &y,const dVector &y_prev);
         tuple<bool, double,double> select_split_from_all(const dVector  &feature, const dVector  &y, const iVector sorted_index,const dVector &y_prev);
     protected:
@@ -15,24 +18,26 @@ class SplitterReg: public Splitter{
 };
 
 SplitterReg::SplitterReg(){
-    MSEReg crit;
-    criterion = &crit;
+    criterion = new MSEReg();
     this->min_samples_leaf = 1;
+    criterion->set_lambda(0.5);
 }
 
-SplitterReg::SplitterReg(int min_samples_leaf, int _citerion){
+SplitterReg::SplitterReg(double lambda, int min_samples_leaf, int _citerion){
     if(_citerion == 0){
-        MSEReg crit;
-        criterion = &crit;
+        criterion = new MSEReg();
     }else if(_citerion ==1){
-        PoissonReg crit;
-        criterion = &crit;
+        criterion = new PoissonReg();
     }else{
         throw invalid_argument("Possible criterions are 'mse' and 'poisson'.");
     }
+    criterion->set_lambda(lambda);
     this->min_samples_leaf = min_samples_leaf;
 }
-
+SplitterReg::~SplitterReg(){
+    delete criterion;
+    min_samples_leaf = NULL;
+}
 
 tuple<bool, double,double> SplitterReg::select_split_from_all(const dVector  &feature, const dVector  &y, const iVector sorted_index,const dVector &y_prev){
     //https://stats.stackexchange.com/questions/72212/updating-variance-of-a-dataset
@@ -42,7 +47,9 @@ tuple<bool, double,double> SplitterReg::select_split_from_all(const dVector  &fe
     
     double largestValue = feature(sorted_index[n-1]);
 
-
+    double yp_L = 0; // sum of predictions from tree 1, left
+    double yp_R = y_prev.array().sum();  // sum of predictions from tree 1, right
+    double yp_squared = y_prev.array().square().sum();  // sum of squares of predictions from tree
   
     bool any_split = false;
     for (int i = 0; i < n-1; i++) {
@@ -60,7 +67,7 @@ tuple<bool, double,double> SplitterReg::select_split_from_all(const dVector  &fe
             break;
         }
         // skip if values are approx equal
-        if(hightValue-lowValue<0.000001){
+        if(hightValue-lowValue<0.0000001){
             continue;
         }
         if(criterion->should_skip(min_samples_leaf)){
@@ -94,7 +101,7 @@ tuple<bool, int, double, double,double> SplitterReg::find_best_split(const dMatr
         int n = y.size();
         criterion->init(n,y,y_prev);
         double impurity = criterion->node_score;
-
+        
         iMatrix X_sorted_indices = sorted_indices(X);
     
         //#pragma omp parallel for ordered num_threads(4) shared(min_score,best_split_value,split_feature) private(i,score,split_value, feature)
@@ -106,7 +113,7 @@ tuple<bool, int, double, double,double> SplitterReg::find_best_split(const dMatr
             
         //   #pragma omp ordered
         //{
-            if(feature[sorted_index[0]] != feature[sorted_index[feature.rows()-1]]){
+            if(feature[sorted_index[0]] != feature[sorted_index[n-1]]){
                 if(min_score>score){
                     min_score = score;
                     best_split_value = split_value;

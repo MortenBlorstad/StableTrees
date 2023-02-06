@@ -5,6 +5,7 @@
 
 
 #include <Eigen/Dense>
+
 #include "node.hpp"
 #include "splitter.hpp"
 
@@ -27,23 +28,28 @@ using namespace Eigen;
 class Tree{
 
     public:
-        
         Node* root  = NULL;
         explicit Tree(int _criterion,int max_depth, double min_split_sample,int min_samples_leaf, bool adaptive_complexity); 
         explicit Tree(); 
         bool all_same(dVector &vec);
         bool all_same_features_values(dMatrix  &X);
-        Node* build_tree(dMatrix  &X, dVector &y, int depth);
-        tuple<iVector, iVector> get_masks(dVector &feature, dVector &y, double value);
+        virtual Node* build_tree(dMatrix  &X, dVector &y, int depth);
+        tuple<iVector, iVector> get_masks(dVector &feature, double value);
         virtual void learn(dMatrix  &X, dVector &y);
         Node* get_root();
         double predict_obs(dVector  &obs);
         dVector predict(dMatrix  &X);
         virtual void update(dMatrix &X, dVector &y);
-        virtual tuple<bool,int,double, double,double> find_split(dMatrix &X, dVector &y);
+        virtual tuple<bool,int,double, double,double,double> find_split(dMatrix &X, dVector &y);
+        Node* update_tree_info(dMatrix &X, dVector &y, Node* node, int depth);
+        //~Tree();
+        std::vector<Node*> make_node_list();
+        virtual Tree* copy();
+
+        int tree_depth;
         
     protected:
-
+        Splitter* splitter;
         int max_depth;
         bool adaptive_complexity;
         int _criterion;
@@ -52,6 +58,9 @@ class Tree{
         double total_obs;
         dMatrix cir_sim;
         double grid_end;
+        
+        int number_of_nodes;
+        void make_node_list_rec(Node* node, std::vector<Node*> &l, size_t index );
 };
 Tree::Tree(){
     int max_depth = INT_MAX;
@@ -59,8 +68,31 @@ Tree::Tree(){
     _criterion = 0;
     adaptive_complexity = false;
     this->min_samples_leaf = 1;
-
+    tree_depth = 0;
+    number_of_nodes = 0;
 }
+
+
+ Tree* Tree::copy(){
+    Tree* tree = new Tree(*this);
+    tree->root = root->copy();
+    return tree;
+ }
+ 
+ /*
+Tree::~Tree(){
+    delete root;
+    max_depth = NULL;
+    adaptive_complexity = NULL;
+    _criterion = NULL;
+    min_split_sample = NULL;
+    min_samples_leaf = NULL;
+    total_obs = NULL;
+    grid_end = NULL;
+    tree_depth = NULL;
+    number_of_nodes = NULL;
+}
+*/
 
 Tree::Tree(int _criterion, int max_depth, double min_split_sample,int min_samples_leaf, bool adaptive_complexity){
     //this->splitter = Splitter(_criterion);
@@ -73,20 +105,14 @@ Tree::Tree(int _criterion, int max_depth, double min_split_sample,int min_sample
     this->min_samples_leaf = min_samples_leaf;
     this->_criterion = _criterion;
     this->adaptive_complexity = adaptive_complexity;
-    if(adaptive_complexity){
-        cir_sim = cir_sim_mat(100, 100);
-        grid_end = 1.5*cir_sim.maxCoeff();
-    }
+    tree_depth = 0;
+    number_of_nodes = 0;
 
 } 
 
-tuple<bool,int,double, double,double>  Tree::find_split(dMatrix &X, dVector &y){
-    Splitter splitter = Splitter(min_samples_leaf,total_obs,_criterion, adaptive_complexity);
-    if(adaptive_complexity){
-        splitter.cir_sim = cir_sim;
-        splitter.grid_end = grid_end;
-    }
-    return splitter.find_best_split(X, y);
+tuple<bool,int,double, double,double,double>  Tree::find_split(dMatrix &X, dVector &y){
+    
+    return splitter->find_best_split(X, y);
 }
 
 
@@ -114,10 +140,10 @@ bool Tree::all_same_features_values(dMatrix &X){
     return same;
 }
 
-tuple<iVector, iVector> Tree::get_masks(dVector &feature, dVector &y, double value){
+tuple<iVector, iVector> Tree::get_masks(dVector &feature, double value){
     std::vector<int> left_values;
     std::vector<int> right_values;
-    for(int i=0; i<y.rows();i++){
+    for(int i=0; i<feature.rows();i++){
         if(feature[i]<=value){
             left_values.push_back(i);
         }else{
@@ -133,8 +159,20 @@ tuple<iVector, iVector> Tree::get_masks(dVector &feature, dVector &y, double val
 
 
 void Tree::learn(dMatrix  &X, dVector &y){
+    set_seed(1); //set seed for cir
+    if(adaptive_complexity){
+        cir_sim = cir_sim_mat(100, 100);
+        grid_end = 1.5*cir_sim.maxCoeff();
+    }
+    
     total_obs = y.size();
+    splitter = new Splitter(min_samples_leaf,total_obs,_criterion, adaptive_complexity);
+    if(adaptive_complexity){
+        splitter->cir_sim = cir_sim;
+        splitter->grid_end = grid_end;
+    }
     this->root = build_tree(X, y, 0);
+    //printf("done building \n");
 }
 
 double Tree::predict_obs(dVector  &obs){
@@ -170,27 +208,57 @@ dVector Tree::predict(dMatrix  &X){
 
 
 Node* Tree::build_tree(dMatrix  &X, dVector &y, int depth){
+    number_of_nodes +=1;
+
+    tree_depth = max(depth,tree_depth);
     if (depth>= this->max_depth){
-        return new Node(y.array().mean(),y.rows());
+        double y_var = 0.0;
+        double pred = y.array().mean();
+        if(y.rows()>1){
+            y_var = (y.array() - pred).square().mean();
+        }
+        
+        return new Node(pred,y.rows(),y_var,0.0 );
     }
     if(X.rows()<1 || y.rows()<1){
+        
         return NULL;
     }
     if(X.rows()<2 || y.rows()<2){
-        return new Node(y.array()(0), y.rows()); 
+       
+        return new Node(y.array()(0), y.rows(),0.0,0.0); 
     }
     if(y.rows()< this->min_split_sample){
-        return new Node(y.array().mean(), y.rows());
+        double y_var = 0.0;
+        double pred = y.array().mean();
+        if(y.rows()>1){
+            y_var = (y.array() - pred).square().mean();
+        }
+      
+        return new Node(pred, y.rows(),y_var,0.0);
     }
+    
     if(all_same(y)){
-        return new Node(y.array()(0), y.rows());
+     
+        return new Node(y.array()(0), y.rows(),0.0,0.0);
     }
     if(all_same_features_values(X)){
-        return new Node(y.array().mean() ,y.rows());
+        double y_var = 0.0;
+        double pred = y.array().mean();
+        if(y.rows()>1){
+            y_var = (y.array() - pred).square().mean();
+        }
+ 
+        return new Node(pred, y.rows(),y_var,0.0 );
     }
     if(this->_criterion ==1){
         if(y.rows()==2 && (y.array()(0) ==0.0  || y.array()(1) ==0.0  ) ){
-            return new Node(y.array().mean() ,y.rows());
+            double y_var = 0.0;
+            double pred = y.array().mean();
+            if(y.rows()>1){
+                y_var = (y.array() - pred).square().mean();
+            }
+            return new Node(pred, y.rows(),y_var,0.0 );
         }
     }
     
@@ -201,13 +269,14 @@ Node* Tree::build_tree(dMatrix  &X, dVector &y, int depth){
     double score;
     double impurity;
     double split_value;
+    double w_var;
     int split_feature;
     iVector mask_left;
     iVector mask_right;
-    tie(any_split, split_feature,impurity, score, split_value)  = find_split(X,y);
+    tie(any_split, split_feature,impurity, score, split_value,w_var)  = find_split(X,y);
     //printf("%d %d %f \n", any_split,split_feature, impurity);
     if(!any_split){
-        return new Node(y.array().mean() ,y.rows());
+         return new Node(y.array().mean() ,y.rows() );
     }
     //printf("score %d\n", score);
     //printf("score %f\n", score);
@@ -233,10 +302,14 @@ Node* Tree::build_tree(dMatrix  &X, dVector &y, int depth){
    
 
     dVector feature = X.col(split_feature);
-    tie(mask_left, mask_right) = get_masks(feature, y, split_value);
+    tie(mask_left, mask_right) = get_masks(feature, split_value);
 
-
-    Node* node = new Node(split_value, impurity, score, split_feature, y.rows() , y.array().mean());
+    double y_var = 0.0;
+    double pred = y.array().mean();
+    if(y.rows()>1){
+        y_var = (y.array() - pred).square().mean();
+    }
+    Node* node = new Node(split_value, impurity, score, split_feature, y.rows() , pred, y_var, w_var);
     
     iVector keep_cols = iVector::LinSpaced(X.cols(), 0, X.cols()-1).array();
     
@@ -253,9 +326,70 @@ Node* Tree::build_tree(dMatrix  &X, dVector &y, int depth){
 
 }
 
+Node* Tree::update_tree_info(dMatrix &X, dVector &y, Node* node, int depth){
+    tree_depth = max(tree_depth, depth);
+    node->n_samples = y.size();
+    if(node->n_samples<1){
+        return NULL;
+    }else if(node->n_samples<1){
+        node->prediction = y[0];
+    }else{
+        node->prediction = y.array().mean();
+    }
+    if(node->is_leaf()){
+        return node;
+    }
+    dVector feature = X.col(node->split_feature);
+    iVector mask_left;
+    iVector mask_right;
+    tie(mask_left, mask_right) = get_masks(feature, node->split_value);
+    if(mask_left.size()<1 || mask_right.size()<1 ){
+        //printf("null %d %d \n", mask_left.size()<1, mask_right.size()<1);
+        node->left_child = NULL;
+        node->right_child = NULL;
+    }else{
+        iVector keep_cols = iVector::LinSpaced(X.cols(), 0, X.cols()-1).array();
+        dMatrix X_left = X(mask_left,keep_cols); dVector y_left = y(mask_left,1);
+        dMatrix X_right = X(mask_right,keep_cols); dVector y_right = y(mask_right,1);
+
+        //printf("update rec %d %d \n", mask_left.size()<1, mask_right.size()<1);
+
+        node->left_child = update_tree_info(X_left, y_left, node->left_child, depth+1) ;
+        node->right_child = update_tree_info(X_right, y_right, node->right_child, depth+1) ;
+    }
+    //printf("update %d \n", node->get_split_feature());
+    return node;
+}
+
+void Tree::make_node_list_rec(Node* node, std::vector<Node*> &l, size_t index ){
+    if(node->is_leaf()){
+        return;
+    }
+    size_t left_index = index*2+1;
+    size_t right_index = index*2+2;
+    l[left_index] = node->left_child;
+    l[right_index] = node->right_child;
+    make_node_list_rec(node->left_child, l, left_index);
+    make_node_list_rec(node->right_child, l, right_index);
+
+}
+
+std::vector<Node*> Tree::make_node_list(){
+    size_t index = 0;
+    int max_number_of_nodes = pow(2,tree_depth+1)-1;
+    std::vector<Node*> l(max_number_of_nodes);
+    Node* node = root;
+    l[index] = node;
+    make_node_list_rec(node,l, index);
+
+    return l;
+}
+
+
+
 void Tree::update(dMatrix &X, dVector &y){
     this->learn(X,y);
-    printf("%d, %f", this->max_depth, this->min_split_sample);
+    //printf("%d, %d, %d, %f", this->max_depth,this->number_of_nodes,this->tree_depth, this->min_split_sample);
 }
 
 Node* Tree::get_root(){

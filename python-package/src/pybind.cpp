@@ -11,10 +11,16 @@ using namespace std;
 
 #include "node.hpp"
 #include "splitters\splitter.hpp"
+#include "trees\approximate_bayesian_update.hpp"
+#include "splitters\probabalisticsplitter.hpp"
 #include "criterions\criterion.hpp"
 #include "trees\tree.hpp"
+#include "trees\abutree.hpp"
 #include "trees\method2.hpp"
+#include "trees\method0.hpp"
 #include "trees\method1.hpp"
+#include "trees\probabalistictree.hpp"
+#include "trees\evotree.hpp"
 #include "criterions\MSE.hpp"
 #include "criterions\Poisson.hpp"
 #include "optimism\cir.hpp"
@@ -54,7 +60,9 @@ PYBIND11_MODULE(_stabletrees, m)
         .def("get_split_score", &Node::get_split_score)
         .def("get_impurity", &Node::get_impurity)
         .def("get_split_feature", &Node::get_split_feature)
-        .def("get_split_value", &Node::get_split_value);
+        .def("get_split_value", &Node::get_split_value)
+        .def("copy", &Node::copy)
+        .def("toString", &Node::toString);
 
     
     py::class_<Tree>(m, "Tree")
@@ -66,10 +74,11 @@ PYBIND11_MODULE(_stabletrees, m)
         .def("learn", &Tree::learn)
         .def("get_root", &Tree::get_root)
         .def("predict", &Tree::predict)
-        .def("update", &Tree::update);
-
+        .def("update", &Tree::update)
+        .def("make_node_list", &Tree::make_node_list);
+        
     py::class_<Method2>(m, "Method2")
-        .def(py::init<int, int, double, int,bool>())
+        .def(py::init<double, int, int, double, int,bool>())
             .def("learn", &Method2::learn)
             .def("predict", &Method2::predict)
             .def("update", &Method2::update)
@@ -80,7 +89,52 @@ PYBIND11_MODULE(_stabletrees, m)
             .def("learn", &Method1::learn)
             .def("predict", &Method1::predict)
             .def("update", &Method1::update)
-            .def("get_root", &Method1::get_root);
+            .def("get_root", &Method1::get_root)
+            .def("get_mse_ratio", &Method1::get_mse_ratio)
+            .def("get_eps", &Method1::get_eps)
+            .def("get_obs", &Method1::get_obs);
+
+    py::class_<Method0>(m, "Method0")
+        .def(py::init<int, int, double,int, bool>())
+            .def("learn", &Method0::learn)
+            .def("predict", &Method0::predict)
+            .def("update", &Method0::update)
+            .def("get_root", &Method0::get_root);
+
+    py::class_<ProbabalisticTree>(m, "ProbabalisticTree")
+        .def(py::init<int, int, double,int, bool, int>())
+            .def("learn", &ProbabalisticTree::learn)
+            .def("predict", &ProbabalisticTree::predict)
+            .def("update", &ProbabalisticTree::update)
+            .def("get_root", &ProbabalisticTree::get_root)
+            .def("crossover", &ProbabalisticTree::crossover)
+            .def("make_node_list", &ProbabalisticTree::make_node_list)
+            .def("copy", &ProbabalisticTree::copy);
+
+    py::class_<EvoTree>(m, "EvoTree")
+        .def(py::init<int, int, double,int, bool, int>())
+            .def("learn", &EvoTree::learn)
+            .def("predict", &EvoTree::predict)
+            .def("update", &EvoTree::update)
+            .def("get_root", &EvoTree::get_root)
+            .def("breed", &EvoTree::breed)
+            .def("create_population", &EvoTree::create_population)
+            .def("generate_population", &EvoTree::generate_population)
+            .def("fitness_function", &EvoTree::fitness_function);
+
+    py::class_<ABU>(m, "AbuTree")
+        .def(py::init<int, int, double,int>())
+            .def("learn", &ABU::learn)
+            .def("predict", &ABU::predict)
+            .def("update", &ABU::update)
+            .def("get_root", &ABU::get_root);
+
+    py::class_<AbuTree>(m, "AbuTreeI")
+        .def(py::init<int, int, double,int>())
+            .def("learn", &AbuTree::learn)
+            .def("predict", &AbuTree::predict)
+            .def("update", &AbuTree::update)
+            .def("get_root", &AbuTree::get_root);
 
 
     py::class_<MSE>(m, "MSE")
@@ -89,7 +143,8 @@ PYBIND11_MODULE(_stabletrees, m)
             .def("init", &MSE::init)
             .def("update", &MSE::update)
             .def("get_root", &MSE::reset)
-            .def("node_impurity", &MSE::node_impurity);
+            .def("node_impurity", &MSE::node_impurity)
+            .def("reset", &MSE::reset);
 
     py::class_<Poisson>(m, "Poisson")
         .def(py::init<>())
@@ -97,7 +152,8 @@ PYBIND11_MODULE(_stabletrees, m)
             .def("init", &Poisson::init)
             .def("update", &Poisson::update)
             .def("get_root", &Poisson::reset)
-            .def("node_impurity", &Poisson::node_impurity);
+            .def("node_impurity", &Poisson::node_impurity)
+            .def("reset", &Poisson::reset);
 
     py::class_<MSEReg>(m, "MSEReg")
         .def(py::init<>())
@@ -105,7 +161,8 @@ PYBIND11_MODULE(_stabletrees, m)
             .def("init", &MSEReg::init)
             .def("update", &MSEReg::update)
             .def("get_root", &MSEReg::reset)
-            .def("node_impurity", &MSEReg::node_impurity);
+            .def("node_impurity", &MSEReg::node_impurity)
+            .def("reset", &MSEReg::reset);
 
 
     py::class_<PoissonReg>(m, "PoissonReg")
@@ -114,13 +171,22 @@ PYBIND11_MODULE(_stabletrees, m)
             .def("init", &PoissonReg::init)
             .def("update", &PoissonReg::update)
             .def("get_root", &PoissonReg::reset)
-            .def("node_impurity", &PoissonReg::node_impurity);
+            .def("node_impurity", &PoissonReg::node_impurity)
+            .def("reset", &PoissonReg::reset);
 
 
-    // py::class_<Splitter>(m, "Splitter")
-    //     .def(py::init<double, int,bool>())
-    //         .def("find_best_split", &Splitter::find_best_split)
-    //         .def("select_split_from_all", &Splitter::select_split_from_all);
+
+    py::class_<Splitter>(m, "Splitter")
+        .def(py::init<int, double, int,bool>())
+            .def("find_best_split", &Splitter::find_best_split)
+            .def("select_split_from_all", &Splitter::select_split_from_all);
+
+
+    py::class_<ProbabalisticSplitter>(m, "ProbabalisticSplitter")
+        .def(py::init<int, double, int,bool,int>())
+            .def("find_best_split", &ProbabalisticSplitter::find_best_split)
+            .def("select_split_from_all", &ProbabalisticSplitter::select_split_from_all);
+
 
     m.def("rnchisq", &rnchisq);
     m.def("cir_sim_vec",&cir_sim_vec);
