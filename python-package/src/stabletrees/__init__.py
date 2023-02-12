@@ -4,6 +4,7 @@ An example python library.
 """
 from stabletrees.tree import BaseLineTree
 from stabletrees.tree import AbuTreeI
+from stabletrees.tree import AbuTree
 from stabletrees.tree import SklearnTree
 
 

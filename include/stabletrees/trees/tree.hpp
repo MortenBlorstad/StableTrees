@@ -41,7 +41,7 @@ class Tree{
         double predict_obs(dVector  &obs);
         dVector predict(dMatrix  &X);
         virtual void update(dMatrix &X, dVector &y);
-        virtual tuple<bool,int,double, double,double,double> find_split(dMatrix &X, dVector &y, dVector &g, dVector &h);
+        virtual tuple<bool,int,double, double,double,double,double,double> find_split(dMatrix &X, dVector &y, dVector &g, dVector &h);
         Node* update_tree_info(dMatrix &X, dVector &y, Node* node, int depth);
         //~Tree();
         std::vector<Node*> make_node_list();
@@ -60,10 +60,6 @@ class Tree{
         double total_obs;
         
         int n1;
-        dMatrix cir_sim;
-        int grid_size = 101;
-        dVector grid;
-        dArray gum_cdf_mmcir_grid;
         
         int number_of_nodes;
         void make_node_list_rec(Node* node, std::vector<Node*> &l, size_t index );
@@ -104,7 +100,7 @@ Tree::Tree(int _criterion, int max_depth, double min_split_sample,int min_sample
 
 } 
 
-tuple<bool,int,double, double,double,double>  Tree::find_split(dMatrix &X, dVector &y, dVector &g, dVector &h){
+tuple<bool,int,double, double,double,double,double,double>  Tree::find_split(dMatrix &X, dVector &y, dVector &g, dVector &h){
     return splitter->find_best_split(X, y, g, h);
 }
 
@@ -205,7 +201,7 @@ Node* Tree::build_tree(dMatrix  &X, dVector &y,dVector &g, dVector &h, int depth
 
    
 
-    double y_var;
+    
     int n = y.size();
     double pred = y.array().mean();
 
@@ -219,11 +215,12 @@ Node* Tree::build_tree(dMatrix  &X, dVector &y,dVector &g, dVector &h, int depth
     double impurity;
     double split_value;
     double w_var;
+    double y_var;
     int split_feature;
     iVector mask_left;
     iVector mask_right;
     double expected_max_S;
-    tie(any_split, split_feature, split_value,impurity, score, expected_max_S)  = find_split(X,y, g,h);
+    tie(any_split, split_feature, split_value,impurity, score, y_var ,w_var,expected_max_S)  = find_split(X,y, g,h);
     
     
     if(depth>=this->max_depth){

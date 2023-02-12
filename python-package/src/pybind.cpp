@@ -14,6 +14,7 @@ using namespace std;
 #include "criterions\criterion.hpp"
 #include "trees\tree.hpp"
 #include "trees\abutree.hpp"
+#include "trees\abutreeI.hpp"
 #include "criterions\MSE.hpp"
 #include "criterions\Poisson.hpp"
 #include "optimism\cir.hpp"
@@ -71,10 +72,16 @@ PYBIND11_MODULE(_stabletrees, m)
         .def("update", &Tree::update)
         .def("make_node_list", &Tree::make_node_list);
         
+        
 
+    py::class_<AbuTreeI>(m, "AbuTreeI")
+        .def(py::init<int, int, double,int,bool>())
+            .def("learn", &AbuTreeI::learn)
+            .def("predict", &AbuTreeI::predict)
+            .def("update", &AbuTreeI::update)
+            .def("get_root", &AbuTreeI::get_root);
 
-
-    py::class_<AbuTree>(m, "AbuTreeI")
+    py::class_<AbuTree>(m, "AbuTree")
         .def(py::init<int, int, double,int,bool>())
             .def("learn", &AbuTree::learn)
             .def("predict", &AbuTree::predict)

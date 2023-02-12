@@ -32,7 +32,7 @@ class Splitter{
         Splitter();
         Splitter(int min_samples_leaf, double _total_obs, bool _adaptive_complexity);
         Splitter(int min_samples_leaf,double _total_obs, int _citerion, bool _adaptive_complexity);
-        virtual tuple<bool,int,double,double,double,double>  find_best_split(const dMatrix  &X, const dVector  &y, dVector &g, dVector &h);
+        virtual tuple<bool,int,double,double,double,double,double,double>  find_best_split(const dMatrix  &X, const dVector  &y, dVector &g, dVector &h);
         dMatrix cir_sim;
         virtual ~Splitter();
         
@@ -89,7 +89,7 @@ Splitter::~Splitter(){
     grid_size = NULL;
 }
 
-tuple<bool,int,double,double,double,double> Splitter::find_best_split(const dMatrix  &X, const dVector  &y, dVector &g, dVector &h){
+tuple<bool,int,double,double,double,double,double,double> Splitter::find_best_split(const dMatrix  &X, const dVector  &y, dVector &g, dVector &h){
     int n = y.size();
     criterion->init((double)n,y);
     double observed_reduction = -std::numeric_limits<double>::infinity();
@@ -118,7 +118,9 @@ tuple<bool,int,double,double,double,double> Splitter::find_best_split(const dMat
     dArray gum_cdf_grid(grid_size);
     double optimism = (G2 - 2.0*gxh*(G/H) + G*G*H2/(H*H)) / (H*n);
     double expected_max_S;
-    set_seed(1);
+    double w_var = total_obs*(n/total_obs)*(optimism/(H));
+    double y_var =  (y.array() - y.array().mean()).square().mean();
+    
     for(int j = 0; j<X.cols(); j++){
         criterion->reset();
         int nl = 0; int nr = n;
@@ -157,9 +159,9 @@ tuple<bool,int,double,double,double,double> Splitter::find_best_split(const dMat
             }
             u_store[num_splits] = nl*prob_delta;
             num_splits +=1;
-            score  = criterion->get_score();
+            score  =((Gl*Gl)/Hl + (Gr*Gr)/Hr - (G*G)/H)/(2*n) ;//criterion->get_score();
             any_split = true;
-            if(any_split && min_score>score){
+            if(any_split && observed_reduction<score){
                 min_score = score;
                 observed_reduction = ((Gl*Gl)/Hl + (Gr*Gr)/Hr - (G*G)/H)/(2*n);
                 split_value = middle;
@@ -228,7 +230,7 @@ tuple<bool,int,double,double,double,double> Splitter::find_best_split(const dMat
         }
     }
 
-    return tuple<bool,int,double,double,double,double>(any_split, split_feature, split_value,impurity,min_score,expected_max_S);
+    return tuple<bool,int,double,double,double,double,double,double>(any_split, split_feature, split_value,impurity,min_score,y_var,w_var,expected_max_S);
 
 }
 

@@ -85,16 +85,10 @@ Node* AbuTree::build_tree(dMatrix  &X, dVector &y,dVector g, dVector h, int dept
     w_var = total_obs*(n/total_obs)*(optimism/(H));
     y_var =  n * (n/total_obs) * total_obs * (optimism / H ); //(y.array() - y.array().mean()).square().mean();
 
-    set_seed(1);
     if(all_same(y)){
         return new Node(pred, n,1,1);
     }
-    if(depth>=this->max_depth){
-        return new Node(pred, n, y_var,w_var);
-    }
-    if(y.rows()< this->min_split_sample){
-        return new Node(pred, n, y_var,w_var);
-    }
+    
     
     double expected_max_S;
 
@@ -227,7 +221,12 @@ Node* AbuTree::build_tree(dMatrix  &X, dVector &y,dVector g, dVector h, int dept
     }
    
   
-
+    if(depth>=this->max_depth){
+        return new Node(pred, n, y_var,w_var);
+    }
+    if(y.rows()< this->min_split_sample){
+        return new Node(pred, n, y_var,w_var);
+    }
     if(!any_split){
         //printf("make leaf  %f %f\n", y_var, w_var);
          return new Node(pred ,n, y_var, w_var  );
