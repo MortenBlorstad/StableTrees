@@ -1,4 +1,4 @@
-from stabletrees import BaseLineTree, StableTree1,StableTree2
+from stabletrees import BaseLineTree,StableTree0, StableTree1,StableTree2, AbuTreeI,SklearnTree
 from sklearn.datasets import make_regression
 from sklearn.metrics import mean_squared_error, mean_poisson_deviance
 from sklearn.model_selection import train_test_split,GridSearchCV,RepeatedKFold
@@ -17,7 +17,7 @@ def S2(pred1, pred2):
     return np.mean(abs(pred1- pred2))
 
 
-parameters = {"criterion" : ["poisson"], 'max_depth':[None, 5, 10], 'min_samples_split':[2,4,8]}
+parameters = {"criterion" : ["poisson"], 'max_depth':[None, 5, 10], 'min_samples_leaf':[2,4,8]}
 
 clf = GridSearchCV(DecisionTreeRegressor(random_state=0), parameters)
 import numpy as np
@@ -27,13 +27,20 @@ def formula(X, noise = 0.1):
     return  np.exp(2*X[:,0] + 0.1*X[:,1] + 0.75*X[:,2] + np.random.normal(0,noise))
 y = formula(X)
 
+# import pandas as pd 
+# df = pd.read_csv("C:\\Users\\mb-92\\OneDrive\\Skrivebord\\studie\\StableTrees\\StableTrees_examples\\test_data.csv")
+# X = df["x"].to_numpy().reshape(-1,1)
+# y = np.exp(df["y"].to_numpy())+0
 
 kf = RepeatedKFold(n_splits= 5,n_repeats=10, random_state=SEED)
 
 models = {  
                  "baseline": BaseLineTree(),
+                "sklearn": SklearnTree(),
+                "method0" : StableTree0(),            
                  "method1" : StableTree1(),
-                 "method2" : StableTree2()
+                 "method2" : StableTree2(),
+                "method3" : AbuTreeI(), 
             }
 
 
@@ -56,10 +63,14 @@ for train_index, test_index in kf.split(X):
     clf.fit(X1,y1)
     params = clf.best_params_
     # initial model 
+    criterion = "poisson"
     models = {  
                 "baseline": BaseLineTree(**params),
-                "method1" : StableTree1(**params, delta = 0.25),
-                "method2" : StableTree2(**params)
+                "sklearn": SklearnTree(**params),
+                "method0" : StableTree0(**params), 
+                "method1" : StableTree1(**params, delta = 0.1),
+                "method2" : StableTree2(**params,lmda=0.75),
+                "method3" : AbuTreeI(criterion=criterion,min_samples_leaf=5)
             }
     for name, model in models.items():
         model.fit(X1,y1)

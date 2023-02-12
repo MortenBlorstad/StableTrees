@@ -10,6 +10,7 @@ from stabletrees.tree import ProbabalisticTree
 from stabletrees.tree import EvoTree
 from stabletrees.tree import AbuTree
 from stabletrees.tree import AbuTreeI
+from stabletrees.tree import SklearnTree
 
 
 

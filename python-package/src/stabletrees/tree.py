@@ -97,7 +97,7 @@ class BaseRegressionTree(BaseEstimator, metaclass=ABCMeta):
     
         x_left, y_left = x-off_x,y-off_y
         plt.text(x, y,f"X_{node.get_split_feature()}<={node.get_split_value():.4f}\n", fontsize=8,ha='center')
-        plt.text(x, y-2,f"impurity: {node.get_split_score():.3f}", fontsize=8,ha='center')
+        plt.text(x, y-2,f"impurity: {node.get_impurity():.3f}", fontsize=8,ha='center')
         plt.text(x, y-4,f"nsamples: {node.nsamples()}", fontsize=8,ha='center')
         plt.annotate("", xy=(x_left, y_left+4), xytext=(x-2, y-4),
         arrowprops=dict(arrowstyle="->"))
@@ -134,6 +134,31 @@ class BaseLineTree(BaseRegressionTree):
     def update(self,X : np.ndarray ,y : np.ndarray):
         return self.fit(X,y)
     
+
+class SklearnTree(DecisionTreeRegressor):
+    """
+    A regression tree that uses stability regularization when updating the tree. Method 2: update method build a new tree using the prediction from the previous tree as regularization.
+    
+    Parameters
+    ----------
+    criterion : string, {'mse', 'poisson'}, default = 'mse'
+                Function to optimize when selecting split feature and value.
+    max_depth : int, default = None.
+                Hyperparameter to determine the max depth of the tree.
+                If None, then nodes are expanded until all leaves are pure or until all leaves contain less than
+                min_samples_split samples.
+    min_samples_split : int,  default = 2.
+                Hyperparameter to determine the minimum number of samples required in order to split a internel node.
+
+    """
+    
+    def __init__(self, *,criterion = "mse", max_depth = None, min_samples_split = 2,min_samples_leaf:int = 1, adaptive_complexity : bool = False, random_state = None):
+        
+        super().__init__(criterion = criterion,max_depth= max_depth, min_samples_split= min_samples_split,min_samples_leaf = min_samples_leaf, random_state = random_state)
+
+    def update(self, X,y):
+        self.fit(X,y)
+        return self
 
 class StableTree0(BaseRegressionTree):
     """
@@ -219,7 +244,6 @@ class StableTree2(BaseRegressionTree):
         self.lmda = lmda
         super().__init__(criterion,max_depth, min_samples_split,min_samples_leaf,adaptive_complexity, random_state)
         self.tree = Method2(self.lmda, criterions[self.criterion], self.max_depth,self.min_samples_split,self.min_samples_leaf, self.adaptive_complexity)
-        
 
     def update(self, X,y):
         X,y = self.check_input(X,y)
@@ -356,11 +380,11 @@ class AbuTreeI(BaseRegressionTree):
 
     """
     
-    def __init__(self, *,criterion = "mse", max_depth = None, min_samples_split = 2,min_samples_leaf:int = 5):
+    def __init__(self, *,criterion = "mse", max_depth = None, min_samples_split = 2,min_samples_leaf:int = 5, adaptive_complexity : bool = False):
         
         self.root = None
-        super().__init__(criterion,max_depth, min_samples_split,min_samples_leaf,True)
-        self.tree = atreeI(criterions[self.criterion], self.max_depth, self.min_samples_split,self.min_samples_leaf)
+        super().__init__(criterion,max_depth, min_samples_split,min_samples_leaf,adaptive_complexity)
+        self.tree = atreeI(criterions[self.criterion], self.max_depth, self.min_samples_split,self.min_samples_leaf,adaptive_complexity)
     
     def predict(self, X):
         return self.tree.predict(X)

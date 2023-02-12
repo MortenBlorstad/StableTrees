@@ -8,6 +8,7 @@
 
 #include "node.hpp"
 #include "splitter.hpp"
+#include "lossfunctions.hpp"
 
 
 using Eigen::Dynamic;
@@ -50,6 +51,7 @@ class Tree{
         
     protected:
         Splitter* splitter;
+        LossFunction* loss_function;
         int max_depth;
         bool adaptive_complexity;
         int _criterion;
@@ -58,6 +60,7 @@ class Tree{
         double total_obs;
         dMatrix cir_sim;
         double grid_end;
+        
         
         int number_of_nodes;
         void make_node_list_rec(Node* node, std::vector<Node*> &l, size_t index );
@@ -70,6 +73,7 @@ Tree::Tree(){
     this->min_samples_leaf = 1;
     tree_depth = 0;
     number_of_nodes = 0;
+    loss_function = new LossFunction(0);
 }
 
 
@@ -107,11 +111,11 @@ Tree::Tree(int _criterion, int max_depth, double min_split_sample,int min_sample
     this->adaptive_complexity = adaptive_complexity;
     tree_depth = 0;
     number_of_nodes = 0;
+    loss_function = new LossFunction(_criterion);
 
 } 
 
 tuple<bool,int,double, double,double,double>  Tree::find_split(dMatrix &X, dVector &y){
-    
     return splitter->find_best_split(X, y);
 }
 
@@ -201,8 +205,7 @@ dVector Tree::predict(dMatrix  &X){
         dVector obs = X.row(i);
         y_pred[i] = predict_obs(obs);
     }
-    return y_pred;
-
+    return y_pred; //loss_function->inverse_link_function(y_pred);
 }
 
 
@@ -237,7 +240,7 @@ Node* Tree::build_tree(dMatrix  &X, dVector &y, int depth){
       
         return new Node(pred, y.rows(),y_var,0.0);
     }
-    
+
     if(all_same(y)){
      
         return new Node(y.array()(0), y.rows(),0.0,0.0);
@@ -251,16 +254,16 @@ Node* Tree::build_tree(dMatrix  &X, dVector &y, int depth){
  
         return new Node(pred, y.rows(),y_var,0.0 );
     }
-    if(this->_criterion ==1){
-        if(y.rows()==2 && (y.array()(0) ==0.0  || y.array()(1) ==0.0  ) ){
-            double y_var = 0.0;
-            double pred = y.array().mean();
-            if(y.rows()>1){
-                y_var = (y.array() - pred).square().mean();
-            }
-            return new Node(pred, y.rows(),y_var,0.0 );
-        }
-    }
+    // if(this->_criterion ==1){
+    //     if(y.rows()==2 && (y.array()(0) ==0.0  || y.array()(1) ==0.0  ) ){
+    //         double y_var = 0.0;
+    //         double pred = y.array().mean();
+    //         if(y.rows()>1){
+    //             y_var = (y.array() - pred).square().mean();
+    //         }
+    //         return new Node(pred, y.rows(),y_var,0.0 );
+    //     }
+    // }
     
     //printf("y size %d, min_split_sample %d\n", y.size(),this->min_split_sample);
 

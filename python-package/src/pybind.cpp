@@ -27,6 +27,7 @@ using namespace std;
 
 
 
+
 #define STRINGIFY(x) #x
 #define MACRO_STRINGIFY(x) STRINGIFY(x)
 
@@ -130,7 +131,7 @@ PYBIND11_MODULE(_stabletrees, m)
             .def("get_root", &ABU::get_root);
 
     py::class_<AbuTree>(m, "AbuTreeI")
-        .def(py::init<int, int, double,int>())
+        .def(py::init<int, int, double,int,bool>())
             .def("learn", &AbuTree::learn)
             .def("predict", &AbuTree::predict)
             .def("update", &AbuTree::update)

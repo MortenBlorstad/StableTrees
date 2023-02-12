@@ -42,10 +42,10 @@ void MSE::init(double _n, const dVector &y){
     score = 0;
     node_score = (y_sum_squared - n*(pred*pred))/n;
     
-    G = 2*(pred - y.array()).sum();
+    G = (2*(pred - y.array())).sum();
     H = 2*n;
     G_l = 0; H_l = 0;
-    G2 = (2*(pred - y.array()).square()).sum();
+    G2 = (2*(pred - y.array())).square().sum();
     H2 = 4*n; gxh = (2*(pred - y.array())*2).sum();
     double w = -G/H;
     //optimism_ = 2.0*pred*pred*delta_ls.dot(delta_ls)/(n-1);
@@ -56,8 +56,8 @@ void MSE::init(double _n, const dVector &y){
     // double G2_ = (2*(0 - y.array()).square()).sum();
     // double gxh_ = (2*(0 - y.array())*2).sum();
     
-    optimism = 2*(G2 - 2.0*gxh*(G/H) + G*G*H2/(H*H)) / (H*n);
-    //printf("%f %f %f %f %f %f \n", n, G, H, y.array().sum(),pred,optimism );
+    optimism = (G2 - 2.0*gxh*(G/H) + G*G*H2/(H*H)) / (H*n);
+    printf("%f %f %f %f %f %f \n", n, G, H, y.array().sum(),pred,optimism );
 
 }
 
@@ -332,14 +332,25 @@ void MSEReg::init(double _n, const dVector &y,const dVector &yprev){
     sum_yprev_l = 0;
     sum_yprev_r = sum_yprev;
     node_stability = (yprev.array() - pred).square().mean();
-    
-    // node_score += (yprev_sum_squared - n*(pred*pred))/n;
+    //printf("node_score : %f %f \n", node_score, node_score + lambda*node_stability);
+    node_score = node_score + lambda*node_stability;
 
-    // G += 2*(pred - yprev.array()).sum();
-    // H += 2*n;
-    // G2 += (2*(pred - yprev.array()).square()).sum();
-    // H2 += 4*n; gxh += (2*(pred - yprev.array())*2).sum();
-    // optimism += (G2 + 2*gxh*(pred) + H2*pred*pred)/(n*H);
+    //printf("G : %f %f \n", G, G + 2*lambda*(pred - yprev.array()).sum());
+    G += 2*lambda*(pred - yprev.array()).sum();
+    //printf("H : %f %f \n", H, H + 2*lambda*n);
+    H += 2*lambda*n;
+    
+    //printf("G2 : %f %f \n", G2, (2*(pred - y.array()) + 2*lambda*(pred - yprev.array())).square().sum());
+    
+    G2 = (2*(pred - y.array()) + 2*lambda*(pred - yprev.array()) ).square().sum();
+    //printf("H2 : %f %f \n", H2, pow(2 + 2*lambda,2)*n);
+    H2 = pow(2 + 2*lambda,2)*n;
+    //printf("gxh : %f %f \n", gxh, ( (2*(pred - y.array()) + 2*lambda*(pred - yprev.array()) )*(2+2*lambda)  ).sum());
+    gxh = ( (2*(pred - y.array()) + 2*lambda*(pred - yprev.array()) )*(2+2*lambda)  ).sum();
+    
+    //printf("optimism : %f %f \n", optimism, 2*(G2 - 2.0*gxh*(G/H) + G*G*H2/(H*H)) / (H*n));
+    optimism = 2*(G2 - 2.0*gxh*(G/H) + G*G*H2/(H*H)) / (H*n);
+    //printf("%f \n", lambda);
 }
 
 void MSEReg::update(double y_i, double yp_i){
@@ -349,12 +360,16 @@ void MSEReg::update(double y_i, double yp_i){
 
     double y_bar_l = sum_y_l/n_l;
     double y_bar_r = sum_y_r/n_r;
-    // G_l += 2*(y_bar_l  -  yp_i); H_l += 2;
-    // double G_r = G - G_l; double H_r = H-H_l;
 
-    double reg = (n_l*pow(y_bar_l,2.0) + n_r*pow(y_bar_r,2.0) - 2*sum_yprev_l*y_bar_l - 2*sum_yprev_r*y_bar_r + yprev_sum_squared)/n;
+    G_l += 2*lambda*(y_bar_l  -  yp_i) ; H_l += 2*lambda;
+    double G_r = G - G_l; double H_r = H-H_l;
+
+    double reg_ = (n_l*pow(y_bar_l,2.0) + n_r*pow(y_bar_r,2.0) - 2*sum_yprev_l*y_bar_l - 2*sum_yprev_r*y_bar_r + yprev_sum_squared)/n;
+    reg = ( (1+ score) /(1+ node_score) )   +   (lambda) * ((1+reg_)/(1+node_stability));
     //printf("%f %f %f \n",lambda, score/node_score,reg/node_stability);
-    score = ( (1+ score) /(1+ node_score) )*(1-lambda) +   (lambda) * ((1+reg)/(1+node_stability));
+    score = score  +   lambda * reg_;
+    
+    
 }
 
 #endif

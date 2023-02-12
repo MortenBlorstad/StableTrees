@@ -76,7 +76,8 @@ void Poisson::update(double y_i){
 
     double sum_ylogpred_l = sum_y_l*log(y_bar_l+eps);
     double sum_ylogpred_r = sum_y_r*log(y_bar_r+eps);
-    score = (sum_ylogy_l-sum_ylogpred_l + sum_ylogy_r - sum_ylogpred_r)/n;
+    score =  (- sum_ylogpred_l  - sum_ylogpred_r)/n;
+    //score = (sum_ylogy_l-sum_ylogpred_l + sum_ylogy_r - sum_ylogpred_r)/n;
 }
 
 void Poisson::reset(){
@@ -85,6 +86,8 @@ void Poisson::reset(){
     sum_ylogy_r = sum_ylogy;
 
 }
+
+
 
 class PoissonReg : public Poisson{ 
     public:

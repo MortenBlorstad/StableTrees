@@ -35,6 +35,7 @@ class Criterion{
         void set_lambda(double lambda);
 
         double get_score();
+        double get_reg();
         double node_score;
         double observed_reduction;
         double score_reg;
@@ -64,7 +65,7 @@ class Criterion{
         
         
         
-        
+        double reg;
         double score;
         double eps = 0.000000000000001;    
 
@@ -107,6 +108,10 @@ bool Criterion::should_skip(int min_samples_leaf){
 
 double Criterion::node_impurity(const dVector &y){
     return 0;
+}
+
+double Criterion::get_reg(){
+    return reg;
 }
 
 void Criterion::update(double y_i){

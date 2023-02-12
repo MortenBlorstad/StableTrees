@@ -11,7 +11,7 @@
 #include "poisson.hpp"
 #include "cir.hpp"
 #include "gumbel.hpp"
-
+#include "utils.hpp"
 #include <omp.h>
 
 using Eigen::Dynamic;
@@ -37,9 +37,9 @@ class Splitter{
         dMatrix cir_sim;
         double grid_end; 
         virtual ~Splitter();
-        iMatrix sorted_indices(dMatrix X);
+        
     protected:
-        vector<int> sort_index(const dVector &v);
+        
         Criterion * criterion;
         double total_obs;
         int grid_size = 101;
@@ -186,7 +186,7 @@ tuple<bool, int, double, double,double,double> Splitter::find_best_split(const d
         double split_value;
         int i;
         int n = y.size();
-        bool any_split;
+        bool any_split = false;
         if(adaptive_complexity){
             grid = dVector::LinSpaced( grid_size, 0.0, grid_end );
             gum_cdf_mmcir_grid = dArray::Ones(grid_size);
@@ -235,13 +235,13 @@ tuple<bool, int, double, double,double,double> Splitter::find_best_split(const d
             //double C = CRt*(criterion->n_r/criterion->n) + CRt*(criterion->n_r/criterion->n);
             double expected_reduction = 1.0*(2.0-1.0)*criterion->observed_reduction*((n/total_obs) ) - 1.0*CRt;
             w_var = criterion->optimism/(criterion->H/criterion->n);
-            // std::cout << "local_optimism: " <<  criterion->optimism<< std::endl;
-            // std::cout << "CRt: " <<  CRt << std::endl;
-            // std::cout << "n:  " <<  n  <<std::endl;
-            // std::cout << "prob_node:  " <<  n/total_obs << std::endl;
-            // std::cout << "expected_max_S:  " <<  expected_max_S << std::endl;
-            // std::cout << "observed_reduction:  " <<  criterion->observed_reduction << std::endl;
-            // std::cout << "expected_reduction:  " <<  expected_reduction << "\n" <<std::endl;
+            std::cout << "local_optimism: " <<  criterion->optimism<< std::endl;
+            std::cout << "CRt: " <<  CRt << std::endl;
+            std::cout << "n:  " <<  n  <<std::endl;
+            std::cout << "prob_node:  " <<  n/total_obs << std::endl;
+            std::cout << "expected_max_S:  " <<  expected_max_S << std::endl;
+            std::cout << "observed_reduction:  " <<  criterion->observed_reduction << std::endl;
+            std::cout << "expected_reduction:  " <<  expected_reduction << "\n" <<std::endl;
             //printf("%f %f %f %f %f %f %f %f \n", expected_reduction, criterion->observed_reduction, CRt,C, criterion->optimism, n/total_obs, criterion->node_score,expected_max_S);
             if(expected_reduction<0.0){
                 any_split = false;
@@ -251,36 +251,6 @@ tuple<bool, int, double, double,double,double> Splitter::find_best_split(const d
         return tuple<bool, int, double, double,double,double>(any_split, split_feature,impurity,min_score, best_split_value,w_var);
         
     
-}
-
-vector<int> Splitter::sort_index(const dVector &v) {
-
-  // initialize original index locations
-  vector<int> idx(v.size());
-  iota(idx.begin(), idx.end(), 0);
-
-  // sort indexes based on comparing values in v
-  // using std::stable_sort instead of std::sort
-  // to avoid unnecessary index re-orderings
-  // when v contains elements of equal values 
-  stable_sort(idx.begin(), idx.end(),
-       [&v](size_t i1, size_t i2) {return v[i1] <= v[i2];});
-
-  return idx;
-}
-
-iMatrix Splitter::sorted_indices(dMatrix X){
-    const int nrows = X.rows();
-    const int ncols = X.cols();
-    iMatrix X_sorted_indices(nrows,ncols);
-    
-    for(int i = 0; i<ncols; i++){
-        vector<int> sorted_ind = sort_index(X.col(i));
-        for(int j = 0; j<nrows; j++){
-            X_sorted_indices(j,i) = sorted_ind[j];
-        }
-    }
-    return X_sorted_indices;
 }
 
 

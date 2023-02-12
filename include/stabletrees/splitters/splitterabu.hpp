@@ -371,20 +371,20 @@ tuple<bool, int, double, double,double,double,double> SplitterABU::find_best_spl
         double CRt = criterion_update->optimism * (n/total_obs)  *expected_max_S;
         //double C = CRt*(criterion->n_r/criterion->n) + CRt*(criterion->n_r/criterion->n);
         double expected_reduction = 1.0*(2.0-1.0)*criterion_update->observed_reduction*((n/total_obs) ) - 1.0*CRt;
-        double w_var = (n/total_obs)*(criterion_update->optimism/(criterion_update->H/n)); //criterion->optimism/(criterion->H/criterion->n); 
+        double w_var = total_obs*(n/total_obs)*(criterion_update->optimism/(criterion_update->H/n))*expected_reduction; //criterion->optimism/(criterion->H/criterion->n); 
         
-        // std::cout << "update: " << std::endl;
-        // std::cout << "local_optimism: " <<  criterion_update->optimism<< std::endl;
-        // std::cout << "CRt: " <<  CRt << std::endl;
-        // std::cout << "n:  " <<  n  <<std::endl;
-        // std::cout << "prob_node:  " <<  n/total_obs << std::endl;
-        // std::cout << "expected_max_S:  " <<  expected_max_S << std::endl;
-        // std::cout << "node_score:  " <<  criterion_update->node_score << std::endl;
-        // std::cout << "observed_reduction:  " <<  criterion_update->observed_reduction << std::endl;
-        // std::cout << "expected_reduction:  " <<  expected_reduction <<std::endl;
-        // std::cout << "H:  " <<  criterion_update->H  <<std::endl;
-        // std::cout << "y_var:  " <<  y_var <<std::endl;
-        // std::cout << "w_var:  " <<  w_var <<std::endl;
+        std::cout << "update: " << std::endl;
+        std::cout << "local_optimism: " <<  criterion_update->optimism<< std::endl;
+        std::cout << "CRt: " <<  CRt << std::endl;
+        std::cout << "n:  " <<  n  <<std::endl;
+        std::cout << "prob_node:  " <<  n/total_obs << std::endl;
+        std::cout << "expected_max_S:  " <<  expected_max_S << std::endl;
+        std::cout << "node_score:  " <<  criterion_update->node_score << std::endl;
+        std::cout << "observed_reduction:  " <<  criterion_update->observed_reduction << std::endl;
+        std::cout << "expected_reduction:  " <<  expected_reduction <<std::endl;
+        std::cout << "H:  " <<  criterion_update->H  <<std::endl;
+        std::cout << "y_var:  " <<  y_var <<std::endl;
+        std::cout << "w_var:  " <<  w_var<< "\n" <<std::endl;
         //printf("%f %f %f %f %f %f %f %f \n", expected_reduction, criterion->observed_reduction, CRt,C, criterion->optimism, n/total_obs, criterion->node_score,expected_max_S);
         if(any_split && n/total_obs!=1.0 && expected_reduction<0.0){
             any_split = false;

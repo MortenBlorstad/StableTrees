@@ -5,6 +5,7 @@ from sklearn.model_selection import train_test_split,GridSearchCV,RepeatedKFold
 from sklearn.tree import DecisionTreeRegressor
 import numpy as np
 import pandas as pd
+import datapreprocess
 
 
 SEED = 0
@@ -16,7 +17,7 @@ def S1(pred1, pred2):
 def S2(pred1, pred2):
     return np.mean(abs(pred1- pred2))
 
-parameters = {'max_depth':[None, 5, 10], 'min_samples_split':[2,4,8]} # , "min_samples_leaf": [3,5]
+parameters = {'max_depth':[None, 5, 10],"min_samples_leaf": [5]} # , 
 clf = GridSearchCV(DecisionTreeRegressor(random_state=0), parameters)
 
 # from examples in R package ISLR2, https://cran.r-project.org/web/packages/ISLR2/ISLR2.pdf
@@ -48,8 +49,8 @@ for ds,target, feature in zip(datasets,targets, features):
     if not cat_data.empty: # if any categorical features, one-hot encode them
         cat_data = pd.get_dummies(data.select_dtypes("object"), prefix=None, prefix_sep="_", dummy_na=False, columns=None, sparse=False, drop_first=False, dtype=None)
         data = pd.concat([data.select_dtypes(['int','float']),cat_data],axis=1)
-
-    print(data.describe())
+    data = datapreprocess.data_preperation(ds)
+    #print(data.corr())
     
     y = data[target].to_numpy()
     X = data.drop(target, axis=1).to_numpy()
@@ -74,13 +75,19 @@ for ds,target, feature in zip(datasets,targets, features):
         clf.fit(X1,y1)
         params = clf.best_params_
         # initial model 
+        criterion = "mse"
         models = {  
-                 "baseline": BaseLineTree(adaptive_complexity=True),
-                 #"baseline": BaseLineTree(**params),
-                 "NU": StableTree0(adaptive_complexity=True),
-                 "TR":StableTree1(adaptive_complexity=True, delta=0.1),
-                 #"SR":StableTree2(**params,lmda=0.75),
-                 "ABU":AbuTreeI()
+                 "baseline": BaseLineTree(criterion = criterion, adaptive_complexity=True),
+                 "NU": StableTree0(criterion = criterion, adaptive_complexity=True),
+                 "TR":StableTree1(criterion = criterion, adaptive_complexity=True, delta=0.1),
+                "SR":StableTree2(criterion = criterion, adaptive_complexity=True,lmda=0),
+                 "ABU":AbuTreeI(criterion = criterion, adaptive_complexity=True)
+                
+                #  "baseline": BaseLineTree(**params), 
+                # "NU": StableTree0(**params),
+                #  "TR":StableTree1(**params, delta=0.1),
+                #  #"SR":StableTree2(**params,lmda=0.5),
+                #  "ABU":AbuTreeI(**params)
                 }
         for name, model in models.items():
             model.fit(X1,y1)

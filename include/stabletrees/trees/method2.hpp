@@ -6,11 +6,13 @@ class Method2: public Tree{
         Method2(double lambda, int _criterion,int max_depth, double min_split_sample,int min_samples_leaf,bool adaptive_complexity);
         Method2();
         virtual void update(dMatrix &X, dVector &y);
-        tuple<bool,int,double, double,double> find_split_update(dMatrix &X, dVector &y, dVector &yprev);
+        tuple<bool, int,double, double,double,double> find_split_update(dMatrix &X, dVector &y, dVector &yprev);
         
     private:
         Node* update_tree(dMatrix  &X, dVector &y, int depth, dVector &yprev);
         double lambda;
+        SplitterReg* update_splitter;
+
 };
 
 Method2::Method2():Tree(){
@@ -23,16 +25,16 @@ Method2::Method2(double lambda, int _criterion,int max_depth, double min_split_s
     this->lambda = lambda;
 }
 
-tuple<bool, int,double, double,double> Method2::find_split_update(dMatrix &X, dVector &y, dVector &yprev){
-    SplitterReg splitter = SplitterReg(lambda,min_samples_leaf,_criterion);
-    if(adaptive_complexity){
-        splitter.cir_sim = cir_sim;
-        splitter.grid_end = grid_end;
-    }
-    return splitter.find_best_split(X, y, yprev);
+tuple<bool, int,double, double,double,double> Method2::find_split_update(dMatrix &X, dVector &y, dVector &yprev){
+    return update_splitter->find_best_split(X, y, yprev);
 }
 
 void Method2::update(dMatrix &X, dVector &y) {
+    update_splitter = new SplitterReg(lambda,min_samples_leaf,total_obs,_criterion,adaptive_complexity);
+    if(adaptive_complexity){
+        update_splitter->cir_sim = cir_sim;
+        update_splitter->grid_end = grid_end;
+    }
     if(this->root == NULL){
         this->learn(X,y);
     }else{
@@ -42,6 +44,9 @@ void Method2::update(dMatrix &X, dVector &y) {
 }
 
 Node* Method2::update_tree(dMatrix  &X, dVector &y, int depth, dVector &yprev){
+    number_of_nodes +=1;
+    tree_depth = max(depth,tree_depth);
+    
     if (depth>= this->max_depth){
         return new Node(y.array().mean(),y.rows());
     }
@@ -60,20 +65,17 @@ Node* Method2::update_tree(dMatrix  &X, dVector &y, int depth, dVector &yprev){
     if(all_same_features_values(X)){
         return new Node(y.array().mean() ,y.rows());
     }
-    if(this->_criterion ==1){
-        if(y.rows()==2 && (y.array()(0) ==0.0  || y.array()(1) ==0.0  ) ){
-            return new Node(y.array().mean() ,y.rows());
-        }
-    }
+    
 
     bool any_split;
     double score;
     double split_value;
     double impurity;
     int split_feature;
+    double w_var;
     iVector mask_left;
     iVector mask_right;
-    tie(any_split, split_feature, impurity, score, split_value)  = find_split_update(X,y, yprev);
+    tie(any_split, split_feature, impurity, score, split_value,w_var)  = find_split_update(X,y, yprev);
     if(!any_split){
         return new Node(y.array().mean() ,y.rows());
     }

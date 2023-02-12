@@ -1,9 +1,12 @@
 #pragma once
 #include "tree.hpp"
 #include "splitterabu.hpp"
+#include "utils.hpp"
+#include "lossfunctions.hpp"
+
 class AbuTree: public Tree{
     public:
-        AbuTree(int _criterion,int max_depth, double min_split_sample,int min_samples_leaf);
+        AbuTree(int _criterion,int max_depth, double min_split_sample,int min_samples_leaf, bool adaptive_complexity);
         AbuTree();
         virtual void update(dMatrix &X, dVector &y);
         dMatrix predict_info(dMatrix &X);
@@ -15,24 +18,25 @@ class AbuTree: public Tree{
         tuple<dMatrix,dVector> sample_X_y(const dMatrix &X,const dVector &y, int n1);
         dMatrix sample_X(const dMatrix &X, int n1);
         int n1;
-        
         dMatrix cir_sim;
-        iMatrix sorted_indices(dMatrix X);
-        vector<int> sort_index(const dVector &v);
         int grid_size = 101;
         dVector grid;
         dArray gum_cdf_mmcir_grid;
+        LossFunction* loss_function;
+        
 
 };
 
 AbuTree::AbuTree():Tree(){
     
     Tree();
+    loss_function = new LossFunction(0);
     
 }
 
-AbuTree::AbuTree(int _criterion,int max_depth, double min_split_sample,int min_samples_leaf):Tree(_criterion, max_depth,  min_split_sample,min_samples_leaf,adaptive_complexity){
-    Tree(_criterion, max_depth, min_split_sample,min_samples_leaf, true);
+AbuTree::AbuTree(int _criterion,int max_depth, double min_split_sample,int min_samples_leaf, bool adaptive_complexity):Tree(_criterion, max_depth,  min_split_sample,min_samples_leaf,adaptive_complexity){
+    Tree(_criterion, max_depth, min_split_sample,min_samples_leaf, adaptive_complexity);
+    loss_function = new LossFunction(_criterion);
 }
 
 
@@ -43,13 +47,8 @@ Node* AbuTree::build_tree(dMatrix  &X, dVector &y,dVector g, dVector h, int dept
         
         return NULL;
     }
-    if(depth>max_depth){
-        
-        return NULL;
-    }
     
-    
-    
+
     
     
     double score;
@@ -65,7 +64,7 @@ Node* AbuTree::build_tree(dMatrix  &X, dVector &y,dVector g, dVector h, int dept
     double observed_reduction = -std::numeric_limits<double>::infinity();
     dVector feature;
     bool any_split = false;
-    grid = dVector::LinSpaced(grid_size, 0.0, grid_end );
+    
     gum_cdf_mmcir_grid = dArray::Ones(grid_size);
     int i;
     int n = y.size();
@@ -75,12 +74,13 @@ Node* AbuTree::build_tree(dMatrix  &X, dVector &y,dVector g, dVector h, int dept
     
     
     double G=g.array().sum(), H=h.array().sum(), G2=g.array().square().sum(), H2=h.array().square().sum(), gxh=(g.array()*h.array()).sum();
+    printf("abu G2: %f G: %f\n", G2, G);
     double Gl_final; double Hl_final;
     double grid_end = 1.5*cir_sim.maxCoeff();
     dVector grid = dVector::LinSpaced( grid_size, 0.0, grid_end );
     gum_cdf_mmcir_grid = dVector::Ones(grid_size);
     dVector gum_cdf_mmcir_complement(grid_size);
-    double pred = -G/H;
+    double pred = y.array().mean();// -G/H;
     //printf("pred %f\n", pred);
     int num_splits;
     dVector u_store((int)n);
@@ -89,12 +89,20 @@ Node* AbuTree::build_tree(dMatrix  &X, dVector &y,dVector g, dVector h, int dept
     double optimism = (G2 - 2.0*gxh*(G/H) + G*G*H2/(H*H)) / (H*n);
     w_var = total_obs*(n/total_obs)*(optimism/(H));
     y_var =  n * (n/total_obs) * total_obs * (optimism / H ); //(y.array() - y.array().mean()).square().mean();
+
+    
     if(all_same(y)){
         return new Node(pred, n,1,1);
     }
+    if(depth>=this->max_depth){
+        return new Node(pred, n, y_var,w_var);
+    }
+    if(y.rows()< this->min_split_sample){
+        return new Node(pred, n, y_var,w_var);
+    }
+    
     double expected_max_S;
 
-    
     for(int i = 0; i<X.cols(); i++){
         int nl = 0; int nr = n;
         double Gl = 0, Gl2 = 0, Hl=0, Hl2=0, Gr=G, Gr2 = G2, Hr=H, Hr2 = H2;
@@ -103,6 +111,8 @@ Node* AbuTree::build_tree(dMatrix  &X, dVector &y,dVector g, dVector h, int dept
         iVector sorted_index = X_sorted_indices.col(i);
         double largestValue = feature(sorted_index[n-1]);
         u_store = dVector::Zero(n);
+        double sum_y_l = 0;
+        double sum_y_r = y.array().sum();
         
         for (int j = 0; j < n-1; j++) {
             int low = sorted_index[j];
@@ -121,6 +131,8 @@ Node* AbuTree::build_tree(dMatrix  &X, dVector &y,dVector g, dVector h, int dept
             Gr2 = G2 - Gl2; Hr2 = H2 - Hl2;
             nl+=1;
             nr-=1;
+            sum_y_l += y(low,1);
+            sum_y_r -= y(low,1);
             
             // break if rest of the values are equal
             if(lowValue == largestValue){
@@ -133,13 +145,19 @@ Node* AbuTree::build_tree(dMatrix  &X, dVector &y,dVector g, dVector h, int dept
             if(nl< min_samples_leaf || nr < min_samples_leaf){
                 continue;
             }
+            if(_criterion ==1 && (sum_y_l<=0.00000000001 || sum_y_r<=0.00000000001)){
+                continue;
+            }
+            // if(_criterion ==1 && (sum_y_l<=0.00000000001 || sum_y_r<=0.00000000001) ){
+            //     continue;
+            // }
             
             u_store[num_splits] = nl*prob_delta;
             num_splits +=1;
             score  = ((Gl*Gl)/Hl + (Gr*Gr)/Hr - (G*G)/H)/(2*n);
             any_split = true;
-            // printf("%f, %f ,%f,%f, %f ,%f, %d \n",Gl,Gr,G, Hl, Hr, H, n);
-            // printf("%d, %d, %d, %f, %f\n",num_splits, nl,nr, score, optimism);
+            //printf("%f, %f ,%f,%f, %f ,%f, %d \n",Gl,Gr,G, Hl, Hr, H, n);
+            //printf("%d, %d, %d, %f, %f\n",num_splits, nl,nr, score, optimism);
             if(any_split && observed_reduction<score){
                 observed_reduction = score;
                 split_value = middle;
@@ -189,6 +207,7 @@ Node* AbuTree::build_tree(dMatrix  &X, dVector &y,dVector g, dVector h, int dept
         expected_max_S = simpson( gum_cdf_mmcir_complement, grid );
         double CRt = optimism * (n/total_obs)  *expected_max_S;
         double expected_reduction = 1.0*(2.0-1.0)*observed_reduction*((n/total_obs) )  - 1.0*CRt;
+
         // std::cout << "local_optimism: " <<  optimism<< std::endl;
         // std::cout << "CRt: " <<  CRt << std::endl;
         // std::cout << "n:  " <<  n  <<std::endl;
@@ -203,7 +222,7 @@ Node* AbuTree::build_tree(dMatrix  &X, dVector &y,dVector g, dVector h, int dept
         // std::cout << "y_var:  " <<  y_var <<std::endl;
         // std::cout << "w_var:  " <<  w_var <<"\n"<<std::endl;
 
-        if(any_split && n/total_obs!=1.0 && expected_reduction<0.0){
+        if(adaptive_complexity && any_split && n/total_obs!=1.0 && expected_reduction<0.0){
             any_split = false;
         }
     }
@@ -229,12 +248,13 @@ Node* AbuTree::build_tree(dMatrix  &X, dVector &y,dVector g, dVector h, int dept
     dVector g_right = g(mask_right,1); dVector h_right = h(mask_right,1);
     node->left_child = build_tree( X_left, y_left,g_left, h_left, depth+1);
     if(node->left_child!=NULL){
+        
         node->left_child->w_var*=expected_max_S;
     }
 
     node->right_child = build_tree(X_right, y_right,g_right,h_right,depth+1) ;
     if(node->right_child!=NULL){
-        node->right_child->w_var*=expected_max_S;
+        node->right_child->w_var *=expected_max_S;
     }
     
 
@@ -251,7 +271,13 @@ dVector AbuTree::predict_info_obs(dVector  &obs){
         if(node->is_leaf()){
             //printf("prediction %f \n", node->predict());
             info(0,1) = node->predict();
-            info(1,1) = (node->y_var/node->w_var)/node->n_samples;
+            if(_criterion ==1){
+                info(1,1) = 1/(node->w_var/node->n_samples);
+            }
+            else{
+                info(1,1) = (node->y_var/node->w_var)/node->n_samples;
+            }
+                
             //printf("asdas %f %f, %f ,%d \n", info(1,1),node->w_var, node->y_var, node->n_samples);
             return info;
         }else{
@@ -284,8 +310,14 @@ void AbuTree::learn(dMatrix  &X, dVector &y){
     cir_sim = cir_sim_mat(100,100);
     total_obs = y.size();
     n1 = total_obs;
-    dVector g = 2*(- y.array());
-    dVector h = dVector::Constant(n1,0,2.0);
+    dVector g = loss_function->dloss(y,  dVector::Zero(n1,1)); //2*(- y.array());
+    dVector z = dVector::Zero(n1,1);
+    // for (size_t j = 0; j < g.size(); j++)
+    //     {
+    //         printf("%f ", g(j,1));
+    //     }
+    // printf("\n");
+    dVector h = loss_function->ddloss(y, dVector::Zero(n1,1)); //dVector::Constant(n1,0,2.0);
     this->root = build_tree(X, y, g, h, 0);
 }
 
@@ -302,8 +334,8 @@ void AbuTree::update(dMatrix &X, dVector &y){
 
     dVector gb = -1*hb.array().cwiseProduct(yb.array());
 
-    dVector g = 2*(- y.array());
-    dVector h = dVector::Constant(X.rows(),0,2.0);
+    dVector g = loss_function->dloss(y, dVector::Zero(X.rows(),1)); 
+    dVector h = loss_function->ddloss(y, dVector::Zero(X.rows(),1) );
     dMatrix X_concat(X.rows()+Xb.rows(), X.cols());
     dVector y_concat(y.rows()+yb.rows(), 1);
     dVector g_concat(g.rows() + gb.rows(), 1); 
@@ -379,35 +411,7 @@ dMatrix AbuTree::sample_X(const dMatrix &X, int n1){
     return X_sample;
 }
 
-vector<int> AbuTree::sort_index(const dVector &v) {
 
-  // initialize original index locations
-  vector<int> idx(v.size());
-  iota(idx.begin(), idx.end(), 0);
-
-  // sort indexes based on comparing values in v
-  // using std::stable_sort instead of std::sort
-  // to avoid unnecessary index re-orderings
-  // when v contains elements of equal values 
-  stable_sort(idx.begin(), idx.end(),
-       [&v](size_t i1, size_t i2) {return v[i1] <= v[i2];});
-
-  return idx;
-}
-
-iMatrix AbuTree::sorted_indices(dMatrix X){
-    const int nrows = X.rows();
-    const int ncols = X.cols();
-    iMatrix X_sorted_indices(nrows,ncols);
-    
-    for(int i = 0; i<ncols; i++){
-        vector<int> sorted_ind = sort_index(X.col(i));
-        for(int j = 0; j<nrows; j++){
-            X_sorted_indices(j,i) = sorted_ind[j];
-        }
-    }
-    return X_sorted_indices;
-}
 
 
 
