@@ -24,6 +24,11 @@ void set_seed(unsigned int s)
     seed = s;
 }
 
+int get_seed()
+{
+    return seed;
+}
+
 /*
 * from https://github.com/SurajGupta/r-source/blob/master/src/nmath/rnchisq.c
 */

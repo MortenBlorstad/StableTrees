@@ -41,24 +41,6 @@ void MSE::init(double _n, const dVector &y){
     y_sum_squared = y.array().square().sum();
     score = 0;
     node_score = (y_sum_squared - n*(pred*pred))/n;
-    
-    G = (2*(pred - y.array())).sum();
-    H = 2*n;
-    G_l = 0; H_l = 0;
-    G2 = (2*(pred - y.array())).square().sum();
-    H2 = 4*n; gxh = (2*(pred - y.array())*2).sum();
-    double w = -G/H;
-    //optimism_ = 2.0*pred*pred*delta_ls.dot(delta_ls)/(n-1);
-
-    //optimism = (G2 + 2*gxh*(pred) + H2*pred*pred)/(n*H);
-    //optimism = (G2 + 2*gxh*(w) + H2*w*w)/(n*H);
-    // double G_ = 2*(0-y.array()).sum();
-    // double G2_ = (2*(0 - y.array()).square()).sum();
-    // double gxh_ = (2*(0 - y.array())*2).sum();
-    
-    optimism = (G2 - 2.0*gxh*(G/H) + G*G*H2/(H*H)) / (H*n);
-    printf("%f %f %f %f %f %f \n", n, G, H, y.array().sum(),pred,optimism );
-
 }
 
 double MSE::node_impurity(const dVector &y){
@@ -80,12 +62,7 @@ void MSE::update(double y_i){
     double y_bar_r = sum_y_r/n_r;
     double SSE_L = n_l*( pow(y_bar_l,2.0) );
     double SSE_R = n_r*( pow(y_bar_r,2.0) );
-    G_l += 2*(pred  -  y_i); H_l += 2;
-    double G_r = G - G_l; double H_r = H-H_l;
-
-    double score_ = -(G_l*G_l/H_l + G_r*G_r/H_r - G*G/H)/(2*H*n);
     score = (y_sum_squared - SSE_L-SSE_R)/n;
-    //printf("update real %f %f %f %f %f %f \n ",SSE_L, SSE_R, n, node_score - score, score_, optimism);
 }
 
 void MSE::reset(){

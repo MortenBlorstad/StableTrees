@@ -1,6 +1,5 @@
 #pragma once
 #include "tree.hpp"
-#include "splitterabu.hpp"
 #include "utils.hpp"
 #include "lossfunctions.hpp"
 
@@ -22,9 +21,6 @@ class AbuTree: public Tree{
         int grid_size = 101;
         dVector grid;
         dArray gum_cdf_mmcir_grid;
-        LossFunction* loss_function;
-        
-
 };
 
 AbuTree::AbuTree():Tree(){
@@ -65,7 +61,6 @@ Node* AbuTree::build_tree(dMatrix  &X, dVector &y,dVector g, dVector h, int dept
     dVector feature;
     bool any_split = false;
     
-    gum_cdf_mmcir_grid = dArray::Ones(grid_size);
     int i;
     int n = y.size();
     iMatrix X_sorted_indices = sorted_indices(X);
@@ -74,7 +69,7 @@ Node* AbuTree::build_tree(dMatrix  &X, dVector &y,dVector g, dVector h, int dept
     
     
     double G=g.array().sum(), H=h.array().sum(), G2=g.array().square().sum(), H2=h.array().square().sum(), gxh=(g.array()*h.array()).sum();
-    printf("abu G2: %f G: %f\n", G2, G);
+    //printf("abu G2: %f G: %f\n", G2, G);
     double Gl_final; double Hl_final;
     double grid_end = 1.5*cir_sim.maxCoeff();
     dVector grid = dVector::LinSpaced( grid_size, 0.0, grid_end );
@@ -90,7 +85,7 @@ Node* AbuTree::build_tree(dMatrix  &X, dVector &y,dVector g, dVector h, int dept
     w_var = total_obs*(n/total_obs)*(optimism/(H));
     y_var =  n * (n/total_obs) * total_obs * (optimism / H ); //(y.array() - y.array().mean()).square().mean();
 
-    
+    set_seed(1);
     if(all_same(y)){
         return new Node(pred, n,1,1);
     }
@@ -145,9 +140,9 @@ Node* AbuTree::build_tree(dMatrix  &X, dVector &y,dVector g, dVector h, int dept
             if(nl< min_samples_leaf || nr < min_samples_leaf){
                 continue;
             }
-            if(_criterion ==1 && (sum_y_l<=0.00000000001 || sum_y_r<=0.00000000001)){
-                continue;
-            }
+            // if(_criterion ==1 && (sum_y_l<=0.00000000001 || sum_y_r<=0.00000000001)){
+            //     continue;
+            // }
             // if(_criterion ==1 && (sum_y_l<=0.00000000001 || sum_y_r<=0.00000000001) ){
             //     continue;
             // }
@@ -174,6 +169,7 @@ Node* AbuTree::build_tree(dMatrix  &X, dVector &y,dVector g, dVector h, int dept
             any_split = false;
         }else{
             dVector u = u_store.head(num_splits);
+            set_seed(1);
             dArray max_cir = rmax_cir(u, cir_sim); // Input cir_sim!
             if(num_splits>1){
                 // Asymptotically Gumbel
@@ -220,7 +216,10 @@ Node* AbuTree::build_tree(dMatrix  &X, dVector &y,dVector g, dVector h, int dept
         // std::cout << "Gl: " <<  Gl_final<< std::endl;
         // std::cout << "Hl: " <<  Hl_final << std::endl;
         // std::cout << "y_var:  " <<  y_var <<std::endl;
-        // std::cout << "w_var:  " <<  w_var <<"\n"<<std::endl;
+        // std::cout << "w_var:  " <<  w_var <<std::endl;
+        // std::cout << "seed: " <<  get_seed() << std::endl;
+        // std::cout << "num_splits: " <<  num_splits << std::endl;
+        // std::cout <<"\n" << std::endl;
 
         if(adaptive_complexity && any_split && n/total_obs!=1.0 && expected_reduction<0.0){
             any_split = false;

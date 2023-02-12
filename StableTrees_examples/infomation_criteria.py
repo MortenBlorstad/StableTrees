@@ -1,5 +1,5 @@
 import numpy as np  
-from stabletrees import BaseLineTree,AbuTree,AbuTreeI, StableTree2
+from stabletrees import BaseLineTree,AbuTreeI
 from matplotlib import pyplot as plt
 from sklearn.metrics import mean_squared_error
 import pandas as pd
@@ -69,10 +69,9 @@ if __name__ == "__main__":
     X1,X2,y1,y2 = train_test_split(X,y,test_size=0.5,random_state=0)
 
     #tree = BaseLineTree(adaptive_complexity=True).fit(X,y)
-    print( X[1] )
-    
-    tree = BaseLineTree(adaptive_complexity=True).fit(X,y)
     tree2 = AbuTreeI(adaptive_complexity=True).fit(X,y)
+    tree = BaseLineTree(adaptive_complexity=True).fit(X,y)
+    
     
     print(np.sort(np.unique(tree.predict(X))))
     print(np.sort(np.unique(tree2.predict(X))))

@@ -1,4 +1,4 @@
-from stabletrees import BaseLineTree,StableTree0, StableTree1,StableTree2, AbuTreeI
+from stabletrees import BaseLineTree, AbuTreeI
 from sklearn.datasets import make_regression
 from sklearn.metrics import mean_squared_error
 from sklearn.model_selection import train_test_split,GridSearchCV,RepeatedKFold
@@ -29,9 +29,9 @@ EPSILON = 1.1
 
 models = {  
             "baseline": BaseLineTree(),
-            "NU": StableTree0(),
-            "TR":StableTree1(delta=0.25),
-            "SR":StableTree2(),
+            #"NU": StableTree0(),
+            #"TR":StableTree1(delta=0.25),
+            #"SR":StableTree2(),
             "ABU":AbuTreeI()
             }
 stability_all = {name:[] for name in models.keys()}
@@ -78,9 +78,9 @@ for ds,target, feature in zip(datasets,targets, features):
         criterion = "mse"
         models = {  
                  "baseline": BaseLineTree(criterion = criterion, adaptive_complexity=True),
-                 "NU": StableTree0(criterion = criterion, adaptive_complexity=True),
-                 "TR":StableTree1(criterion = criterion, adaptive_complexity=True, delta=0.1),
-                "SR":StableTree2(criterion = criterion, adaptive_complexity=True,lmda=0),
+                 #"NU": StableTree0(criterion = criterion, adaptive_complexity=True),
+                 #"TR":StableTree1(criterion = criterion, adaptive_complexity=True, delta=0.1),
+                #"SR":StableTree2(criterion = criterion, adaptive_complexity=True,lmda=0),
                  "ABU":AbuTreeI(criterion = criterion, adaptive_complexity=True)
                 
                 #  "baseline": BaseLineTree(**params), 
