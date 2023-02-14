@@ -68,8 +68,7 @@ bool Poisson::should_skip(int min_samples_leaf){
 void Poisson::update(double y_i){
     Criterion::update(y_i);
     
-    sum_ylogy_l+= (y_i+eps)*log(y_i+eps);
-    sum_ylogy_r-= (y_i+eps)*log(y_i+eps);
+
 
     double y_bar_l = sum_y_l/n_l;
     double y_bar_r = sum_y_r/n_r;
@@ -77,7 +76,7 @@ void Poisson::update(double y_i){
     double sum_ylogpred_l = sum_y_l*log(y_bar_l+eps);
     double sum_ylogpred_r = sum_y_r*log(y_bar_r+eps);
     score =  (- sum_ylogpred_l  - sum_ylogpred_r)/n;
-    //score = (sum_ylogy_l-sum_ylogpred_l + sum_ylogy_r - sum_ylogpred_r)/n;
+    
 }
 
 void Poisson::reset(){
@@ -87,6 +86,132 @@ void Poisson::reset(){
 
 }
 
+
+class PoissonABU : public Poisson{ 
+    public:
+        void init(double _n, const dVector &y, const dVector &weights);
+        void update(double y_i,double w_i);
+        void reset();
+        ~PoissonABU();
+
+    protected:
+        double sum_wxy;
+        double sum_wxy_l;
+        double sum_wxy_r;
+        
+        double sum_w;
+        double sum_w_l;
+        double sum_w_r;
+        double y_sum_squared;
+        double n1;
+        double n2;
+        iVector get_y1_mask(const dVector &y, const dVector &weight);
+        double sum_y2;
+        double sum_y2_l;
+        double sum_y2_r;
+
+
+};
+
+PoissonABU::~PoissonABU(){
+    Poisson::~Poisson();
+}
+
+iVector PoissonABU::get_y1_mask(const dVector &y, const dVector &weight){
+    std::vector<int> mask;
+    for(int i=0; i<y.rows();i++){
+        if(weight[i]<=0)
+            mask.push_back(i);
+    }
+    iVector mask_v = Eigen::Map<iVector, Eigen::Unaligned>(mask.data(), mask.size());
+    return mask_v;
+}
+
+void PoissonABU::init(double _n, const dVector &y, const dVector &weights){
+    Poisson::init(_n,y);
+    sum_wxy = (y.array()*weights.array()).sum();
+    sum_wxy_l = 0;
+    sum_wxy_r = sum_wxy;
+
+    iVector y1_mask = get_y1_mask(y, weights);
+
+    sum_y2 = y(y1_mask).array().sum();
+    sum_y2_l = 0;
+    sum_y2_r = sum_y2;
+
+    sum_w = weights.array().sum();
+    sum_w_l = 0;
+    sum_w_r = sum_w;
+
+    y_sum_squared = (y.array().square()*weights.array()).sum();
+}
+
+
+void PoissonABU::reset(){
+    Poisson::reset();
+    sum_wxy_l = 0;
+    sum_wxy_r = sum_wxy;
+    sum_w_l = 0;
+    sum_w_r = sum_w;
+    n1 = 0;
+    n2 = 0;
+    sum_y2_l = 0;
+    sum_y2_r = sum_y2;
+
+}
+
+void PoissonABU::update(double y_i,double w_i){
+    Criterion::update(y_i);
+    double y_bar_l = sum_y_l/n_l;
+    double y_bar_r = sum_y_r/n_r;
+    
+    if(w_i==0){
+        n2+=1;
+        sum_y2_l += y_i;
+        sum_y2_r -= y_i;
+    }
+        
+    double sum_ylogpred_l = sum_y2_l*log(y_bar_l);
+    double sum_ylogpred_r = sum_y2_r*log(y_bar_r);
+    score =  (- sum_ylogpred_l  - sum_ylogpred_r);
+
+    if(w_i!=0)
+        n1+=1;
+    sum_wxy_l+= y_i*w_i;
+    sum_wxy_r-=y_i*w_i;
+    sum_w_l += w_i;
+    sum_w_r -= w_i;
+
+    double SSE_L =( pow(y_bar_l,2.0) )*sum_w_l;
+    double SSE_R =( pow(y_bar_r,2.0) )*sum_w_r;
+
+    double reg = (y_sum_squared -2*sum_wxy_l*y_bar_l -2*sum_wxy_r*y_bar_r  + SSE_L + SSE_R);
+    score= (score + reg)/n;
+    // std::cout << "score: " <<  score<< std::endl;
+    // std::cout << "y_sum_squared: " <<  y_sum_squared<< std::endl;
+    //  std::cout << "sum_y2:  " <<  sum_y2 << std::endl;
+    // std::cout << "sum_y2_l:  " <<  sum_y2_l << std::endl;
+    // std::cout << "sum_y2_r:  " <<  sum_y2_r << std::endl;
+    // std::cout << "sum_y:  " <<  sum_y << std::endl;
+    // std::cout << "sum_y_l:  " <<  sum_y_l << std::endl;
+    // std::cout << "sum_y_r:  " <<  sum_y_r << std::endl;
+    // std::cout << "sum_w:  " <<  sum_w << std::endl;
+    // std::cout << "sum_w_l:  " <<  sum_w_l << std::endl;
+    // std::cout << "sum_w_r:  " <<  sum_w_r << std::endl;
+    // std::cout << "sum_wxy:  " <<  sum_wxy << std::endl;
+    // std::cout << "sum_wxy_l:  " <<  sum_wxy_l << std::endl;
+    // std::cout << "sum_wxy_r:  " <<  sum_wxy_r << std::endl;
+    // std::cout << "SSE_L: " <<  SSE_L << std::endl;
+    // std::cout << "SSE_R:  " <<  SSE_R  <<std::endl;
+    // std::cout << "2*sum_wxy_l*y_bar_l:  " <<  2*sum_wxy_l*y_bar_l << std::endl;
+    // std::cout << "2*sum_wxy_r*y_bar_r:  " <<  2*sum_wxy_r*y_bar_r << std::endl;
+    // std::cout << "n:  " <<  n << std::endl;
+    // std::cout << "nl:  " <<  n_l << std::endl;
+    // std::cout << "nr:  " <<  n_r << std::endl;
+    // std::cout <<"\n" << std::endl;
+
+
+}
 
 
 class PoissonReg : public Poisson{ 

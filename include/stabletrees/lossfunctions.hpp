@@ -84,7 +84,7 @@ dVector LossFunction::dloss(dVector y_true,dVector y_pred  ){
         
 
     if(citerion ==1){
-        return y_pred.array().exp() - y_true.array(); // y_pred.array().exp() - y_true.array();
+        return y_pred.array().exp() - y_true.array(); //1- y_true.array(); //
     }
         
 
@@ -92,11 +92,14 @@ dVector LossFunction::dloss(dVector y_true,dVector y_pred  ){
 }
 
 dVector LossFunction::ddloss(dVector y_true,dVector y_pred  ){
-    if(citerion ==0)
+    if(citerion ==0){
         return dVector::Constant(y_true.size(),0,2.0);
+    }
 
-    if(citerion ==1)
-        return y_pred.array().exp();
+    if(citerion ==1){
+        return y_pred.array().exp(); //y_pred.array()/ y_true.array().square() ;
+    }
+        
 
     throw exception("asdada");
 }

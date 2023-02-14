@@ -13,6 +13,7 @@
 #include "gumbel.hpp"
 #include "utils.hpp"
 #include <omp.h>
+#include "splitter.hpp"
 
 using Eigen::Dynamic;
 using dVector = Eigen::Matrix<double, Dynamic, 1>;
@@ -26,15 +27,15 @@ using namespace std;
 
 
 
-class Splitter{
+class AbuSplitter: public Splitter{
 
     public:
-        Splitter();
-        Splitter(int min_samples_leaf, double _total_obs, bool _adaptive_complexity);
-        Splitter(int min_samples_leaf,double _total_obs, int _citerion, bool _adaptive_complexity);
-        virtual tuple<bool,int,double,double,double,double,double,double>  find_best_split(const dMatrix  &X, const dVector  &y,const dVector &g,const dVector &h);
+        AbuSplitter();
+        AbuSplitter(int min_samples_leaf, double _total_obs, bool _adaptive_complexity);
+        AbuSplitter(int min_samples_leaf,double _total_obs, int _citerion, bool _adaptive_complexity);
+        virtual tuple<bool,int,double,double,double,double,double,double>  find_best_split(const dMatrix  &X, const dVector  &y,const dVector &g,const dVector &h,const dVector &weights);
         dMatrix cir_sim;
-        virtual ~Splitter();
+        virtual ~AbuSplitter();
         
     protected:
         
@@ -48,16 +49,16 @@ class Splitter{
 
 };
 
-Splitter::Splitter(){
-    criterion = new MSE();
+AbuSplitter::AbuSplitter(){
+    criterion = new MSEABU(1);
     adaptive_complexity = false;
     this->min_samples_leaf = 1;
     set_seed(1);
     cir_sim = cir_sim_mat(100,100);
 }
 
-Splitter::Splitter(int min_samples_leaf,double _total_obs, bool _adaptive_complexity){
-    criterion = new MSE();
+AbuSplitter::AbuSplitter(int min_samples_leaf,double _total_obs, bool _adaptive_complexity){
+    criterion = new MSEABU(min_samples_leaf);
     total_obs = _total_obs;
     adaptive_complexity =_adaptive_complexity;
     this->min_samples_leaf = min_samples_leaf;
@@ -65,11 +66,12 @@ Splitter::Splitter(int min_samples_leaf,double _total_obs, bool _adaptive_comple
     cir_sim = cir_sim_mat(100,100);
 }
 
-Splitter::Splitter(int min_samples_leaf, double _total_obs, int _citerion, bool _adaptive_complexity){
+AbuSplitter::AbuSplitter(int min_samples_leaf, double _total_obs, int _citerion, bool _adaptive_complexity){
+
     if(_citerion == 0){
-        criterion = new MSE();
+        criterion = new MSEABU(min_samples_leaf);
     }else if(_citerion ==1){
-        criterion = new Poisson();
+        criterion = new PoissonABU();
     }else{
         throw invalid_argument("Possible criterions are 'mse' and 'poisson'.");
     }
@@ -80,7 +82,7 @@ Splitter::Splitter(int min_samples_leaf, double _total_obs, int _citerion, bool 
     this->min_samples_leaf = min_samples_leaf;
 }
 
-Splitter::~Splitter(){
+AbuSplitter::~AbuSplitter(){
     set_seed(1);
     delete criterion;
     total_obs = NULL;
@@ -89,9 +91,9 @@ Splitter::~Splitter(){
     grid_size = NULL;
 }
 
-tuple<bool,int,double,double,double,double,double,double> Splitter::find_best_split(const dMatrix  &X, const dVector  &y, const dVector &g, const dVector &h){
+tuple<bool,int,double,double,double,double,double,double> AbuSplitter::find_best_split(const dMatrix  &X, const dVector  &y, const dVector &g, const dVector &h,const dVector &weights){
     int n = y.size();
-    criterion->init((double)n,y);
+    criterion->init((double)n, y, weights);
     double observed_reduction = -std::numeric_limits<double>::infinity();
     double min_score = std::numeric_limits<double>::infinity();
     double score;
@@ -99,6 +101,7 @@ tuple<bool,int,double,double,double,double,double,double> Splitter::find_best_sp
     double split_value;
     int split_feature;
     bool any_split = false;
+    
     
     
     
@@ -119,7 +122,7 @@ tuple<bool,int,double,double,double,double,double,double> Splitter::find_best_sp
     double optimism = (G2 - 2.0*gxh*(G/H) + G*G*H2/(H*H)) / (H*n);
     double expected_max_S;
     double w_var = total_obs*(n/total_obs)*(optimism/(H));
-    double y_var =  n * (n/total_obs) * total_obs * (optimism / H ); //(y.array() - y.array().mean()).square().mean();
+    double y_var =  (y.array() - y.array().mean()).square().mean();
     
     for(int j = 0; j<X.cols(); j++){
         criterion->reset();
@@ -147,7 +150,8 @@ tuple<bool,int,double,double,double,double,double,double> Splitter::find_best_sp
             nl+=1;
             nr-=1;
             //------------------------------------
-            criterion->update(y[low]);
+            criterion->update(y[low],weights[low]);
+
             if(lowValue == largestValue){// no unique feature values. cannot split on this feature. 
                 break;
             }
@@ -159,7 +163,7 @@ tuple<bool,int,double,double,double,double,double,double> Splitter::find_best_sp
             }
             u_store[num_splits] = nl*prob_delta;
             num_splits +=1;
-            score  =criterion->get_score();
+            score  = criterion->get_score();
             any_split = true;
             if(any_split && min_score>score){
                 min_score = score;

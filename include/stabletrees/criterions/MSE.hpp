@@ -63,6 +63,13 @@ void MSE::update(double y_i){
     double SSE_L = n_l*( pow(y_bar_l,2.0) );
     double SSE_R = n_r*( pow(y_bar_r,2.0) );
     score = (y_sum_squared - SSE_L-SSE_R)/n;
+    // std::cout << "y_sum_squared: " <<  y_sum_squared<< std::endl;
+    // std::cout << "SSE_L: " <<  SSE_L << std::endl;
+    // std::cout << "SSE_R:  " <<  SSE_R  <<std::endl;
+    // std::cout << "n:  " <<  n << std::endl;
+    // std::cout << "nl:  " <<  n_l << std::endl;
+    // std::cout << "nr:  " <<  n_r << std::endl;
+    // std::cout <<"\n" << std::endl;
 }
 
 void MSE::reset(){
@@ -73,8 +80,8 @@ void MSE::reset(){
 class MSEABU : public MSE{ 
      public:
         MSEABU(int min_sample_leaf);
-        void init(double _n, const dVector &y, dMatrix leaf_info);
-        void update(double y_i, const iVector &sorted_index,const dArray &feature_sample, const dMatrix &leaf_info, double split_value);
+        void init(double _n, const dVector &y, const dVector &weights);
+        void update(double y_i, double w_i);
         
         bool should_skip(int min_sample_leaf);
         void reset();
@@ -99,7 +106,15 @@ class MSEABU : public MSE{
         double gamma_r;
         double gamma_l;
         int j;
+        
         int min_sample_leaf;
+        double sum_wxy;
+        double sum_wxy_l;
+        double sum_wxy_r;
+        
+        double sum_w;
+        double sum_w_l;
+        double sum_w_r;
 };
 bool MSEABU::should_skip(int min_sample_leaf){
     return MSE::should_skip(min_sample_leaf);
@@ -136,137 +151,79 @@ MSEABU::~MSEABU(){
 
     j = NULL;
 }
-void MSEABU::init(double _n, const dVector &y, dMatrix leaf_info){
-    MSE::init(_n,y);
-    y1_sum_squared = leaf_info.col(0).array().square().sum();
-    y1_sum_squared_l = 0;
-    y1_sum_squared_r = y1_sum_squared;
-    n1 = leaf_info.rows();
-    n1_l = 0;
-    n1_r = n1;
-    dVector sums =  leaf_info.colwise().sum();
-    sum_y1 = sums(0,0);
-    sum_y1_l = 0;
-    sum_y1_r = sum_y1;
-    
-    gamma = sums(1,0);
+void MSEABU::init(double _n, const dVector &y, const dVector &weights){
+    n = _n;
+    sum_y = y.array().sum();
+    sum_y_l = 0;
+    sum_y_r = sum_y;
+    sum_wxy = (y.array()*weights.array()).sum();
+    sum_wxy_l = 0;
+    sum_wxy_r = sum_wxy;
+    n_l = 0;
+    n_r = n;
+    pred = y.array().mean();
+    observed_reduction = 0.0;
 
-    // y1_var = sums(1,0);
-    // y1_var_r = y1_var;
-    // y1_var_l = 0;
 
-    // w_var = sums(2,0);
-    // w_var_r = w_var;
-    // w_var_l = 0;
-    j=0;
+    sum_w = weights.array().sum();
+    sum_w_l = 0;
+    sum_w_r = sum_w;
+
+
+    y_sum_squared = (y.array().square()*weights.array()).sum();
+    score = 0;
+    node_score = (y.array()- pred).square().mean();
+
 }
 
 void MSEABU::reset(){
-    MSE::reset();
-    n1_l = 0;
-    n1_r = n1;
-    sum_y1_l = 0;
-    sum_y1_r = sum_y1;
-
-    // y1_var_r = y1_var;
-    // y1_var_l = 0;
-
-    // w_var_r = w_var;
-    // w_var_l = 0;
-    gamma_l = 0;
-    gamma_r = gamma;
-    j=0;
-    y1_sum_squared_l =0;
-    y1_sum_squared_r = y1_sum_squared;
+    sum_wxy_l = 0;
+    sum_wxy_r = sum_wxy;
+    sum_w_l = 0;
+    sum_w_r = sum_w;
+    sum_y_l = 0;
+    sum_y_r = sum_y;
+    n_l = 0;
+    n_r = n;
 }
 
-void MSEABU::update(double y_i, const iVector &sorted_index,const dArray &feature_sample, const dMatrix &leaf_info, double split_value){
+void MSEABU::update(double y_i, double w_i){
+    sum_y_l+= y_i;
+    sum_y_r-= y_i;
+    sum_wxy_l+= y_i*w_i;
+    sum_wxy_r-=y_i*w_i;
+    sum_w_l += w_i;
+    sum_w_r -= w_i;
 
-    
-    while (true)
-    {
-        if(j>(n1-2)){
-            break;
-        }
-        
-        int low = sorted_index[j];
-        double lowValue = feature_sample[low];
-        if(lowValue>split_value){
-            break;
-        }
-            
-        double y1_i = leaf_info(low,0);
-        double gamma_i = leaf_info(low,1);
-        //double y1_var_i = leaf_info(low,1);
-        //double w_var_i = leaf_info(low,2);
+    n_l+=1;
+    n_r-=1;
+    double y_bar_l = sum_y_l/n_l;
+    double y_bar_r = sum_y_r/n_r;
 
-        y1_sum_squared_l += y1_i*y1_i;
-        y1_sum_squared_r -= y1_i*y1_i;
+    double SSE_L =( pow(y_bar_l,2.0) )*sum_w_l;
+    double SSE_R =( pow(y_bar_r,2.0) )*sum_w_r;
 
-        sum_y1_l += y1_i;
-        sum_y1_r -= y1_i;
-        gamma_l += gamma_i;
-        gamma_r -= gamma_i;
-        // y1_var_l += y1_var_i;
-        // y1_var_r -= y1_var_i;
-        
-        // w_var_l += w_var_i;
-        // w_var_r -= w_var_i;
-        n1_l += 1;
-        n1_r -= 1;
-        j += 1;
-        
-        
-        // if(n1_l < min_sample_leaf || n1_r <min_sample_leaf){
-        //     continue;
-        // }         
-    }
-    MSE::update(y_i);
-    double y1_bar_l = sum_y1_l/n1_l;
-    double y1_bar_r = sum_y1_r/n1_r;
-    // double y1_var_bar_l = y1_var_l/n1_l;
-    // double y1_var_bar_r = y1_var_r/n1_r;
-    // double w_var_bar_l = w_var_l/n1_l;
-    // double w_var_bar_r = w_var_r/n1_r;
-    double gamma_bar_l = gamma_l/n1_l;
-    double gamma_bar_r = gamma_r/n1_r;
+    score = (y_sum_squared -2*sum_wxy_l*y_bar_l -2*sum_wxy_r*y_bar_r  + SSE_L + SSE_R)/n;
+    // std::cout << "score: " <<  score<< std::endl;
+    // std::cout << "y_sum_squared: " <<  y_sum_squared<< std::endl;
+    // std::cout << "sum_y:  " <<  sum_y << std::endl;
+    // std::cout << "sum_y_l:  " <<  sum_y_l << std::endl;
+    // std::cout << "sum_y_r:  " <<  sum_y_r << std::endl;
+    // std::cout << "sum_w:  " <<  sum_w << std::endl;
+    // std::cout << "sum_w_l:  " <<  sum_w_l << std::endl;
+    // std::cout << "sum_w_r:  " <<  sum_w_r << std::endl;
+    // std::cout << "sum_wxy:  " <<  sum_wxy << std::endl;
+    // std::cout << "sum_wxy_l:  " <<  sum_wxy_l << std::endl;
+    // std::cout << "sum_wxy_r:  " <<  sum_wxy_r << std::endl;
+    // std::cout << "SSE_L: " <<  SSE_L << std::endl;
+    // std::cout << "SSE_R:  " <<  SSE_R  <<std::endl;
+    // std::cout << "2*sum_wxy_l*y_bar_l:  " <<  2*sum_wxy_l*y_bar_l << std::endl;
+    // std::cout << "2*sum_wxy_r*y_bar_r:  " <<  2*sum_wxy_r*y_bar_r << std::endl;
+    // std::cout << "n:  " <<  n << std::endl;
+    // std::cout << "nl:  " <<  n_l << std::endl;
+    // std::cout << "nr:  " <<  n_r << std::endl;
+    // std::cout <<"\n" << std::endl;
 
-    double SSE1_L = n1_l*( pow(y1_bar_l,2.0) );
-    double SSE1_R = n1_r*( pow(y1_bar_r,2.0) );
-    
-    
-    
-    // double var_ratio_l = y1_var_bar_l/w_var_bar_l/n1_l;
-    // //printf("var_ratio_l %f %f %f %f \n", var_ratio_l,y1_var_bar_l,w_var_bar_l, n1_l);
-    // double var_ratio_r = y1_var_bar_r/w_var_bar_r/n1_r;
-
-    // std::cout << "w_var_l: " <<  w_var_l<< std::endl;
-    // std::cout << "w_var_r: " <<  w_var_r << std::endl;
-    // std::cout << "y1_var_l: " <<  y1_var_l<< std::endl;
-    // std::cout << "y1_var_r: " <<  y1_var_r << std::endl;
-    double reg = (gamma_bar_l*(y1_sum_squared_l - SSE1_L) + gamma_bar_r*(y1_sum_squared_r -SSE1_R))/n1;
-    score_reg = score+reg;
-    // if(score_reg < std::numeric_limits<double>::infinity()){
-    //     std::cout << "score_reg ==inf" << std::endl;
-    //     std::cout << "score: " <<  score << std::endl;
-    //     std::cout << "score_reg: " <<  score_reg << std::endl;
-    //     std::cout << "n1: " <<  n1 << std::endl;
-    //     std::cout << "n1_l: " <<  n1_l << std::endl;
-    //     std::cout << "n1_r: " <<  n1_r << std::endl;
-    //     std::cout << "y1_sum_squared_l: " <<  y1_sum_squared_l << std::endl;
-    //     std::cout << "y1_sum_squared_r: " <<  y1_sum_squared_r << std::endl;
-    //      std::cout << "SSE1_L: " <<  SSE1_L << std::endl;
-    //     std::cout << "SSE1_R: " <<  SSE1_R << std::endl;
-    //     std::cout << "gamma_bar_l: " <<  gamma_bar_l<< std::endl;
-    //     std::cout << "gamma_bar_r: " <<  gamma_bar_r <<"\n"<< std::endl;
-        
-        
-    //     // std::cout << "y1_var_l: " <<  y1_var_l<< std::endl;
-    //     // std::cout << "y1_var_r: " <<  y1_var_r << std::endl;
-         
-    // }
-    //score += reg;
-    //printf("update real %f %f %f %f\n ", n, node_score - score, optimism,reg);
 }
 
 

@@ -1,4 +1,4 @@
-from stabletrees import BaseLineTree,StableTree0, StableTree1,StableTree2, AbuTreeI,SklearnTree
+from stabletrees import BaseLineTree, AbuTreeI,AbuTree,SklearnTree
 from sklearn.datasets import make_regression
 from sklearn.metrics import mean_squared_error, mean_poisson_deviance
 from sklearn.model_selection import train_test_split,GridSearchCV,RepeatedKFold
@@ -23,24 +23,26 @@ clf = GridSearchCV(DecisionTreeRegressor(random_state=0), parameters)
 import numpy as np
 np.random.seed(SEED)
 X = np.random.multivariate_normal([0.025 ,0.075,0.05], np.array([[1, 0.1, 0], [0.1,1, 0.2], [0,0.2,1]]), size=1000)
-def formula(X, noise = 0.1):
+def formula(X, noise = 1):
     return  np.exp(2*X[:,0] + 0.1*X[:,1] + 0.75*X[:,2] + np.random.normal(0,noise))
 y = formula(X)
 
-# import pandas as pd 
-# df = pd.read_csv("C:\\Users\\mb-92\\OneDrive\\Skrivebord\\studie\\StableTrees\\StableTrees_examples\\test_data.csv")
-# X = df["x"].to_numpy().reshape(-1,1)
-# y = np.exp(df["y"].to_numpy())+0
+import pandas as pd 
+df = pd.read_csv("C:\\Users\\mb-92\\OneDrive\\Skrivebord\\studie\\StableTrees\\StableTrees_examples\\test_data.csv")
+X = df["x"].to_numpy().reshape(-1,1)
+y = np.exp(df["y"].to_numpy())+0
+
+n = 500
+X =np.random.uniform(size=(n,1), low = 0,high = 4)
+y = np.random.poisson(X.ravel(),size=n) +0.1 
 
 kf = RepeatedKFold(n_splits= 5,n_repeats=10, random_state=SEED)
 
 models = {  
                  "baseline": BaseLineTree(),
                 "sklearn": SklearnTree(),
-                "method0" : StableTree0(),            
-                 "method1" : StableTree1(),
-                 "method2" : StableTree2(),
-                "method3" : AbuTreeI(), 
+                 "AbuTree" : AbuTree(),
+                "AbuTreeI" : AbuTreeI(), 
             }
 
 
@@ -59,35 +61,33 @@ orig_poisson= {name:[] for name in models.keys()}
 for train_index, test_index in kf.split(X):
     X_12, y_12 = X[train_index],y[train_index]
     X_test,y_test = X[test_index],y[test_index]
-    X1,X2,y1,y2 =  train_test_split(X_12, y_12, test_size=0.5, random_state=SEED)
+    X1,X2,y1,y2 =  train_test_split(X_12, y_12, test_size=0.3, random_state=SEED)
     clf.fit(X1,y1)
     params = clf.best_params_
     # initial model 
     criterion = "poisson"
     models = {  
-                "baseline": BaseLineTree(**params),
+                "baseline": BaseLineTree(min_samples_leaf=5,adaptive_complexity=True),
                 "sklearn": SklearnTree(**params),
-                "method0" : StableTree0(**params), 
-                "method1" : StableTree1(**params, delta = 0.1),
-                "method2" : StableTree2(**params,lmda=0.75),
-                "method3" : AbuTreeI(criterion=criterion,min_samples_leaf=5)
+                 "AbuTree" : AbuTree(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True),
+                "AbuTreeI" : AbuTreeI(criterion=criterion,min_samples_leaf=5, adaptive_complexity=True)
             }
     for name, model in models.items():
         model.fit(X1,y1)
 
         pred1 = model.predict(X_test)
-        pred1_train = model.predict(X_12)
+        pred1_train = model.predict(X2)
         pred1_orig= model.predict(X1)
-        model.update(X_12,y_12)
+        model.update(X2,y2)
         pred2 = model.predict(X_test)
         pred2_orig= model.predict(X1)
-        pred2_train =  model.predict(X_12)
+        pred2_train =  model.predict(X2)
 
         orig_poisson[name].append(mean_poisson_deviance(pred2_orig,y1))
         orig_stability[name].append(S1(pred1_orig,pred2_orig))
         orig_standard_stability[name].append(S2(pred1_orig,pred2_orig))
 
-        train_poisson[name].append(mean_poisson_deviance(pred2_train,y_12))
+        train_poisson[name].append(mean_poisson_deviance(pred2_train,y2))
         train_stability[name].append(S1(pred1_train,pred2_train))
         train_standard_stability[name].append(S2(pred1_train,pred2_train))
         poisson[name].append(mean_poisson_deviance(y_test,pred2))

@@ -22,10 +22,9 @@ class Criterion{
         explicit Criterion();
         virtual void init(double n, const dVector &y,const dVector &yprev);
         virtual void init(double n, const dVector &y);
-        virtual void init(double n, const dVector &y, dMatrix leaf_info);
+
 
         virtual void update(double y_i, double yp_i);
-        virtual void update(double y_i, const iVector &sorted_index,const dArray &feature_sample, const dMatrix &leaf_info, double split_value);
         virtual void update(double y_i);
 
         virtual void reset();
@@ -125,9 +124,7 @@ void Criterion::update(double y_i, double yp_i){
 
 }
 
-void Criterion::update(double y_i, const iVector &sorted_index,const dArray &feature_sample, const dMatrix &leaf_info, double split_value){
-    
-}
+
 
 
 void Criterion::reset(){
@@ -158,7 +155,5 @@ void Criterion::init(double _n, const dVector &y){
 void Criterion::init(double _n, const dVector &y, const dVector &yprev){
 
 }
-void Criterion::init(double n, const dVector &y, dMatrix leaf_info){
 
-}
 #endif

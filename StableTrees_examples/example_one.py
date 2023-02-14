@@ -51,7 +51,7 @@ for ds,target, feature in zip(datasets,targets, features):
         cat_data = pd.get_dummies(data.select_dtypes("object"), prefix=None, prefix_sep="_", dummy_na=False, columns=None, sparse=False, drop_first=False, dtype=None)
         data = pd.concat([data.select_dtypes(['int','float']),cat_data],axis=1)
     data = datapreprocess.data_preperation(ds)
-    #print(data.corr())
+    print(data.corr())
     
     y = data[target].to_numpy()
     X = data.drop(target, axis=1).to_numpy()

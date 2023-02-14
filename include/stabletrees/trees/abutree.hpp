@@ -321,7 +321,6 @@ void AbuTree::learn(dMatrix  &X, dVector &y){
 
 void AbuTree::update(dMatrix &X, dVector &y){
     set_seed(1);
-    
     cir_sim = cir_sim_mat(100,100);
     dMatrix Xb = sample_X(X,n1);
     dMatrix info = predict_info(Xb);

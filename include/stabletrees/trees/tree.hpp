@@ -32,16 +32,16 @@ class Tree{
         Node* root  = NULL;
         explicit Tree(int _criterion,int max_depth, double min_split_sample,int min_samples_leaf, bool adaptive_complexity); 
         explicit Tree(); 
-        bool all_same(dVector &vec);
-        bool all_same_features_values(dMatrix  &X);
-        virtual Node* build_tree(dMatrix  &X, dVector &y, dVector &g, dVector &h, int depth);
+        bool all_same(const dVector &vec);
+        bool all_same_features_values(const dMatrix  &X);
+        virtual Node* build_tree(const dMatrix  &X, const dVector &y, const dVector &g, const dVector &h, int depth);
         tuple<iVector, iVector> get_masks(dVector &feature, double value);
         virtual void learn(dMatrix  &X, dVector &y);
         Node* get_root();
         double predict_obs(dVector  &obs);
         dVector predict(dMatrix  &X);
         virtual void update(dMatrix &X, dVector &y);
-        virtual tuple<bool,int,double, double,double,double,double,double> find_split(dMatrix &X, dVector &y, dVector &g, dVector &h);
+        virtual tuple<bool,int,double, double,double,double,double,double> find_split(const dMatrix &X, const dVector &y, const dVector &g, const dVector &h);
         Node* update_tree_info(dMatrix &X, dVector &y, Node* node, int depth);
         //~Tree();
         std::vector<Node*> make_node_list();
@@ -100,12 +100,12 @@ Tree::Tree(int _criterion, int max_depth, double min_split_sample,int min_sample
 
 } 
 
-tuple<bool,int,double, double,double,double,double,double>  Tree::find_split(dMatrix &X, dVector &y, dVector &g, dVector &h){
+tuple<bool,int,double, double,double,double,double,double>  Tree::find_split(const dMatrix &X, const dVector &y, const dVector &g, const dVector &h){
     return splitter->find_best_split(X, y, g, h);
 }
 
 
-bool Tree::all_same(dVector &vec){
+bool Tree::all_same(const dVector &vec){
     bool same = true;
     for(int i=0; i< vec.rows(); i++){
         if(vec(i)!=vec(0) ){
@@ -116,7 +116,7 @@ bool Tree::all_same(dVector &vec){
     return same;
 }
 
-bool Tree::all_same_features_values(dMatrix &X){
+bool Tree::all_same_features_values(const dMatrix &X){
     bool same = true;
     dVector feature;
     for(int i =0; i<X.cols(); i++){
@@ -190,7 +190,7 @@ dVector Tree::predict(dMatrix  &X){
 
 
 
-Node* Tree::build_tree(dMatrix  &X, dVector &y,dVector &g, dVector &h, int depth){
+Node* Tree::build_tree(const dMatrix  &X, const dVector &y,const dVector &g, const dVector &h, int depth){
     number_of_nodes +=1;
 
     tree_depth = max(depth,tree_depth);

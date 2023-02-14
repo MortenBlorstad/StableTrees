@@ -1,6 +1,6 @@
 import numpy as np
 import unittest
-from _stabletrees import MSE, Poisson, MSEReg, PoissonReg
+from _stabletrees import MSE, Poisson, MSEReg, PoissonReg, MSEABU, PoissonABU
 
 
 class TestMSE(unittest.TestCase):
@@ -56,68 +56,131 @@ class TestMSE(unittest.TestCase):
     #             self.assertTrue(score == correct_scores[i])
 
 
-
-class TestPoisson(unittest.TestCase):
+class TestMSEABU(unittest.TestCase):
     def get_testset_one(self):
-        X = np.array([4,5,6]).reshape(-1,1)
-        y = np.array([1,2,4])
+        np.random.seed(0)
+        X =np.random.uniform(size=(10,1), low = 0,high = 1)
+        y = np.random.normal(X.ravel())
         return X,y
+
+
 
     def test_init(self):
         X,y = self.get_testset_one()
-        n = len(y)
-        crit = Poisson()
-        crit.init(n,y)
-        self.assertTrue(crit.get_score()==0)
-        self.assertTrue(np.round(crit.node_impurity(y),4)== np.round(2*np.mean(y*np.log(y/y.mean())- (y-y.mean())  ),4 ))
+        yb = np.random.choice(y, size = 10, replace=True)
+        w = np.ones(20)
+        w[10:] = 0.5
+        y_ = np.concatenate((y,yb))
+        n = len(y_)
+        mse = MSEABU(1)
+        mse.init(n,y_,w)
+        
+        self.assertTrue(mse.node_impurity(y_) -  np.mean((y_ - y_.mean())**2)<0.00000001)
 
     def test_update(self):
         X,y = self.get_testset_one()
-        crit = Poisson()
-        n = len(y)
-        crit.init(n,y)
-        correct_scores = [0.1133,0.0566]
-        for i, y_i in enumerate(y):
-            if i <len(correct_scores):
-                crit.update(y_i)
-                score = np.round(crit.get_score(),4)
-                self.assertTrue(score ==correct_scores[i])
+        yb = np.random.choice(y, size = 10, replace=True)
+        w = np.ones(20)
+        w[10:] = 0.5
+        y_ = np.concatenate((y,yb))
+        n = len(y_)
+        mse = MSEABU(1)
+        mse.init(n,y_,w)
+        y_sum_l = 0
+        sum_w_l = 0
+        sum_wxy_l =0
+        y_sum_r = sum(y_)
+        sum_w_r = sum(w)
+        sum_wxy_r =sum(y_*w)
+        nl = 0
+        nr = n
+        for i, (y_i,w_i) in enumerate(zip(y_[:-3],w[:-3])):
+            mse.update(y_i,w_i)
+            score = mse.get_score()
+            nl+=1
+            nr-=1
+            y_sum_l+=y_i
+            sum_w_l+=w_i
+            sum_wxy_l+= w_i*y_i
+            y_sum_r-=y_i
+            sum_w_r-=w_i
+            sum_wxy_r-= w_i*y_i
+            # print(y_sum_l,sum_w_l,sum_wxy_l,nl, 2*sum_wxy_l*(y_sum_l/nl) )
+            # print(y_sum_r,sum_w_r,sum_wxy_r,nr, 2*sum_wxy_r*(y_sum_r/nr)  )
+            red = (np.sum(w[:(i+1)]*(y_[:(i+1)] - y_[:(i+1)].mean())**2 ) + np.sum(w[(i+1):]*(y_[(i+1):] - y_[(i+1):].mean())**2 ))/20
+            # print(score, red,   2*sum(w[:(i+1)]*y_[:(i+1)])*np.mean(y_[:i]), 2*sum(w[(i+1):]*y_[(i+1):])*np.mean(y_[(i+1):]))
+            # print(np.mean(y_[:(i+1)]), np.mean(y_[(i+1):]))
+            # print(i)
+            # print( (sum(w*(y_**2)) - 2*sum(w[:(i+1)]*y_[:(i+1)])*np.mean(y_[:(i+1)]) + sum(w[:(i+1)])*np.mean(y_[:(i+1)])**2  - 2*sum(w[(i+1):]*y_[(i+1):])*np.mean(y_[(i+1):]) + sum(w[(i+1):])*np.mean(y_[(i+1):])**2  )/20 )
+            self.assertTrue(abs(score -  red)   <0.00000001)
 
-    def test_update2(self):
-        X = np.array([1,2,3,4]).reshape(-1,1)
-        y = np.array([1,2,4,12])
-        crit = Poisson()
-        n = len(y)
-        crit.init(n,y)
-        correct_scores = [0.1133,0.0566,0.0566]
-        for i, y_i in enumerate(y):
-            if i <len(correct_scores):
-                crit.update(y_i)
-                score = np.round(crit.get_score(),4)
-                #self.assertTrue(score ==correct_scores[i])
 
-    # def test_init_with_reg(self):
-    #     X,y = self.get_testset_one()
-    #     n = len(y)
-    #     yprev = np.array([1.25,1.25,4])
-    #     crit = PoissonReg()
-    #     crit.init(n,y,yprev)
-    #     self.assertTrue(crit.get_score()==0)
-    #     self.assertTrue(np.round(crit.node_impurity(y),4)== np.round(2*np.mean(y*np.log(y/y.mean())- (y-y.mean())  ),4 ))
+class TestPoissinABU(unittest.TestCase):
+    def get_testset_one(self):
+        np.random.seed(0)
+        X =np.random.uniform(size=(10,1), low = 0,high = 1)
+        y = np.exp(np.random.normal(X.ravel()))
+        return X,y
 
-    # def test_update_with_reg(self):
-    #     X,y = self.get_testset_one()
-    #     yprev = np.array([1.25,1.25,4])
-    #     crit = PoissonReg()
-    #     n = len(y)
-    #     crit.init(n,y,yprev)
-    #     correct_scores = [round(0.1133+0.27844,4),round(0.056633+0.01473333,4)]
-    #     for i, (y_i,yp_i) in enumerate(zip(y, yprev)):
-    #         if i <len(correct_scores):
-    #             crit.update(y_i,yp_i)
-    #             score = np.round(crit.get_score(),4)
-    #             self.assertTrue(score <=correct_scores[i])
 
+
+    def test_init(self):
+        X,y = self.get_testset_one()
+        yb = np.random.choice(y, size = 10, replace=True)
+        w = np.ones(20)
+        w[10:] = 0.5
+        y_ = np.concatenate((y,yb))
+        n = len(y_)
+        mse = PoissonABU()
+        mse.init(n,y_,w)
+        self.assertTrue(mse.node_impurity(y_) -  2*np.mean(y_*np.log(y_/np.mean(y_))- (y_-np.mean(y_)))<0.00000001)
+
+    def test_update(self):
+        X,y = self.get_testset_one()
+        yb = np.random.choice(y, size = 10, replace=True)
+        w = np.zeros(20)
+        w[10:] = 0.5
+        y_ = np.concatenate((y,yb))
+        n = len(y_)
+        mse = PoissonABU()
+        mse.init(n,y_,w)
+        y2_sum_l = 0
+        y_sum_l = 0
+        sum_w_l = 0
+        sum_wxy_l =0
+        y_sum_r = sum(y_)
+        y2_sum_r = sum(y_[w==0])
+        sum_w_r = sum(w)
+        sum_wxy_r =sum(y_*w)
+        nl = 0
+        nr = n
+        y_sum_squared = np.sum(y_**2*w)
+        for i, (y_i,w_i) in enumerate(zip(y_[:-3],w[:-3])):
+            mse.update(y_i,w_i)
+            score = mse.get_score()
+            if w_i ==0:
+                y2_sum_l+=y_i
+                y2_sum_r -= y_i
+            nl+=1
+            nr-=1
+            y_sum_l+=y_i
+            sum_w_l+=w_i
+            sum_wxy_l+= w_i*y_i
+            y_sum_r-=y_i
+            sum_w_r-=w_i
+            sum_wxy_r-= w_i*y_i
+            ind = i+1
+            mask1 = w[:ind] ==0
+            mask2 = w[ind:] ==0
+
+            print(y_sum_squared,y2_sum_l,y2_sum_r)       
+            pois = np.sum(y_[:ind][mask1]*np.log(np.mean(y_[:ind]))) + np.sum(y_[ind:][mask2]*np.log(np.mean(y_[ind:]) ))
+            reg = np.sum(w[:ind][~mask1]*(y_[:ind][~mask1] - y_[:ind].mean())**2 ) + np.sum(w[ind:][~mask2]*(y_[ind:][~mask2] - y_[ind:].mean())**2 )
+            red = (pois+reg)/20
+
+            print(score,red)
+            self.assertTrue( abs(score -  red)   <0.00000001)
+    
 
 if __name__ == '__main__':
     unittest.main()
