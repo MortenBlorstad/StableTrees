@@ -2,6 +2,8 @@
 from _stabletrees import Node, Tree
 from _stabletrees import AbuTree as atree
 from _stabletrees import AbuTreeI as atreeI
+from _stabletrees import NaiveUpdate as NuTree
+from _stabletrees import StabilityRegularization as SrTree
 
 from abc import ABCMeta
 from abc import abstractmethod
@@ -11,6 +13,8 @@ from matplotlib import pyplot as plt
 import numpy as np
 
 criterions = {"mse":0, "poisson":1}
+
+
 
 class BaseRegressionTree(BaseEstimator, metaclass=ABCMeta):
     @abstractmethod
@@ -132,7 +136,6 @@ class BaseLineTree(BaseRegressionTree):
     def update(self,X : np.ndarray ,y : np.ndarray):
         return self.fit(X,y)
     
-
 class SklearnTree(DecisionTreeRegressor):
     """
     A regression tree that uses stability regularization when updating the tree. Method 2: update method build a new tree using the prediction from the previous tree as regularization.
@@ -157,13 +160,100 @@ class SklearnTree(DecisionTreeRegressor):
     def update(self, X,y):
         self.fit(X,y)
         return self
+    
 
- 
-
-class AbuTree(BaseRegressionTree):
+class NaiveUpdate(BaseRegressionTree):
     """
     A regression tree that uses stability regularization when updating the tree. Method 2: update method build a new tree using the prediction from the previous tree as regularization.
     
+    Parameters
+    ----------
+    criterion : string, {'mse', 'poisson'}, default = 'mse'
+                Function to optimize when selecting split feature and value.
+    max_depth : int, default = None.
+                Hyperparameter to determine the max depth of the tree.
+                If None, then nodes are expanded until all leaves are pure or until all leaves contain less than
+                min_samples_split samples.
+    min_samples_split : int,  default = 2.
+                Hyperparameter to determine the minimum number of samples required in order to split a internel node.
+
+    """
+    
+    def __init__(self, *,criterion = "mse", max_depth = None, min_samples_split = 2,min_samples_leaf:int = 5, adaptive_complexity : bool = False, random_state = None):
+        self.root = None
+        super().__init__(criterion,max_depth, min_samples_split,min_samples_leaf,adaptive_complexity)
+        self.tree = NuTree(criterions[self.criterion], self.max_depth, self.min_samples_split,self.min_samples_leaf,adaptive_complexity)
+    
+    def update(self, X,y):
+        X,y = self.check_input(X,y)
+        self.tree.update(X,y)
+        self.root = self.tree.get_root()
+        return self 
+    
+
+    
+class TreeReevaluation(BaseRegressionTree):
+    """
+    A regression tree that uses stability regularization when updating the tree. Method 2: update method build a new tree using the prediction from the previous tree as regularization.
+    
+    Parameters
+    ----------
+    criterion : string, {'mse', 'poisson'}, default = 'mse'
+                Function to optimize when selecting split feature and value.
+    max_depth : int, default = None.
+                Hyperparameter to determine the max depth of the tree.
+                If None, then nodes are expanded until all leaves are pure or until all leaves contain less than
+                min_samples_split samples.
+    min_samples_split : int,  default = 2.
+                Hyperparameter to determine the minimum number of samples required in order to split a internel node.
+
+    """
+    
+    def __init__(self, *,criterion = "mse", max_depth = None, min_samples_split = 2,min_samples_leaf:int = 5, adaptive_complexity : bool = False, random_state = None):
+        self.root = None
+        super().__init__(criterion,max_depth, min_samples_split,min_samples_leaf,adaptive_complexity)
+        self.tree = NuTree(criterions[self.criterion], self.max_depth, self.min_samples_split,self.min_samples_leaf,adaptive_complexity)
+    
+    def update(self, X,y):
+        X,y = self.check_input(X,y)
+        self.tree.update(X,y)
+        self.root = self.tree.get_root()
+        return self  
+    
+class StabilityRegularization(BaseRegressionTree):
+    """
+    A regression tree that uses stability regularization when updating the tree. Method 2: update method build a new tree using the prediction from the previous tree as regularization.
+    
+    Parameters
+    ----------
+    criterion : string, {'mse', 'poisson'}, default = 'mse'
+                Function to optimize when selecting split feature and value.
+    max_depth : int, default = None.
+                Hyperparameter to determine the max depth of the tree.
+                If None, then nodes are expanded until all leaves are pure or until all leaves contain less than
+                min_samples_split samples.
+    min_samples_split : int,  default = 2.
+                Hyperparameter to determine the minimum number of samples required in order to split a internel node.
+
+    """
+    
+    def __init__(self, *,criterion = "mse", max_depth = None, min_samples_split = 2,min_samples_leaf:int = 5, adaptive_complexity : bool = False,
+                  random_state = None, lmbda :float= 0.5):
+        self.root = None
+        self.lmbda = lmbda
+        super().__init__(criterion,max_depth, min_samples_split,min_samples_leaf,adaptive_complexity)
+        self.tree = SrTree(self.lmbda, criterions[self.criterion], self.max_depth,self.min_samples_split,self.min_samples_leaf, self.adaptive_complexity)
+    
+    def update(self, X,y):
+        X,y = self.check_input(X,y)
+        self.tree.update(X,y)
+        self.root = self.tree.get_root()
+        return self  
+
+class AbuTree(BaseRegressionTree):
+    """
+   
+
     Parameters
     ----------
     criterion : string, {'mse', 'poisson'}, default = 'mse'
@@ -223,3 +313,11 @@ class AbuTreeI(BaseRegressionTree):
         self.tree.update(X,y)
         self.root = self.tree.get_root()
         return self  
+    
+methods = {"baseline":BaseLineTree, "NU":NaiveUpdate , "TR":TreeReevaluation, "SR":StabilityRegularization, "ABU":AbuTreeI}
+
+
+class StableTree(BaseRegressionTree):
+    def __init__(self, method:str = "baseline", criterion: str = "mse", max_depth: int = None, min_samples_split: int = 2, min_samples_leaf: int = 5, adaptive_complexity: bool = False, random_state: int = None) -> None:
+        super().__init__(criterion,max_depth, min_samples_split,min_samples_leaf,adaptive_complexity)
+        

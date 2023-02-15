@@ -95,7 +95,6 @@ tuple<bool,int,double,double,double,double,double,double> AbuSplitter::find_best
     int n = y.size();
     criterion->init((double)n, y, weights);
     double observed_reduction = -std::numeric_limits<double>::infinity();
-    double min_score = std::numeric_limits<double>::infinity();
     double score;
     double impurity;
     double split_value;
@@ -150,24 +149,22 @@ tuple<bool,int,double,double,double,double,double,double> AbuSplitter::find_best
             nl+=1;
             nr-=1;
             //------------------------------------
-            criterion->update(y[low],weights[low]);
-
             if(lowValue == largestValue){// no unique feature values. cannot split on this feature. 
                 break;
             }
             if(hightValue-lowValue<0.00000000001){// skip if values are approx equal. not valid split
                 continue;
             }
-            if(criterion->should_skip(min_samples_leaf)){
+            if(nl< min_samples_leaf || nr < min_samples_leaf){
                 continue;
             }
+            
             u_store[num_splits] = nl*prob_delta;
             num_splits +=1;
-            score  =  ((Gl*Gl)/Hl + (Gr*Gr)/Hr - (G*G)/H)/(2*n);//criterion->get_score();
+            score  =  ((Gl*Gl)/Hl + (Gr*Gr)/Hr - (G*G)/H)/(2*n);
             any_split = true;
             if(any_split && observed_reduction<score){
-                min_score = score;
-                observed_reduction = ((Gl*Gl)/Hl + (Gr*Gr)/Hr - (G*G)/H)/(2*n);
+                observed_reduction = score;
                 split_value = middle;
                 split_feature = j;  
                 Gl_final = Gl;
@@ -234,7 +231,7 @@ tuple<bool,int,double,double,double,double,double,double> AbuSplitter::find_best
         }
     }
 
-    return tuple<bool,int,double,double,double,double,double,double>(any_split, split_feature, split_value,impurity,min_score,y_var,w_var,expected_max_S);
+    return tuple<bool,int,double,double,double,double,double,double>(any_split, split_feature, split_value,impurity,observed_reduction,y_var,w_var,expected_max_S);
 
 }
 

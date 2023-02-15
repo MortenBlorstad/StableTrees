@@ -1,4 +1,4 @@
-from stabletrees import BaseLineTree, AbuTreeI,AbuTree,SklearnTree
+from stabletrees import BaseLineTree, AbuTreeI,AbuTree,SklearnTree,NaiveUpdate,StabilityRegularization
 from sklearn.datasets import make_regression
 from sklearn.metrics import mean_squared_error, mean_poisson_deviance
 from sklearn.model_selection import train_test_split,GridSearchCV,RepeatedKFold
@@ -30,18 +30,20 @@ y = formula(X)
 import pandas as pd 
 df = pd.read_csv("C:\\Users\\mb-92\\OneDrive\\Skrivebord\\studie\\StableTrees\\StableTrees_examples\\test_data.csv")
 X = df["x"].to_numpy().reshape(-1,1)
-y = np.exp(df["y"].to_numpy())+0
+y = np.exp(df["y"].to_numpy())+0.1
 
-n = 1000
-X =np.random.uniform(size=(n,1), low = 0,high = 4)
-y = np.random.poisson(X.ravel(),size=n) +0.1 
+# n = 500
+# X =np.random.uniform(size=(n,1), low = 0,high = 4)
+# y = np.random.poisson(X.ravel(),size=n) 
 
 kf = RepeatedKFold(n_splits= 5,n_repeats=10, random_state=SEED)
 
 models = {  
-                 "baseline": BaseLineTree(),
-                "sklearn": SklearnTree(),
-                 "AbuTree" : AbuTree(),
+             "baseline": BaseLineTree(),
+            "sklearn": SklearnTree(),
+            "NaiveUpdate": NaiveUpdate(),
+             "StabilityRegularization": StabilityRegularization(),
+             "AbuTree" : AbuTree(),
                 "AbuTreeI" : AbuTreeI(), 
             }
 
@@ -61,15 +63,17 @@ orig_poisson= {name:[] for name in models.keys()}
 for train_index, test_index in kf.split(X):
     X_12, y_12 = X[train_index],y[train_index]
     X_test,y_test = X[test_index],y[test_index]
-    X1,X2,y1,y2 =  train_test_split(X_12, y_12, test_size=0.67, random_state=SEED)
+    X1,X2,y1,y2 =  train_test_split(X_12, y_12, test_size=0.5, random_state=SEED)
     clf.fit(X1,y1)
     params = clf.best_params_
     # initial model 
-    criterion = "poisson"
+    criterion = "mse"
     models = {  
                 "baseline": BaseLineTree(min_samples_leaf=5,adaptive_complexity=True),
                 "sklearn": SklearnTree(**params),
-                 "AbuTree" : AbuTree(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True),
+                "NaiveUpdate": NaiveUpdate(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True),
+                "StabilityRegularization": StabilityRegularization(adaptive_complexity=True,min_samples_leaf=5,criterion=criterion, lmbda=0.5),
+                "AbuTree" : AbuTree(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True),
                 "AbuTreeI" : AbuTreeI(criterion=criterion,min_samples_leaf=5, adaptive_complexity=True)
             }
     for name, model in models.items():

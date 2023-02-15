@@ -31,14 +31,11 @@ class Splitter{
     public:
         Splitter();
         Splitter(int min_samples_leaf, double _total_obs, bool _adaptive_complexity);
-        Splitter(int min_samples_leaf,double _total_obs, int _citerion, bool _adaptive_complexity);
         virtual tuple<bool,int,double,double,double,double,double,double>  find_best_split(const dMatrix  &X, const dVector  &y,const dVector &g,const dVector &h);
         dMatrix cir_sim;
         virtual ~Splitter();
         
     protected:
-        
-        Criterion * criterion;
         double total_obs;
         int grid_size = 101;
         dVector grid;
@@ -49,7 +46,6 @@ class Splitter{
 };
 
 Splitter::Splitter(){
-    criterion = new MSE();
     adaptive_complexity = false;
     this->min_samples_leaf = 1;
     set_seed(1);
@@ -57,32 +53,15 @@ Splitter::Splitter(){
 }
 
 Splitter::Splitter(int min_samples_leaf,double _total_obs, bool _adaptive_complexity){
-    criterion = new MSE();
     total_obs = _total_obs;
     adaptive_complexity =_adaptive_complexity;
     this->min_samples_leaf = min_samples_leaf;
     set_seed(1);
     cir_sim = cir_sim_mat(100,100);
-}
-
-Splitter::Splitter(int min_samples_leaf, double _total_obs, int _citerion, bool _adaptive_complexity){
-    if(_citerion == 0){
-        criterion = new MSE();
-    }else if(_citerion ==1){
-        criterion = new Poisson();
-    }else{
-        throw invalid_argument("Possible criterions are 'mse' and 'poisson'.");
-    }
-    set_seed(1);
-    cir_sim = cir_sim_mat(100,100);
-    total_obs = _total_obs;
-    adaptive_complexity =_adaptive_complexity;
-    this->min_samples_leaf = min_samples_leaf;
 }
 
 Splitter::~Splitter(){
     set_seed(1);
-    delete criterion;
     total_obs = NULL;
     adaptive_complexity = NULL;
     min_samples_leaf = NULL;
@@ -91,9 +70,7 @@ Splitter::~Splitter(){
 
 tuple<bool,int,double,double,double,double,double,double> Splitter::find_best_split(const dMatrix  &X, const dVector  &y, const dVector &g, const dVector &h){
     int n = y.size();
-    criterion->init((double)n,y);
     double observed_reduction = -std::numeric_limits<double>::infinity();
-    double min_score = std::numeric_limits<double>::infinity();
     double score;
     double impurity;
     double split_value;
@@ -118,11 +95,12 @@ tuple<bool,int,double,double,double,double,double,double> Splitter::find_best_sp
     dArray gum_cdf_grid(grid_size);
     double optimism = (G2 - 2.0*gxh*(G/H) + G*G*H2/(H*H)) / (H*n);
     double expected_max_S;
-    double w_var =  total_obs*(n/total_obs)*(optimism/(H));//(y.array() - y.array().mean()).square().mean()/n; //
+    double w_var = total_obs*(n/total_obs)*(optimism/(H));
     double y_var =  n * (n/total_obs) * total_obs * (optimism / H ); //(y.array() - y.array().mean()).square().mean();
     
+    
+    
     for(int j = 0; j<X.cols(); j++){
-        criterion->reset();
         int nl = 0; int nr = n;
         double Gl = 0, Gl2 = 0, Hl=0, Hl2=0, Gr=G, Gr2 = G2, Hr=H, Hr2 = H2;
         feature = X.col(j);
@@ -147,23 +125,21 @@ tuple<bool,int,double,double,double,double,double,double> Splitter::find_best_sp
             nl+=1;
             nr-=1;
             //------------------------------------
-            criterion->update(y[low]);
             if(lowValue == largestValue){// no unique feature values. cannot split on this feature. 
                 break;
             }
             if(hightValue-lowValue<0.00000000001){// skip if values are approx equal. not valid split
                 continue;
             }
-            if(criterion->should_skip(min_samples_leaf)){
+            if(nl< min_samples_leaf || nr < min_samples_leaf){
                 continue;
             }
             u_store[num_splits] = nl*prob_delta;
             num_splits +=1;
-            score  = criterion->get_score();
+            score  =  ((Gl*Gl)/Hl + (Gr*Gr)/Hr - (G*G)/H)/(2*n);
             any_split = true;
-            if(any_split && min_score>score){
-                min_score = score;
-                observed_reduction = ((Gl*Gl)/Hl + (Gr*Gr)/Hr - (G*G)/H)/(2*n);
+            if(any_split && observed_reduction<score){
+                observed_reduction = score;
                 split_value = middle;
                 split_feature = j;  
                 Gl_final = Gl;
@@ -172,7 +148,7 @@ tuple<bool,int,double,double,double,double,double,double> Splitter::find_best_sp
         }
         if(num_splits<=0){
             any_split = false;
-        }else{
+        }else if(adaptive_complexity){
             dVector u = u_store.head(num_splits);
             dArray max_cir = rmax_cir(u, cir_sim); // Input cir_sim!
             if(num_splits>1){
@@ -203,7 +179,7 @@ tuple<bool,int,double,double,double,double,double,double> Splitter::find_best_sp
 
     }
 
-    if(any_split){
+    if(any_split && adaptive_complexity){
         gum_cdf_mmcir_complement = dVector::Ones(grid_size) - gum_cdf_mmcir_grid.matrix();
         expected_max_S = simpson( gum_cdf_mmcir_complement, grid );
         double CRt = optimism * (n/total_obs)  *expected_max_S;
@@ -225,12 +201,12 @@ tuple<bool,int,double,double,double,double,double,double> Splitter::find_best_sp
         // std::cout <<"\n" << std::endl;
 
 
-        if(adaptive_complexity && any_split && n/total_obs!=1.0 && expected_reduction<0.0){
+        if(any_split && n/total_obs!=1.0 && expected_reduction<0.0){
             any_split = false;
         }
     }
 
-    return tuple<bool,int,double,double,double,double,double,double>(any_split, split_feature, split_value,impurity,min_score,y_var,w_var,expected_max_S);
+    return tuple<bool,int,double,double,double,double,double,double>(any_split, split_feature, split_value,impurity,observed_reduction,y_var,w_var,expected_max_S);
 
 }
 

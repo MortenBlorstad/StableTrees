@@ -6,6 +6,8 @@ from stabletrees.tree import BaseLineTree
 from stabletrees.tree import AbuTreeI
 from stabletrees.tree import AbuTree
 from stabletrees.tree import SklearnTree
+from stabletrees.tree import NaiveUpdate
+from stabletrees.tree import StabilityRegularization
 
 
 

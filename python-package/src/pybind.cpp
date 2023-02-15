@@ -18,6 +18,9 @@ using namespace std;
 #include "criterions\MSE.hpp"
 #include "criterions\Poisson.hpp"
 #include "optimism\cir.hpp"
+#include "trees\naiveupdate.hpp"
+#include "trees\stabilityregularization.hpp"
+
 
 
 
@@ -71,7 +74,20 @@ PYBIND11_MODULE(_stabletrees, m)
         .def("predict", &Tree::predict)
         .def("update", &Tree::update)
         .def("make_node_list", &Tree::make_node_list);
-        
+    
+     py::class_<NaiveUpdate>(m, "NaiveUpdate")
+        .def(py::init<int, int, double,int, bool>())
+            .def("learn", &NaiveUpdate::learn)
+            .def("predict", &NaiveUpdate::predict)
+            .def("update", &NaiveUpdate::update)
+            .def("get_root", &NaiveUpdate::get_root);
+
+    py::class_<StabilityRegularization>(m, "StabilityRegularization")
+         .def(py::init<double, int, int, double, int,bool>())
+            .def("learn", &StabilityRegularization::learn)
+            .def("predict", &StabilityRegularization::predict)
+            .def("update", &StabilityRegularization::update)
+            .def("get_root", &StabilityRegularization::get_root);
         
 
     py::class_<AbuTreeI>(m, "AbuTreeI")
@@ -147,7 +163,7 @@ PYBIND11_MODULE(_stabletrees, m)
 
 
     py::class_<Splitter>(m, "Splitter")
-        .def(py::init<int, double, int,bool>())
+        .def(py::init<int, double,bool>())
             .def("find_best_split", &Splitter::find_best_split);
 
 

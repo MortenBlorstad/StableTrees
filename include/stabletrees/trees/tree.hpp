@@ -150,7 +150,7 @@ tuple<iVector, iVector> Tree::get_masks(dVector &feature, double value){
 void Tree::learn(dMatrix  &X, dVector &y){
     total_obs = y.size();
     //printf("min_samples_leaf: %d \n", min_samples_leaf);
-    splitter = new Splitter(min_samples_leaf,total_obs,_criterion, adaptive_complexity);
+    splitter = new Splitter(min_samples_leaf,total_obs, adaptive_complexity);
     n1 = total_obs;
     dVector g = loss_function->dloss(y,  dVector::Zero(n1,1));
     dVector h = loss_function->ddloss(y, dVector::Zero(n1,1)); 
@@ -192,30 +192,27 @@ dVector Tree::predict(dMatrix  &X){
 
 Node* Tree::build_tree(const dMatrix  &X, const dVector &y,const dVector &g, const dVector &h, int depth){
     number_of_nodes +=1;
-    printf("%d\n",depth);
     tree_depth = max(depth,tree_depth);
     if(X.rows()<2 || y.rows()<2){
         
         return NULL;
     }
 
-   
-
     
     int n = y.size();
     double pred = y.array().mean();
-
-
-    if(all_same(y)){
-        return new Node(pred, n,1,1);
-    }
-    
     bool any_split;
     double score;
     double impurity;
     double split_value;
-    double w_var;
-    double y_var;
+    double w_var = 1;
+    double y_var = 1;
+
+    if(all_same(y)){
+        return new Node(pred, n,y_var,w_var);
+    }
+    
+    
     int split_feature;
     iVector mask_left;
     iVector mask_right;

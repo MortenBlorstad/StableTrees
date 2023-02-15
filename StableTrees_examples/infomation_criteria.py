@@ -1,5 +1,5 @@
 import numpy as np  
-from stabletrees import BaseLineTree,AbuTreeI, AbuTree
+from stabletrees import BaseLineTree,AbuTreeI, AbuTree,NaiveUpdate, StabilityRegularization
 from matplotlib import pyplot as plt
 from sklearn.metrics import mean_squared_error, mean_poisson_deviance
 import pandas as pd
@@ -68,46 +68,51 @@ if __name__ == "__main__":
     # X_test =np.random.uniform(size=(n,1), low = 0,high = 4)
     # y_test = np.random.poisson(X.ravel(),size=n)
 
-    X1,X2,y1,y2 = train_test_split(X,y,test_size=0.5,random_state=1)
+    X1,X2,y1,y2 = train_test_split(X,y,test_size=0.5,random_state=0)
     # X1 = X[0:250,:]
     # y1 = y[0:250]
     # X2 = X[250:500,:]
     # y2 = X[250:500]
-    # tree = BaseLineTree(adaptive_complexity=True,min_samples_leaf=5,criterion="poisson").fit(X1,y1)
-    # tree2 = AbuTreeI(adaptive_complexity=True,min_samples_leaf=5,criterion="poisson").fit(X1,y1)
-    # tree3 = AbuTree(adaptive_complexity=True,min_samples_leaf=5,criterion="poisson").fit(X1,y1)
-    tree = BaseLineTree(max_depth=5,min_samples_leaf=5,criterion="poisson").fit(X1,y1)
-    tree2 = AbuTreeI(max_depth=5,min_samples_leaf=5,criterion="poisson").fit(X1,y1)
-    tree3 = AbuTree(max_depth=5,min_samples_leaf=5,criterion="poisson").fit(X1,y1)
+    tree = BaseLineTree(adaptive_complexity=True,min_samples_leaf=5,criterion="poisson").fit(X1,y1)
+    #tree2 = AbuTreeI(adaptive_complexity=True,min_samples_leaf=5,criterion="poisson").fit(X1,y1)
+    tree3 = AbuTree(adaptive_complexity=True,min_samples_leaf=5,criterion="poisson").fit(X1,y1)
+    # tree = BaseLineTree(max_depth=5,min_samples_leaf=5,criterion="poisson").fit(X1,y1)
+    # tree2 = AbuTreeI(max_depth=5,min_samples_leaf=5,criterion="poisson").fit(X1,y1)
+    # tree3 = AbuTree(max_depth=5,min_samples_leaf=5,criterion="poisson").fit(X1,y1)
+    nu = StabilityRegularization(adaptive_complexity=True,min_samples_leaf=5,criterion="poisson", lmbda=0.5).fit(X1,y1)
     
+    nu.update(X,y)
+    
+
+
     print(mean_poisson_deviance(y, tree.predict(X)))
-    print(mean_poisson_deviance(y, tree2.predict(X)))
+    #print(mean_poisson_deviance(y, tree2.predict(X)))
     print(mean_poisson_deviance(y, tree3.predict(X)))
     
     print(np.sort(np.unique(tree.predict(X))))
-    print(np.sort(np.unique(tree2.predict(X))))
+    #print(np.sort(np.unique(tree2.predict(X))))
     print(np.sort(np.unique(tree3.predict(X))))
     #tree.update(X,y)
     
 
-    tree.plot()
-    plt.show()
+    # tree.plot()
+    # plt.show()
 
-    plt.subplot(1,3,1)
+    plt.subplot(1,2,1)
     ypred = tree.predict(X)
     plt.scatter(X[:,0],y, alpha = 0.1)
 
     plt.scatter(X[:,0],ypred[:],c ="red", alpha = 0.5)
 
-    plt.subplot(1,3,2)
-    ypred = tree2.predict(X)
-    plt.scatter(X[:,0],y, alpha = 0.1)
+    # plt.subplot(1,3,2)
+    # ypred = tree2.predict(X)
+    # plt.scatter(X[:,0],y, alpha = 0.1)
 
-    plt.scatter(X[:,0],ypred[:],c ="red", alpha = 0.5)
+    # plt.scatter(X[:,0],ypred[:],c ="red", alpha = 0.5)
 
 
     
-    plt.subplot(1,3,3)
+    plt.subplot(1,2,2)
     ypred = tree3.predict(X)
     plt.scatter(X[:,0],y, alpha = 0.1)
 
@@ -117,41 +122,41 @@ if __name__ == "__main__":
 
     
     
-    tree2.update(X2,y2)
+    #tree2.update(X2,y2)
     tree3.update(X2,y2)
 
-    #tree = BaseLineTree(adaptive_complexity=True,criterion="poisson").fit(X1,y1)
-    tree = BaseLineTree(max_depth=5,criterion="poisson").fit(X1,y1)
+    tree = BaseLineTree(adaptive_complexity=True,criterion="poisson").fit(X1,y1)
+    #tree = BaseLineTree(max_depth=5,criterion="poisson").fit(X1,y1)
 
-    plt.subplot(1,5,1)
+    plt.subplot(1,4,1)
     ypred = tree.predict(X)
     plt.scatter(X[:,0],y, alpha = 0.1)
     plt.scatter(X[:,0],ypred[:],c ="red", alpha = 0.5)
     plt.title("Prior tree")
-    #tree4 = BaseLineTree(adaptive_complexity=True,criterion="poisson").fit(X1,y1)
-    tree4 = BaseLineTree(max_depth=5,criterion="poisson").fit(X,y)
+    tree4 = BaseLineTree(adaptive_complexity=True,criterion="poisson").fit(X,y)
+    #tree4 = BaseLineTree(max_depth=5,criterion="poisson").fit(X,y)
     tree.update(X2,y2)
 
-    plt.subplot(1,5,2)
+    plt.subplot(1,4,2)
     ypred = tree.predict(X)
     plt.scatter(X[:,0],y, alpha = 0.1)
     plt.scatter(X[:,0],ypred[:],c ="red", alpha = 0.5)
     plt.title("Train 2 - only D2")
 
-    plt.subplot(1,5,3)
-    ypred = tree2.predict(X)
-    plt.scatter(X[:,0],y, alpha = 0.1)
+    # plt.subplot(1,4,3)
+    # ypred = tree2.predict(X)
+    # plt.scatter(X[:,0],y, alpha = 0.1)
 
-    plt.scatter(X[:,0],ypred[:],c ="red", alpha = 0.5)
-    plt.title(f"Posterior tree improved")
+    # plt.scatter(X[:,0],ypred[:],c ="red", alpha = 0.5)
+    # plt.title(f"Posterior tree improved")
 
-    plt.subplot(1,5,4)
+    plt.subplot(1,4,3)
     ypred = tree3.predict(X)
     plt.scatter(X[:,0],y, alpha = 0.1)
     plt.scatter(X[:,0],ypred[:],c ="red", alpha = 0.5)
     plt.title(f"Posterior tree")
 
-    plt.subplot(1,5,5)
+    plt.subplot(1,4,4)
     ypred = tree4.predict(X)
     plt.scatter(X[:,0],y, alpha = 0.1)
 
@@ -160,12 +165,12 @@ if __name__ == "__main__":
     plt.show()
 
     print(np.sort(np.unique(tree.predict(X))))
-    print(np.sort(np.unique(tree2.predict(X))))
+    #print(np.sort(np.unique(tree2.predict(X))))
     print(np.sort(np.unique(tree3.predict(X))))
 
 
     print(mean_poisson_deviance(y_test, tree.predict(X_test)))
-    print(mean_poisson_deviance(y_test, tree2.predict(X_test)))
+    #print(mean_poisson_deviance(y_test, tree2.predict(X_test)))
     print(mean_poisson_deviance(y_test, tree3.predict(X_test)))
     print(mean_poisson_deviance(y_test, tree4.predict(X_test)))
 

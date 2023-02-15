@@ -27,6 +27,9 @@ class LossFunction{
         dVector loss(dVector y_true,dVector y_pred );
         dVector dloss(dVector y_true,dVector y_pred );
         dVector ddloss(dVector y_true,dVector y_pred );
+        dVector loss(dVector y_true,dVector y_pred2, dVector y_pred1 , double lambda);
+        dVector dloss(dVector y_true,dVector y_pred2, dVector y_pred1 , double lambda);
+        dVector ddloss(dVector y_true,dVector y_pred2, dVector y_pred1 , double lambda);
     protected:
         int citerion;
         
@@ -98,6 +101,46 @@ dVector LossFunction::ddloss(dVector y_true,dVector y_pred  ){
 
     if(citerion ==1){
         return y_pred.array().exp(); //y_pred.array()/ y_true.array().square() ;
+    }
+        
+
+    throw exception("asdada");
+}
+
+dVector LossFunction::loss(dVector y_true,dVector y_pred2, dVector y_pred1, double lambda){
+    if(citerion ==0)
+        return (y_true.array() - y_pred2.array()).square() + lambda*(y_pred1.array() - y_pred2.array()).square();
+
+    if(citerion ==1)
+        return (y_pred2.array().exp() - y_true.array()*y_pred2.array()) + lambda*(y_pred2.array().exp() - y_pred1.array()*y_pred2.array());
+
+    throw exception("asdada");
+}
+
+dVector LossFunction::dloss(dVector y_true,dVector y_pred2, dVector y_pred1, double lambda ){
+    // printf("loss_with_reg , %f %f %f %f\n", lambda, y_true.array().sum(),y_pred2.array().sum(), y_pred1.array().sum());
+    // printf("%f %f %f\n",(y_pred2.array() - y_true.array()).sum(), (y_pred2.array()- y_pred1.array()).sum(),  ((y_pred2.array()- y_true.array())+ (y_pred2.array()- y_pred1.array())).sum());
+        
+    if(citerion ==0){
+       return (1-lambda)*2*(y_pred2.array()- y_true.array())+ lambda*2*(y_pred2.array()- y_pred1.array());
+    }
+        
+
+    if(citerion ==1){
+        return y_pred2.array().exp() - y_true.array() + lambda*(y_pred2.array().exp() - y_pred1.array());
+    }
+        
+
+    throw exception("asdada");
+}
+
+dVector LossFunction::ddloss(dVector y_true,dVector y_pred2, dVector y_pred1 , double lambda){
+    if(citerion ==0){
+        return dVector::Constant(y_true.size(),0, 2.0*(1-lambda) + 2.0*lambda ) ;
+    }
+
+    if(citerion ==1){
+        return y_pred2.array().exp() + lambda*y_pred2.array().exp(); //y_pred.array()/ y_true.array().square() ;
     }
         
 

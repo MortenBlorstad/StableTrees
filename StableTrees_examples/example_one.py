@@ -1,4 +1,4 @@
-from stabletrees import BaseLineTree, AbuTreeI,AbuTree
+from stabletrees import BaseLineTree, AbuTreeI,AbuTree,NaiveUpdate,StabilityRegularization
 from sklearn.datasets import make_regression
 from sklearn.metrics import mean_squared_error
 from sklearn.model_selection import train_test_split,GridSearchCV,RepeatedKFold
@@ -29,9 +29,9 @@ EPSILON = 1.1
 
 models = {  
             "baseline": BaseLineTree(),
-            #"NU": StableTree0(),
+            "NU": NaiveUpdate(),
             #"TR":StableTree1(delta=0.25),
-            #"SR":StableTree2(),
+            "SR":StabilityRegularization(),
             "ABU":AbuTree(),
             "ABUI":AbuTreeI()
             }
@@ -51,7 +51,7 @@ for ds,target, feature in zip(datasets,targets, features):
         cat_data = pd.get_dummies(data.select_dtypes("object"), prefix=None, prefix_sep="_", dummy_na=False, columns=None, sparse=False, drop_first=False, dtype=None)
         data = pd.concat([data.select_dtypes(['int','float']),cat_data],axis=1)
     data = datapreprocess.data_preperation(ds)
-    print(data.corr())
+    #print(data.corr())
     
     y = data[target].to_numpy()
     X = data.drop(target, axis=1).to_numpy()
@@ -79,9 +79,9 @@ for ds,target, feature in zip(datasets,targets, features):
         criterion = "mse"
         models = {  
                  "baseline": BaseLineTree(criterion = criterion, adaptive_complexity=True),
-                 #"NU": StableTree0(criterion = criterion, adaptive_complexity=True),
+                 "NU": NaiveUpdate(criterion = criterion, adaptive_complexity=True),
                  #"TR":StableTree1(criterion = criterion, adaptive_complexity=True, delta=0.1),
-                #"SR":StableTree2(criterion = criterion, adaptive_complexity=True,lmda=0),
+                "SR":StabilityRegularization(criterion = criterion, adaptive_complexity=True,lmbda=0.75),
                  "ABU":AbuTree(criterion = criterion, adaptive_complexity=True),
                 "ABUI":AbuTreeI(criterion = criterion, adaptive_complexity=True)
                 
