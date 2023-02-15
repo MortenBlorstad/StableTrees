@@ -192,7 +192,7 @@ dVector Tree::predict(dMatrix  &X){
 
 Node* Tree::build_tree(const dMatrix  &X, const dVector &y,const dVector &g, const dVector &h, int depth){
     number_of_nodes +=1;
-
+    printf("%d\n",depth);
     tree_depth = max(depth,tree_depth);
     if(X.rows()<2 || y.rows()<2){
         

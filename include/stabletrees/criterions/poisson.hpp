@@ -105,6 +105,8 @@ class PoissonABU : public Poisson{
         double y_sum_squared;
         double n1;
         double n2;
+        double n2_l;
+        double n2_r;
         iVector get_y2_mask(const dVector &y, const dVector &weight);
         double sum_y2;
         double sum_y2_l;
@@ -129,13 +131,13 @@ iVector PoissonABU::get_y2_mask(const dVector &y, const dVector &weight){
 
 void PoissonABU::init(double _n, const dVector &y, const dVector &weights){
     Poisson::init(_n,y);
-    sum_wxy = (y.array().log()*weights.array()).sum();
+    sum_wxy = ((y.array()+eps).log()*weights.array()).sum();
     sum_wxy_l = 0;
     sum_wxy_r = sum_wxy;
 
-    iVector y1_mask = get_y2_mask(y, weights);
+    iVector y2_mask = get_y2_mask(y, weights);
 
-    sum_y2 = y(y1_mask).array().sum();
+    sum_y2 = y(y2_mask).array().sum();
     sum_y2_l = 0;
     sum_y2_r = sum_y2;
 
@@ -143,7 +145,11 @@ void PoissonABU::init(double _n, const dVector &y, const dVector &weights){
     sum_w_l = 0;
     sum_w_r = sum_w;
 
-    y_sum_squared = (y.array().log().square()*weights.array()).sum();
+    n2 = y2_mask.size();
+    n2_l = 0;
+    n2_r = n2;
+
+    y_sum_squared = ((y.array()+eps).log().square()*weights.array()).sum();
 }
 
 
@@ -155,6 +161,8 @@ void PoissonABU::reset(){
     sum_w_r = sum_w;
     n1 = 0;
     n2 = 0;
+    n2_l = 0;
+    n2_l = n2;
     sum_y2_l = 0;
     sum_y2_r = sum_y2;
 
@@ -165,29 +173,37 @@ void PoissonABU::update(double y_i,double w_i){
     
     
     if(w_i==0){
-        n2+=1;
+        n2_l+=1;
+        n2_r-=1;
         sum_y2_l += y_i;
         sum_y2_r -= y_i;
     }
-    double y_bar_l = log(sum_y2_l/n_l);
-    double y_bar_r = log(sum_y2_r/n_r);    
+    double y_bar_l = log((sum_y2_l+eps)/n2_l);
+    double y_bar_r = log((sum_y2_r+eps)/n2_r);    
 
     double sum_ylogpred_l = sum_y2_l*y_bar_l;
     double sum_ylogpred_r = sum_y2_r*y_bar_r;
-    score =  (exp(y_bar_l)+ exp(y_bar_r) - sum_ylogpred_l  - sum_ylogpred_r);
+    score =  (sum_y2_l+ sum_y2_r - sum_ylogpred_l  - sum_ylogpred_r);
 
-    if(w_i!=0)
+    if(w_i!=0){
         n1+=1;
-    sum_wxy_l+= log(y_i)*w_i;
-    sum_wxy_r-=log(y_i)*w_i;
-    sum_w_l += w_i;
-    sum_w_r -= w_i;
-
+        sum_wxy_l+= log(y_i+eps)*w_i;
+        sum_wxy_r-=log(y_i+eps)*w_i;
+        sum_w_l += w_i;
+        sum_w_r -= w_i;
+    }
+        
     double SSE_L =( pow(y_bar_l,2.0) )*sum_w_l;
     double SSE_R =( pow(y_bar_r,2.0) )*sum_w_r;
 
     double reg = (y_sum_squared -2*sum_wxy_l*y_bar_l -2*sum_wxy_r*y_bar_r  + SSE_L + SSE_R);
-    score= (score + reg)/n;
+    // std::cout << "ybar_l: " <<  (sum_y2_l+eps)/n2_l<< std::endl;
+    // std::cout << "sum_ylogpred_l: " <<  sum_ylogpred_l<< std::endl;
+    // std::cout << "n2_l: " <<  n2_l<< std::endl;
+    // std::cout << "sum_ylogpred_r: " <<  sum_ylogpred_r<< std::endl;
+    // std::cout << "score: " <<  score<< std::endl;
+    // std::cout << "reg: " <<  reg<< std::endl;
+    // score= (score + reg) /n;
     // std::cout << "score: " <<  score<< std::endl;
     // std::cout << "y_sum_squared: " <<  y_sum_squared<< std::endl;
     //  std::cout << "sum_y2:  " <<  sum_y2 << std::endl;

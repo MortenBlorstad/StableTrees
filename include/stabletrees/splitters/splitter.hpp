@@ -159,7 +159,7 @@ tuple<bool,int,double,double,double,double,double,double> Splitter::find_best_sp
             }
             u_store[num_splits] = nl*prob_delta;
             num_splits +=1;
-            score  =criterion->get_score();
+            score  = criterion->get_score();
             any_split = true;
             if(any_split && min_score>score){
                 min_score = score;
