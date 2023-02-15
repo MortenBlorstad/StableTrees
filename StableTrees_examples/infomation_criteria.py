@@ -60,21 +60,22 @@ if __name__ == "__main__":
     # X = np.random.uniform(size=(n,1))
     # y = np.random.poisson(lam=X.ravel(),size = n) +1
 
-    n = 1000
+    n = 10000
     X =np.random.uniform(size=(n,1), low = 0,high = 4)
     y = np.random.poisson(X.ravel(),size=n) #np.exp(X.ravel()+  np.random.normal(0, 0.5, size=n)) 
     # print(2*(y.mean() - y).sum())
     #for i in range(100):
     X_test =np.random.uniform(size=(n,1), low = 0,high = 4)
     y_test = np.random.poisson(X.ravel(),size=n)
-    X1,X2,y1,y2 = train_test_split(X,y,test_size=0.5,random_state=0)
+
+    X1,X2,y1,y2 = train_test_split(X,y,test_size=0.5,random_state=1)
     # X1 = X[0:250,:]
     # y1 = y[0:250]
     # X2 = X[250:500,:]
     # y2 = X[250:500]
-    tree = BaseLineTree(adaptive_complexity=True,min_samples_leaf=10,criterion="poisson").fit(X1,y1)
-    tree2 = AbuTreeI(adaptive_complexity=True,min_samples_leaf=10,criterion="poisson").fit(X1,y1)
-    tree3 = AbuTree(adaptive_complexity=True,min_samples_leaf=10,criterion="poisson").fit(X1,y1)
+    tree = BaseLineTree(adaptive_complexity=True,min_samples_leaf=5,criterion="poisson").fit(X1,y1)
+    tree2 = AbuTreeI(adaptive_complexity=True,min_samples_leaf=5,criterion="poisson").fit(X1,y1)
+    tree3 = AbuTree(adaptive_complexity=True,min_samples_leaf=5,criterion="poisson").fit(X1,y1)
     
     print(mean_poisson_deviance(y, tree.predict(X)))
     print(mean_poisson_deviance(y, tree2.predict(X)))
@@ -109,35 +110,47 @@ if __name__ == "__main__":
     plt.show()
 
 
-    tree4 = BaseLineTree(adaptive_complexity=True,criterion="poisson").fit(X,y)
-    tree.update(X2,y2)
+    
+    
     tree2.update(X2,y2)
     tree3.update(X2,y2)
 
+    tree = BaseLineTree(adaptive_complexity=True,criterion="poisson").fit(X1,y1)
 
-    plt.subplot(1,4,1)
+    plt.subplot(1,5,1)
     ypred = tree.predict(X)
     plt.scatter(X[:,0],y, alpha = 0.1)
-
     plt.scatter(X[:,0],ypred[:],c ="red", alpha = 0.5)
+    plt.title("Prior tree")
+    
+    tree4 = BaseLineTree(adaptive_complexity=True,criterion="poisson").fit(X,y)
+    tree.update(X2,y2)
 
-    plt.subplot(1,4,2)
+    plt.subplot(1,5,2)
+    ypred = tree.predict(X)
+    plt.scatter(X[:,0],y, alpha = 0.1)
+    plt.scatter(X[:,0],ypred[:],c ="red", alpha = 0.5)
+    plt.title("Train 2 - only D2")
+
+    plt.subplot(1,5,3)
     ypred = tree2.predict(X)
     plt.scatter(X[:,0],y, alpha = 0.1)
 
     plt.scatter(X[:,0],ypred[:],c ="red", alpha = 0.5)
+    plt.title(f"Posterior tree improved")
 
-
-    plt.subplot(1,4,3)
+    plt.subplot(1,5,4)
     ypred = tree3.predict(X)
     plt.scatter(X[:,0],y, alpha = 0.1)
-
     plt.scatter(X[:,0],ypred[:],c ="red", alpha = 0.5)
-    plt.subplot(1,4,4)
+    plt.title(f"Posterior tree")
+
+    plt.subplot(1,5,5)
     ypred = tree4.predict(X)
     plt.scatter(X[:,0],y, alpha = 0.1)
 
     plt.scatter(X[:,0],ypred[:],c ="red", alpha = 0.5)
+    plt.title("Train 2 - D1 & D2")
     plt.show()
 
     print(np.sort(np.unique(tree.predict(X))))
@@ -205,14 +218,15 @@ if __name__ == "__main__":
     # print(mean_squared_error(y,ypred))
     
     # plt.show()
-    # criterion = "mse"
-    # tree = AbuTreeI(criterion=criterion).fit(X1,y1)
+    # criterion = "poisson"
+    # tree = AbuTreeI(criterion=criterion,adaptive_complexity=True).fit(X1,y1)
     # ypred = tree.predict(X1)
     # plt.subplot(1,4,1)
     # plt.scatter(X1,y1)
     # plt.scatter(X1,ypred,c ="red")
     # plt.xlabel("X1")
     # plt.ylabel("y1")
+    # #plt.ylim(top = 400)
     # plt.title("Prior tree")
 
     # ypred = tree.predict(X1)
@@ -220,7 +234,7 @@ if __name__ == "__main__":
     
     
   
-    # t = AbuTreeI(criterion=criterion).fit(X2,y2)
+    # t = AbuTreeI(criterion=criterion,adaptive_complexity=True).fit(X2,y2)
     # ypred = t.predict(X2)
     # plt.subplot(1,4,2)
     # plt.scatter(X2,y2)
@@ -250,7 +264,7 @@ if __name__ == "__main__":
     
     
 
-    # t = AbuTreeI(criterion=criterion).fit(X,y)
+    # t = AbuTreeI(criterion=criterion,adaptive_complexity=True).fit(X,y)
     # ypred = t.predict(X)
     # print(mean_squared_error(y,ypred))
     # plt.subplot(1,4,4)

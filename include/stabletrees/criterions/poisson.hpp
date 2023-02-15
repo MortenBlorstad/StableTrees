@@ -40,9 +40,9 @@ double Poisson::get_score(){
 
 void Poisson::init(double _n, const dVector &y){
     Criterion::init(_n,y);
-    sum_ylogy_l = 0;
-    sum_ylogy = (y.array()*log(y.array()+ eps)).sum();
-    sum_ylogy_r = sum_ylogy;
+    // sum_ylogy_l = 0;
+    // sum_ylogy = (y.array()*log(y.array()+ eps)).sum();
+    // sum_ylogy_r = sum_ylogy;
 
     node_score = node_impurity(y);
     score = 0;
@@ -73,9 +73,9 @@ void Poisson::update(double y_i){
     double y_bar_l = sum_y_l/n_l;
     double y_bar_r = sum_y_r/n_r;
 
-    double sum_ylogpred_l = sum_y_l*log(y_bar_l+eps);
-    double sum_ylogpred_r = sum_y_r*log(y_bar_r+eps);
-    score =  (- sum_ylogpred_l  - sum_ylogpred_r)/n;
+    double sum_ylogpred_l = sum_y_l*log(y_bar_l);
+    double sum_ylogpred_r = sum_y_r*log(y_bar_r);
+    score =  (y_bar_l + y_bar_r - sum_ylogpred_l  - sum_ylogpred_r)/n;
     
 }
 
@@ -105,7 +105,7 @@ class PoissonABU : public Poisson{
         double y_sum_squared;
         double n1;
         double n2;
-        iVector get_y1_mask(const dVector &y, const dVector &weight);
+        iVector get_y2_mask(const dVector &y, const dVector &weight);
         double sum_y2;
         double sum_y2_l;
         double sum_y2_r;
@@ -117,7 +117,7 @@ PoissonABU::~PoissonABU(){
     Poisson::~Poisson();
 }
 
-iVector PoissonABU::get_y1_mask(const dVector &y, const dVector &weight){
+iVector PoissonABU::get_y2_mask(const dVector &y, const dVector &weight){
     std::vector<int> mask;
     for(int i=0; i<y.rows();i++){
         if(weight[i]<=0)
@@ -129,11 +129,11 @@ iVector PoissonABU::get_y1_mask(const dVector &y, const dVector &weight){
 
 void PoissonABU::init(double _n, const dVector &y, const dVector &weights){
     Poisson::init(_n,y);
-    sum_wxy = (y.array()*weights.array()).sum();
+    sum_wxy = (y.array().log()*weights.array()).sum();
     sum_wxy_l = 0;
     sum_wxy_r = sum_wxy;
 
-    iVector y1_mask = get_y1_mask(y, weights);
+    iVector y1_mask = get_y2_mask(y, weights);
 
     sum_y2 = y(y1_mask).array().sum();
     sum_y2_l = 0;
@@ -143,7 +143,7 @@ void PoissonABU::init(double _n, const dVector &y, const dVector &weights){
     sum_w_l = 0;
     sum_w_r = sum_w;
 
-    y_sum_squared = (y.array().square()*weights.array()).sum();
+    y_sum_squared = (y.array().log().square()*weights.array()).sum();
 }
 
 
@@ -162,23 +162,24 @@ void PoissonABU::reset(){
 
 void PoissonABU::update(double y_i,double w_i){
     Criterion::update(y_i);
-    double y_bar_l = sum_y_l/n_l;
-    double y_bar_r = sum_y_r/n_r;
+    
     
     if(w_i==0){
         n2+=1;
         sum_y2_l += y_i;
         sum_y2_r -= y_i;
     }
-        
-    double sum_ylogpred_l = sum_y2_l*log(y_bar_l);
-    double sum_ylogpred_r = sum_y2_r*log(y_bar_r);
-    score =  (- sum_ylogpred_l  - sum_ylogpred_r);
+    double y_bar_l = log(sum_y2_l/n_l);
+    double y_bar_r = log(sum_y2_r/n_r);    
+
+    double sum_ylogpred_l = sum_y2_l*y_bar_l;
+    double sum_ylogpred_r = sum_y2_r*y_bar_r;
+    score =  (exp(y_bar_l)+ exp(y_bar_r) - sum_ylogpred_l  - sum_ylogpred_r);
 
     if(w_i!=0)
         n1+=1;
-    sum_wxy_l+= y_i*w_i;
-    sum_wxy_r-=y_i*w_i;
+    sum_wxy_l+= log(y_i)*w_i;
+    sum_wxy_r-=log(y_i)*w_i;
     sum_w_l += w_i;
     sum_w_r -= w_i;
 

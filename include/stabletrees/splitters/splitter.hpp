@@ -118,7 +118,7 @@ tuple<bool,int,double,double,double,double,double,double> Splitter::find_best_sp
     dArray gum_cdf_grid(grid_size);
     double optimism = (G2 - 2.0*gxh*(G/H) + G*G*H2/(H*H)) / (H*n);
     double expected_max_S;
-    double w_var = total_obs*(n/total_obs)*(optimism/(H));
+    double w_var =  total_obs*(n/total_obs)*(optimism/(H));//(y.array() - y.array().mean()).square().mean()/n; //
     double y_var =  n * (n/total_obs) * total_obs * (optimism / H ); //(y.array() - y.array().mean()).square().mean();
     
     for(int j = 0; j<X.cols(); j++){

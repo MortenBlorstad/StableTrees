@@ -88,7 +88,13 @@ void AbuTreeI::update(dMatrix &X, dVector &y){
     dVector g_concat(g.rows() + gb.rows(), 1); 
     dVector h_concat(h.rows() + hb.rows(), 1); 
     dVector weights(h.rows() + hb.rows(),1);
-    dVector non_b_weights = dVector::Ones(h.rows(),1);
+    dVector non_b_weights;
+    if(_criterion == 0){
+        non_b_weights = dVector::Ones(h.rows(),1);
+    }else if(_criterion == 1){
+        non_b_weights = dVector::Zero(h.rows(),1);
+    }
+    
     
     
     g_concat <<g,gb ;

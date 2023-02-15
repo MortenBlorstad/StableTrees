@@ -32,7 +32,7 @@ df = pd.read_csv("C:\\Users\\mb-92\\OneDrive\\Skrivebord\\studie\\StableTrees\\S
 X = df["x"].to_numpy().reshape(-1,1)
 y = np.exp(df["y"].to_numpy())+0
 
-n = 500
+n = 1000
 X =np.random.uniform(size=(n,1), low = 0,high = 4)
 y = np.random.poisson(X.ravel(),size=n) +0.1 
 
@@ -61,7 +61,7 @@ orig_poisson= {name:[] for name in models.keys()}
 for train_index, test_index in kf.split(X):
     X_12, y_12 = X[train_index],y[train_index]
     X_test,y_test = X[test_index],y[test_index]
-    X1,X2,y1,y2 =  train_test_split(X_12, y_12, test_size=0.3, random_state=SEED)
+    X1,X2,y1,y2 =  train_test_split(X_12, y_12, test_size=0.67, random_state=SEED)
     clf.fit(X1,y1)
     params = clf.best_params_
     # initial model 
@@ -76,18 +76,18 @@ for train_index, test_index in kf.split(X):
         model.fit(X1,y1)
 
         pred1 = model.predict(X_test)
-        pred1_train = model.predict(X2)
+        pred1_train = model.predict(X_12)
         pred1_orig= model.predict(X1)
-        model.update(X2,y2)
+        model.update(X_12,y_12)
         pred2 = model.predict(X_test)
         pred2_orig= model.predict(X1)
-        pred2_train =  model.predict(X2)
+        pred2_train =  model.predict(X_12)
 
         orig_poisson[name].append(mean_poisson_deviance(pred2_orig,y1))
         orig_stability[name].append(S1(pred1_orig,pred2_orig))
         orig_standard_stability[name].append(S2(pred1_orig,pred2_orig))
 
-        train_poisson[name].append(mean_poisson_deviance(pred2_train,y2))
+        train_poisson[name].append(mean_poisson_deviance(pred2_train,y_12))
         train_stability[name].append(S1(pred1_train,pred2_train))
         train_standard_stability[name].append(S2(pred1_train,pred2_train))
         poisson[name].append(mean_poisson_deviance(y_test,pred2))

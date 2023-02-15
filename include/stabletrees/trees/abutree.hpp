@@ -82,7 +82,7 @@ Node* AbuTree::build_tree(dMatrix  &X, dVector &y,dVector g, dVector h, int dept
     double prob_delta = 1.0/n;
     dArray gum_cdf_grid(grid_size);
     double optimism = (G2 - 2.0*gxh*(G/H) + G*G*H2/(H*H)) / (H*n);
-    w_var = total_obs*(n/total_obs)*(optimism/(H));
+    w_var = total_obs*(n/total_obs)*(optimism/(H));//(y.array() - y.array().mean()).square().mean()/n;
     y_var =  n * (n/total_obs) * total_obs * (optimism / H ); //(y.array() - y.array().mean()).square().mean();
 
     if(all_same(y)){
@@ -321,6 +321,7 @@ void AbuTree::learn(dMatrix  &X, dVector &y){
 
 void AbuTree::update(dMatrix &X, dVector &y){
     set_seed(1);
+
     cir_sim = cir_sim_mat(100,100);
     dMatrix Xb = sample_X(X,n1);
     dMatrix info = predict_info(Xb);
