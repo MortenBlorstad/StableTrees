@@ -70,7 +70,7 @@ double LossFunction::inverse_link_function(double y_pred_transformed ){
 }
 
 
-dVector LossFunction::loss(dVector y_true,dVector y_pred  ){
+dVector LossFunction::loss(dVector y_true, dVector y_pred  ){
     if(citerion ==0)
         return (y_true.array() - y_pred.array()).square();
 

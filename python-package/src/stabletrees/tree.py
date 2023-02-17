@@ -4,6 +4,8 @@ from _stabletrees import AbuTree as atree
 from _stabletrees import AbuTreeI as atreeI
 from _stabletrees import NaiveUpdate as NuTree
 from _stabletrees import StabilityRegularization as SrTree
+from _stabletrees import TreeReevaluation as TrTree
+
 
 from abc import ABCMeta
 from abc import abstractmethod
@@ -209,14 +211,24 @@ class TreeReevaluation(BaseRegressionTree):
 
     """
     
-    def __init__(self, *,criterion = "mse", max_depth = None, min_samples_split = 2,min_samples_leaf:int = 5, adaptive_complexity : bool = False, random_state = None):
+    def __init__(self, *,criterion = "mse", max_depth = None, min_samples_split = 2,min_samples_leaf:int = 5, adaptive_complexity : bool = False,
+                  random_state = None,delta : float=0.1):
         self.root = None
         super().__init__(criterion,max_depth, min_samples_split,min_samples_leaf,adaptive_complexity)
-        self.tree = NuTree(criterions[self.criterion], self.max_depth, self.min_samples_split,self.min_samples_leaf,adaptive_complexity)
+        self.tree = TrTree(criterions[self.criterion], self.max_depth, self.min_samples_split,self.min_samples_leaf,adaptive_complexity)
+        self.delta = delta
+    
+    def fit(self,X : np.ndarray ,y : np.ndarray): 
+        X,y = self.check_input(X,y)
+        #y = (y - np.min(y))/(np.max(y)-np.min(y))
+        self.tree.learn(X,y)
+        self.root = self.tree.get_root()
+        return self
     
     def update(self, X,y):
         X,y = self.check_input(X,y)
-        self.tree.update(X,y)
+        #y = (y - np.min(y))/(np.max(y)-np.min(y))
+        self.tree.update(X,y, self.delta)
         self.root = self.tree.get_root()
         return self  
     

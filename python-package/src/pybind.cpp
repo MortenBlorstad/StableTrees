@@ -20,6 +20,7 @@ using namespace std;
 #include "optimism\cir.hpp"
 #include "trees\naiveupdate.hpp"
 #include "trees\stabilityregularization.hpp"
+#include "trees\treereevaluation.hpp"
 
 
 
@@ -81,6 +82,18 @@ PYBIND11_MODULE(_stabletrees, m)
             .def("predict", &NaiveUpdate::predict)
             .def("update", &NaiveUpdate::update)
             .def("get_root", &NaiveUpdate::get_root);
+        
+    py::class_<TreeReevaluation>(m, "TreeReevaluation")
+        .def(py::init<int, int, double,int, bool>())
+            .def("learn", &TreeReevaluation::learn)
+            .def("predict", &TreeReevaluation::predict)
+            .def("update", &TreeReevaluation::update)
+            .def("get_root", &TreeReevaluation::get_root)
+            .def("get_mse_ratio", &TreeReevaluation::get_mse_ratio)
+            .def("get_eps", &TreeReevaluation::get_eps)
+            .def("get_obs", &TreeReevaluation::get_obs);
+
+
 
     py::class_<StabilityRegularization>(m, "StabilityRegularization")
          .def(py::init<double, int, int, double, int,bool>())
@@ -164,7 +177,8 @@ PYBIND11_MODULE(_stabletrees, m)
 
     py::class_<Splitter>(m, "Splitter")
         .def(py::init<int, double,bool>())
-            .def("find_best_split", &Splitter::find_best_split);
+            .def("find_best_split", &Splitter::find_best_split)
+            .def("get_reduction", &Splitter::get_reduction);
 
 
 

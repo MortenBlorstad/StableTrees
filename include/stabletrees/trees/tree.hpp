@@ -41,7 +41,7 @@ class Tree{
         double predict_obs(dVector  &obs);
         dVector predict(dMatrix  &X);
         virtual void update(dMatrix &X, dVector &y);
-        virtual tuple<bool,int,double, double,double,double,double,double> find_split(const dMatrix &X, const dVector &y, const dVector &g, const dVector &h);
+        virtual tuple<bool,int,double, double,double,double,double> find_split(const dMatrix &X, const dVector &y, const dVector &g, const dVector &h);
         Node* update_tree_info(dMatrix &X, dVector &y, Node* node, int depth);
         //~Tree();
         std::vector<Node*> make_node_list();
@@ -100,7 +100,7 @@ Tree::Tree(int _criterion, int max_depth, double min_split_sample,int min_sample
 
 } 
 
-tuple<bool,int,double, double,double,double,double,double>  Tree::find_split(const dMatrix &X, const dVector &y, const dVector &g, const dVector &h){
+tuple<bool,int,double, double,double,double,double>  Tree::find_split(const dMatrix &X, const dVector &y, const dVector &g, const dVector &h){
     return splitter->find_best_split(X, y, g, h);
 }
 
@@ -203,7 +203,7 @@ Node* Tree::build_tree(const dMatrix  &X, const dVector &y,const dVector &g, con
     double pred = y.array().mean();
     bool any_split;
     double score;
-    double impurity;
+    
     double split_value;
     double w_var = 1;
     double y_var = 1;
@@ -217,8 +217,7 @@ Node* Tree::build_tree(const dMatrix  &X, const dVector &y,const dVector &g, con
     iVector mask_left;
     iVector mask_right;
     double expected_max_S;
-    tie(any_split, split_feature, split_value,impurity, score, y_var ,w_var,expected_max_S)  = find_split(X,y, g,h);
-    
+    tie(any_split, split_feature, split_value, score, y_var ,w_var,expected_max_S)  = find_split(X,y, g,h);
     
     if(depth>=this->max_depth){
         return new Node(pred, n, y_var,w_var);
@@ -231,6 +230,7 @@ Node* Tree::build_tree(const dMatrix  &X, const dVector &y,const dVector &g, con
     }
 
     if(score == std::numeric_limits<double>::infinity()){
+        printf("X.size %d y.size %d, reduction %f, expected_max_S %f, min_samples_leaf = %d \n", X.rows(), y.rows(),score,expected_max_S, min_samples_leaf);
         cout<<"\n Two Dimensional Array is : \n";
         for(int r=0; r<X.rows(); r++)
         {
@@ -252,8 +252,6 @@ Node* Tree::build_tree(const dMatrix  &X, const dVector &y,const dVector &g, con
     dVector feature = X.col(split_feature);
 
     tie(mask_left, mask_right) = get_masks(feature, split_value);
-
-    Node* node = new Node(split_value, impurity, score, split_feature, y.rows() , pred, y_var, w_var);
     
     iVector keep_cols = iVector::LinSpaced(X.cols(), 0, X.cols()-1).array();
     
@@ -261,6 +259,15 @@ Node* Tree::build_tree(const dMatrix  &X, const dVector &y,const dVector &g, con
     dMatrix X_right = X(mask_right,keep_cols); dVector y_right = y(mask_right,1);
     dVector g_left = g(mask_left,1); dVector h_left = h(mask_left,1);
     dVector g_right = g(mask_right,1); dVector h_right = h(mask_right,1);
+    
+    double loss_parent = (y.array() - pred).square().sum();
+    // dVector pred_left = dVector::Constant(y_left.size(),0,loss_function->link_function(y_left.array().mean()));
+    // dVector pred_right = dVector::Constant(y_right.size(),0,loss_function->link_function(y_right.array().mean()));
+    // double loss_left = (y_left.array() - y_left.array().mean()).square().sum();
+    // double loss_right = (y_right.array() - y_right.array().mean()).square().sum();
+    // printf("score comparison: %f, %f \n", score, (loss_parent - (loss_left+loss_right))/n);
+    
+    Node* node = new Node(split_value, loss_parent/n, score, split_feature, y.rows() , pred, y_var, w_var);
     
     node->left_child = build_tree( X_left, y_left, g_left,h_left, depth+1);
     if(node->left_child!=NULL){

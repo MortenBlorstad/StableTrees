@@ -31,9 +31,11 @@ class Splitter{
     public:
         Splitter();
         Splitter(int min_samples_leaf, double _total_obs, bool _adaptive_complexity);
-        virtual tuple<bool,int,double,double,double,double,double,double>  find_best_split(const dMatrix  &X, const dVector  &y,const dVector &g,const dVector &h);
+        virtual tuple<bool,int,double,double,double,double,double>  find_best_split(const dMatrix  &X, const dVector  &y,const dVector &g,const dVector &h);
         dMatrix cir_sim;
         virtual ~Splitter();
+        double get_reduction(const dVector &g,const dVector &h, iVector mask_left);
+        
         
     protected:
         double total_obs;
@@ -52,6 +54,11 @@ Splitter::Splitter(){
     cir_sim = cir_sim_mat(100,100);
 }
 
+
+
+
+
+
 Splitter::Splitter(int min_samples_leaf,double _total_obs, bool _adaptive_complexity){
     total_obs = _total_obs;
     adaptive_complexity =_adaptive_complexity;
@@ -68,11 +75,19 @@ Splitter::~Splitter(){
     grid_size = NULL;
 }
 
-tuple<bool,int,double,double,double,double,double,double> Splitter::find_best_split(const dMatrix  &X, const dVector  &y, const dVector &g, const dVector &h){
+double Splitter::get_reduction(const dVector &g,const dVector &h, iVector mask_left){
+    double G=g.array().sum(), H=h.array().sum();
+    double Gl=g(mask_left).array().sum(), Hl=h(mask_left).array().sum();
+    double Gr = G - Gl, Hr = H - Hl;
+    double n = g.size();
+    double reduction= ((Gl*Gl)/Hl + (Gr*Gr)/Hr - (G*G)/H)/(2*n);
+    return reduction;
+}
+
+tuple<bool,int,double,double,double,double,double> Splitter::find_best_split(const dMatrix  &X, const dVector  &y, const dVector &g, const dVector &h){
     int n = y.size();
     double observed_reduction = -std::numeric_limits<double>::infinity();
     double score;
-    double impurity;
     double split_value;
     int split_feature;
     bool any_split = false;
@@ -206,7 +221,7 @@ tuple<bool,int,double,double,double,double,double,double> Splitter::find_best_sp
         }
     }
 
-    return tuple<bool,int,double,double,double,double,double,double>(any_split, split_feature, split_value,impurity,observed_reduction,y_var,w_var,expected_max_S);
+    return tuple<bool,int,double,double,double,double,double>(any_split, split_feature, split_value,observed_reduction,y_var,w_var,expected_max_S);
 
 }
 
