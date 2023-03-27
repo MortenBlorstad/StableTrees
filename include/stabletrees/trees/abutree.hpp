@@ -5,7 +5,7 @@
 
 class AbuTree: public Tree{
     public:
-        AbuTree(int _criterion,int max_depth, double min_split_sample,int min_samples_leaf, bool adaptive_complexity);
+        AbuTree(int _criterion,int max_depth, double min_split_sample,int min_samples_leaf, bool adaptive_complexity, int max_features,double learning_rate, unsigned int random_state);
         AbuTree();
         virtual void update(dMatrix &X, dVector &y);
         dMatrix predict_info(dMatrix &X);
@@ -30,8 +30,8 @@ AbuTree::AbuTree():Tree(){
     
 }
 
-AbuTree::AbuTree(int _criterion,int max_depth, double min_split_sample,int min_samples_leaf, bool adaptive_complexity):Tree(_criterion, max_depth,  min_split_sample,min_samples_leaf,adaptive_complexity){
-    Tree(_criterion, max_depth, min_split_sample,min_samples_leaf, adaptive_complexity);
+AbuTree::AbuTree(int _criterion,int max_depth, double min_split_sample,int min_samples_leaf, bool adaptive_complexity, int max_features,double learning_rate, unsigned int random_state):Tree(_criterion, max_depth, min_split_sample,min_samples_leaf,adaptive_complexity,max_features,learning_rate,random_state){
+    Tree(_criterion, max_depth, min_split_sample,min_samples_leaf, adaptive_complexity,max_features,learning_rate,random_state);
     loss_function = new LossFunction(_criterion);
 }
 

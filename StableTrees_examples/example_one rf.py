@@ -1,4 +1,4 @@
-from stabletrees import BaseLineTree, AbuTreeI,AbuTree,NaiveUpdate,TreeReevaluation,StabilityRegularization,BootstrapUpdate,SklearnTree
+from stabletrees.random_forest import RF
 from sklearn.datasets import make_regression
 from sklearn.metrics import mean_squared_error
 from sklearn.model_selection import train_test_split,GridSearchCV,RepeatedKFold
@@ -6,8 +6,7 @@ from sklearn.tree import DecisionTreeRegressor
 import numpy as np
 import pandas as pd
 import datapreprocess
-from sklearn.linear_model import LinearRegression
-from matplotlib import pyplot as plt
+from sklearn.linear_model import TweedieRegressor
 
 SEED = 0
 EPSILON = 1.1
@@ -16,7 +15,7 @@ def S1(pred1, pred2):
     return np.std(np.log((pred2+EPSILON)/(pred1+EPSILON)))#np.mean((pred1- pred2)**2)#
 
 def S2(pred1, pred2):
-    return np.mean((pred1- pred2)**2)
+    return np.mean(abs(pred1- pred2))
 
 parameters = {'max_depth':[None, 5, 10],"min_samples_leaf": [5]} # , 
 clf = GridSearchCV(DecisionTreeRegressor(random_state=0), parameters)
@@ -29,15 +28,12 @@ SEED = 0
 EPSILON = 1.1
 
 models = {  
-            "baseline": BaseLineTree(),
-            "GLM": LinearRegression(),
-            "sklearn": SklearnTree(),
-            "NU": NaiveUpdate(),
-            "TR":TreeReevaluation(delta=0.1),
-            "SR":StabilityRegularization(),
-            "iABU": BootstrapUpdate(),
-            "ABU":AbuTreeI()
-            }
+                        "baseline": RF(),
+                        "NU": RF(),
+                        "TR": RF(),
+                        "SR": RF(),
+                        "ABU": RF()
+                }
 stability_all = {name:[] for name in models.keys()}
 standard_stability_all= {name:[] for name in models.keys()}
 mse_all= {name:[] for name in models.keys()}
@@ -81,33 +77,24 @@ for ds,target, feature in zip(datasets,targets, features):
         # initial model 
         criterion = "mse"
         models = {  
-                "baseline": BaseLineTree(criterion = criterion,min_samples_leaf=5, adaptive_complexity=True),
-                #"GLM": LinearRegression(),
-                #"sklearn": SklearnTree(criterion = criterion,min_samples_leaf=5, max_depth=10),
-                #"NU": NaiveUpdate(criterion = criterion,min_samples_leaf=5, adaptive_complexity=True,),
-                #"TR":TreeReevaluation(criterion = criterion,min_samples_leaf=5, adaptive_complexity=True, delta=0.1),
-                "SR":StabilityRegularization(criterion = criterion,min_samples_leaf=5, adaptive_complexity=True,lmbda=0.75),
-                #"iABU": BootstrapUpdate(criterion = criterion, adaptive_complexity=True),
-                #"ABU":AbuTree(criterion = criterion, adaptive_complexity=True,min_samples_leaf=5),
-                "ABU":AbuTreeI(criterion = criterion,min_samples_leaf=5,adaptive_complexity=True)
-                
-                #  "baseline": BaseLineTree(**params), 
-                # "NU": StableTree0(**params),
-                #  "TR":TreeReevaluation(criterion = criterion,**params, delta=0.1)
-                #  #"SR":StableTree2(**params,lmda=0.5),
-                #  "ABU":AbuTreeI(**params)
+                        "baseline": RF("base",n_estimators= 100,max_features="sqrt",criterion=criterion,min_samples_leaf=5,adaptive_complexity=True),
+                        "NU": RF("nu",n_estimators= 100,max_features="sqrt",criterion=criterion,min_samples_leaf=5,adaptive_complexity=True),
+                        "TR": RF("tr",n_estimators= 100,max_features="sqrt",criterion=criterion,min_samples_leaf=5,adaptive_complexity=True),
+                        "SR": RF("sr",n_estimators= 100,max_features="sqrt",criterion=criterion,min_samples_leaf=5,adaptive_complexity=True),
+                        "ABU": RF("abu",n_estimators= 100,max_features="sqrt",criterion=criterion,min_samples_leaf=5,adaptive_complexity=True)
                 }
+        
         for name, model in models.items():
+           
             model.fit(X1,y1)
+            
             pred1 = model.predict(X_test)
+         
             pred1_train = model.predict(X_12)
+         
             pred1_orig= model.predict(X1)
             #print("before")
-            if name =="GLM":
-                model.fit(X_12,y_12)
-            else:
-                model.update(X_12,y_12)
-            
+            model.update(X_12,y_12)
             #print("after")
             pred2 = model.predict(X_test)
             pred2_orig= model.predict(X1)

@@ -6,8 +6,10 @@
 
 #include <stdio.h>
 #include <iostream>
+#include <Eigen/Dense>
 using namespace std;
-
+using namespace Eigen;
+using iVector = Eigen::Matrix<int, Dynamic, 1>;
 class Node{
     public:
         Node* left_child;
@@ -20,9 +22,11 @@ class Node{
         double impurity; // node impurity
         double y_var;// variance to the response variable in a node
         double w_var;// variance to the prediction in a node
+        double parent_expected_max_S; 
 
         Node(double _split_value,double _impurity, double _split_score, int _split_feature, int _n_samples, double _prediction);
         Node(double _split_value,double _impurity, double _split_score, int _split_feature, int _n_samples, double _prediction, double y_var, double w_var);
+        Node(double _split_value,double _impurity, double _split_score, int _split_feature, int _n_samples, double _prediction, double y_var, double w_var, iVector &features_indices);
         Node(double _prediction, int _n_samples, double y_var, double w_var);
         Node(double _prediction, int _n_samples);
 
@@ -37,9 +41,12 @@ class Node{
         double get_split_value();
         double get_split_score();
         double get_impurity();
+        iVector get_features_indices();
         Node* copy();
         ~Node();
         std::string toString();
+
+        iVector features_indices;
 
     private:
         Node* copy_rec(Node* node);
@@ -107,6 +114,7 @@ Node::Node(double _split_value, double _impurity, double _split_score, int _spli
     right_child=NULL;
     prediction = _prediction;
 
+
 }
 Node::Node(double _split_value, double _impurity, double _split_score, int _split_feature,int _n_samples, double _prediction, double y_var,double w_var){
     split_value = _split_value;
@@ -121,7 +129,20 @@ Node::Node(double _split_value, double _impurity, double _split_score, int _spli
     this->w_var = w_var;
 
 }
-
+Node::Node(double _split_value,double _impurity, double _split_score, int _split_feature, int _n_samples, double _prediction, double y_var, double w_var, iVector &features_indices){
+    split_value = _split_value;
+    impurity = _impurity;
+    split_score = _split_score;
+    n_samples = _n_samples;
+    split_feature = _split_feature;
+    left_child=NULL;
+    right_child=NULL;
+    prediction = _prediction;
+    this->y_var = y_var;
+    this->w_var = w_var;
+    this->features_indices = features_indices;
+}
+    
 Node::Node(double _prediction, int _n_samples, double y_var,double w_var){
     n_samples = _n_samples;
     prediction = _prediction;
@@ -136,6 +157,10 @@ Node::Node(double _prediction, int _n_samples){
     prediction = _prediction;
     left_child=NULL;
     right_child=NULL;
+}
+
+iVector Node::get_features_indices(){
+    return features_indices;
 }
 
 void Node::set_left_node(Node* node){

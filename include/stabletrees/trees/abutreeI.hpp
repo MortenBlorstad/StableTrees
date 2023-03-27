@@ -6,7 +6,7 @@
 
 class AbuTreeI: public Tree{
     public:
-        AbuTreeI(int _criterion,int max_depth, double min_split_sample,int min_samples_leaf, bool adaptive_complexity);
+        AbuTreeI(int _criterion,int max_depth, double min_split_sample,int min_samples_leaf, bool adaptive_complexity,int max_features,double learning_rate, unsigned int random_state);
         AbuTreeI();
         virtual void update(dMatrix &X, dVector &y);
         dMatrix predict_info(dMatrix &X);
@@ -20,8 +20,8 @@ AbuTreeI::AbuTreeI():Tree(){
     Tree(); 
 }
 
-AbuTreeI::AbuTreeI(int _criterion,int max_depth, double min_split_sample,int min_samples_leaf, bool adaptive_complexity):Tree(_criterion, max_depth,  min_split_sample,min_samples_leaf,adaptive_complexity){
-    Tree(_criterion, max_depth, min_split_sample,min_samples_leaf, adaptive_complexity);
+AbuTreeI::AbuTreeI(int _criterion,int max_depth, double min_split_sample,int min_samples_leaf, bool adaptive_complexity, int max_features, double learning_rate, unsigned int random_state):Tree(_criterion, max_depth,  min_split_sample,min_samples_leaf,adaptive_complexity,max_features,learning_rate,random_state){
+    Tree(_criterion, max_depth, min_split_sample,min_samples_leaf, adaptive_complexity,max_features,learning_rate,random_state);
 }
 
 
@@ -73,9 +73,13 @@ void AbuTreeI::update(dMatrix &X, dVector &y){
     // complete the squares 
     dVector hb = 2*weights.array();
     dVector gb = -1*hb.array().cwiseProduct(yb.array());
-
-    dVector g = loss_function->dloss(y, dVector::Zero(X.rows(),1)); 
-    dVector h = loss_function->ddloss(y, dVector::Zero(X.rows(),1) );
+    //pred_0 = loss_function->link_function(y.array().mean());//
+    pred_0 = 0;
+    dVector pred = dVector::Constant(y.size(),0,  pred_0) ;
+    dVector g = loss_function->dloss(y, pred ); //dVector::Zero(n1,1)
+    dVector h = loss_function->ddloss(y, pred ); //dVector::Zero(n1,1)
+    // dVector g = loss_function->dloss(y, dVector::Zero(X.rows(),1)); 
+    // dVector h = loss_function->ddloss(y, dVector::Zero(X.rows(),1) );
     dMatrix X_concat(X.rows()+Xb.rows(), X.cols());
     dVector y_concat(y.rows()+yb.rows(), 1);
     dVector g_concat(g.rows() + gb.rows(), 1); 
@@ -86,20 +90,20 @@ void AbuTreeI::update(dMatrix &X, dVector &y){
     g_concat <<g,gb ;
     h_concat <<h,hb;
     X_concat <<X,Xb;
-    y_concat <<y,yb;
+    y_concat <<y,yb.array().exp();
     
 
     total_obs = X_concat.rows();
-    splitter = new Splitter(min_samples_leaf,total_obs, adaptive_complexity);
+    splitter = new Splitter(min_samples_leaf,total_obs, adaptive_complexity, max_features,learning_rate);
 
-    this->root = build_tree(X_concat, y_concat, g_concat, h_concat, 0);
+    this->root = build_tree(X_concat, y_concat, g_concat, h_concat, 0,this->root);
     n1 = total_obs;
 }
 
 
 dMatrix AbuTreeI::sample_X(const dMatrix &X, int n1){
     std::mt19937 gen(0);
-    std::uniform_int_distribution<size_t>  distr(0, X.rows());
+    std::uniform_int_distribution<size_t>  distr(0, X.rows()-1);
     dMatrix X_sample(n1, X.cols());
     for (size_t i = 0; i < n1; i++)
     {   

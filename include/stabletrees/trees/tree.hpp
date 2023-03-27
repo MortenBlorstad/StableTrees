@@ -11,6 +11,7 @@
 #include "lossfunctions.hpp"
 
 
+
 using Eigen::Dynamic;
 using dVector = Eigen::Matrix<double, Dynamic, 1>;
 using bVector = Eigen::Matrix<bool, Dynamic, 1>;
@@ -30,24 +31,26 @@ class Tree{
 
     public:
         Node* root  = NULL;
-        explicit Tree(int _criterion,int max_depth, double min_split_sample,int min_samples_leaf, bool adaptive_complexity); 
+        explicit Tree(int _criterion,int max_depth, double min_split_sample,int min_samples_leaf, bool adaptive_complexity, int max_features,double learning_rate, unsigned int random_state); 
         explicit Tree(); 
         bool all_same(const dVector &vec);
         bool all_same_features_values(const dMatrix  &X);
-        virtual Node* build_tree(const dMatrix  &X, const dVector &y, const dVector &g, const dVector &h, int depth);
+        virtual Node* build_tree(const dMatrix  &X, const dVector &y, const dVector &g, const dVector &h, int depth, Node* previuos_tree_node);
         tuple<iVector, iVector> get_masks(dVector &feature, double value);
         virtual void learn(dMatrix  &X, dVector &y);
+        void learn_difference(dMatrix  &X, dVector &y, dVector &g, dVector &h);
         Node* get_root();
         double predict_obs(dVector  &obs);
         dVector predict(dMatrix  &X);
         virtual void update(dMatrix &X, dVector &y);
-        virtual tuple<bool,int,double, double,double,double,double> find_split(const dMatrix &X, const dVector &y, const dVector &g, const dVector &h);
+        virtual tuple<bool,int,double, double,double,double,double> find_split(const dMatrix &X, const dVector &y, const dVector &g, const dVector &h, const iVector &features_indices);
         Node* update_tree_info(dMatrix &X, dVector &y, Node* node, int depth);
         //~Tree();
         std::vector<Node*> make_node_list();
         virtual Tree* copy();
-
+        Tree* next_tree = NULL; // only needed for gradient boosting
         int tree_depth;
+        double learning_rate; // only needed for gradient boosting (shrinkage)
         
     protected:
         Splitter* splitter;
@@ -58,9 +61,10 @@ class Tree{
         double min_split_sample;
         int min_samples_leaf;
         double total_obs;
-        
+        unsigned int random_state;
+        double pred_0 = 0;
         int n1;
-        
+        int max_features;
         int number_of_nodes;
         void make_node_list_rec(Node* node, std::vector<Node*> &l, size_t index );
 };
@@ -73,6 +77,9 @@ Tree::Tree(){
     tree_depth = 0;
     number_of_nodes = 0;
     loss_function = new LossFunction(0);
+    this-> max_features =  INT_MAX;
+    learning_rate = 1;
+    random_state = 1;
 }
 
 
@@ -83,7 +90,7 @@ Tree::Tree(){
  }
  
 
-Tree::Tree(int _criterion, int max_depth, double min_split_sample,int min_samples_leaf, bool adaptive_complexity){
+Tree::Tree(int _criterion, int max_depth, double min_split_sample,int min_samples_leaf, bool adaptive_complexity,int max_features,double learning_rate, unsigned int random_state){
     //this->splitter = Splitter(_criterion);
     if(max_depth !=NULL){
        this-> max_depth =  max_depth;
@@ -94,14 +101,17 @@ Tree::Tree(int _criterion, int max_depth, double min_split_sample,int min_sample
     this->min_samples_leaf = min_samples_leaf;
     this->_criterion = _criterion;
     this->adaptive_complexity = adaptive_complexity;
+    this->max_features = max_features;
+    this->learning_rate = learning_rate;
     tree_depth = 0;
     number_of_nodes = 0;
     loss_function = new LossFunction(_criterion);
+    this->random_state = random_state;
 
 } 
 
-tuple<bool,int,double, double,double,double,double>  Tree::find_split(const dMatrix &X, const dVector &y, const dVector &g, const dVector &h){
-    return splitter->find_best_split(X, y, g, h);
+tuple<bool,int,double, double,double,double,double>  Tree::find_split(const dMatrix &X, const dVector &y, const dVector &g, const dVector &h, const iVector &features_indices){
+    return splitter->find_best_split(X, y, g, h,features_indices);
 }
 
 
@@ -150,14 +160,28 @@ tuple<iVector, iVector> Tree::get_masks(dVector &feature, double value){
 void Tree::learn(dMatrix  &X, dVector &y){
     total_obs = y.size();
     //printf("min_samples_leaf: %d \n", min_samples_leaf);
-    splitter = new Splitter(min_samples_leaf,total_obs, adaptive_complexity);
+    splitter = new Splitter(min_samples_leaf,total_obs, adaptive_complexity,max_features, learning_rate);
     n1 = total_obs;
-    dVector g = loss_function->dloss(y,  dVector::Zero(n1,1));
-    dVector h = loss_function->ddloss(y, dVector::Zero(n1,1)); 
+    //pred_0 = loss_function->link_function(y.array().mean());
+    pred_0 = 0;
     
-    this->root = build_tree(X, y,g, h, 0);
+    dVector pred = dVector::Constant(y.size(),0,  pred_0) ;
+    dVector g = loss_function->dloss(y, pred ); //dVector::Zero(n1,1)
+    dVector h = loss_function->ddloss(y, pred ); //dVector::Zero(n1,1)
+    
+    this->root = build_tree(X, y,g, h, 0, NULL);
     
 }
+
+
+void Tree::learn_difference(dMatrix  &X, dVector &y, dVector &g, dVector &h){
+    total_obs = y.size();
+    //printf("min_samples_leaf: %d \n", min_samples_leaf);
+    splitter = new Splitter(min_samples_leaf,total_obs, adaptive_complexity,max_features, learning_rate );
+    n1 = total_obs;
+    this->root = build_tree(X, y,g, h, 0,NULL);
+}
+
 
 double Tree::predict_obs(dVector  &obs){
     Node* node = this->root;
@@ -185,22 +209,24 @@ dVector Tree::predict(dMatrix  &X){
         dVector obs = X.row(i);
         y_pred[i] = predict_obs(obs);
     }
-    return y_pred; //loss_function->inverse_link_function(y_pred);
+    return loss_function->inverse_link_function(pred_0 + y_pred.array());//y_pred; //
 }
 
 
-
-Node* Tree::build_tree(const dMatrix  &X, const dVector &y,const dVector &g, const dVector &h, int depth){
+Node* Tree::build_tree(const dMatrix  &X, const dVector &y, const dVector &g, const dVector &h, int depth, Node* previuos_tree_node){
     number_of_nodes +=1;
     tree_depth = max(depth,tree_depth);
     if(X.rows()<2 || y.rows()<2){
-        
+         printf("X.rows()<2 || y.rows()<2 \n");
         return NULL;
     }
 
     
     int n = y.size();
-    double pred = y.array().mean();
+    double G = g.array().sum();
+    double H = h.array().sum();
+    double pred =  -G/H; // //loss_function->inverse_link_function(0)-g.array().sum()/h.array().sum();//y.array().mean();//pred_0-G/H;//
+    //printf("-g/h = %f, y.mean() = %f, -G/H = %f \n", pred, y.array().mean(),pred_0-G/H);
     bool any_split;
     double score;
     
@@ -209,24 +235,48 @@ Node* Tree::build_tree(const dMatrix  &X, const dVector &y,const dVector &g, con
     double y_var = 1;
 
     if(all_same(y)){
+        //printf("all_same(y) \n");
         return new Node(pred, n,y_var,w_var);
     }
-    
     
     int split_feature;
     iVector mask_left;
     iVector mask_right;
     double expected_max_S;
-    tie(any_split, split_feature, split_value, score, y_var ,w_var,expected_max_S)  = find_split(X,y, g,h);
+    iVector features_indices(X.cols(),1);
+    for (int i=0; i<X.cols(); i++){features_indices(i) = i; } 
+    if(previuos_tree_node ==NULL){
+        //for (int i=0; i<X.cols(); i++){features_indices(i) = i; } 
+    
+        if(max_features<INT_MAX){
+            std::mt19937 gen(random_state);
+            std::shuffle(features_indices.data(), features_indices.data() + features_indices.size(), gen);
+            features_indices = features_indices.block(0,0,max_features,1);
+            this->random_state +=1;
+        }
+    }else if(previuos_tree_node->get_features_indices().size()>0) {
+        features_indices = previuos_tree_node->get_features_indices();
+    }
+
+
+    //printf("%d \n", features_indices.allFinite());
+    
+    
+    
+    
+    tie(any_split, split_feature, split_value, score, y_var ,w_var,expected_max_S)  = find_split(X,y, g,h, features_indices);
     
     if(depth>=this->max_depth){
+        //printf("max_depth: %d >= %d \n", depth,this->max_depth);
         return new Node(pred, n, y_var,w_var);
     }
     if(y.rows()< this->min_split_sample){
+        //printf("min_split_sample \n");
         return new Node(pred, n, y_var,w_var);
     }
     if(!any_split){
-         return new Node(pred ,n, y_var, w_var  );
+        //printf("any_split \n");
+        return new Node(pred ,n, y_var, w_var);
     }
 
     if(score == std::numeric_limits<double>::infinity()){
@@ -267,16 +317,25 @@ Node* Tree::build_tree(const dMatrix  &X, const dVector &y,const dVector &g, con
     // double loss_right = (y_right.array() - y_right.array().mean()).square().sum();
     // printf("score comparison: %f, %f \n", score, (loss_parent - (loss_left+loss_right))/n);
     
-    Node* node = new Node(split_value, loss_parent/n, score, split_feature, y.rows() , pred, y_var, w_var);
+    Node* node = new Node(split_value, loss_parent/n, score, split_feature, y.rows() , pred, y_var, w_var,features_indices);
     
-    node->left_child = build_tree( X_left, y_left, g_left,h_left, depth+1);
+    if(previuos_tree_node !=NULL){//only applivable for random forest for remembering previous node sub features when updating a tree (or if max_features are less then total number of features)
+        node->left_child = build_tree( X_left, y_left, g_left,h_left, depth+1,previuos_tree_node->left_child);
+    }else{
+        node->left_child = build_tree( X_left, y_left, g_left,h_left, depth+1,NULL);
+    }
     if(node->left_child!=NULL){
         node->left_child->w_var*=expected_max_S;
+        node->left_child->parent_expected_max_S=expected_max_S;
     }
-
-    node->right_child = build_tree(X_right, y_right,g_right,h_right, depth+1) ;
+    if(previuos_tree_node !=NULL){ //only applivable for random forest for remembering previous node sub features when updating a tree (or if max_features are less then total number of features)
+        node->right_child = build_tree(X_right, y_right,g_right,h_right, depth+1,previuos_tree_node->right_child) ;
+    }else{
+        node->right_child = build_tree(X_right, y_right,g_right,h_right, depth+1,NULL) ;
+    }
     if(node->right_child!=NULL){
         node->right_child->w_var *=expected_max_S;
+        node->right_child->parent_expected_max_S=expected_max_S;
     }
 
     return node;
@@ -344,6 +403,7 @@ std::vector<Node*> Tree::make_node_list(){
 
 
 void Tree::update(dMatrix &X, dVector &y){
+    this->random_state =0;
     this->learn(X,y);
 }
 

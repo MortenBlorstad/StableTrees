@@ -27,10 +27,10 @@ class LossFunction{
         dVector loss(dVector y_true,dVector y_pred );
         dVector dloss(dVector y_true,dVector y_pred );
         dVector ddloss(dVector y_true,dVector y_pred );
+        double ddloss(double y_true,double y_pred );
         dVector loss(dVector y_true,dVector y_pred2, dVector y_pred1 , double lambda);
         dVector dloss(dVector y_true,dVector y_pred2, dVector y_pred1 , double lambda);
         dVector ddloss(dVector y_true,dVector y_pred2, dVector y_pred1 , double lambda);
-    protected:
         int citerion;
         
 };
@@ -82,7 +82,7 @@ dVector LossFunction::loss(dVector y_true, dVector y_pred  ){
 
 dVector LossFunction::dloss(dVector y_true,dVector y_pred  ){
     if(citerion ==0){
-        return 2*(y_pred.array()- y_true.array());
+        return 2*(y_pred.array() - y_true.array());
     }
         
 
@@ -90,17 +90,30 @@ dVector LossFunction::dloss(dVector y_true,dVector y_pred  ){
         return y_pred.array().exp() - y_true.array(); //1- y_true.array(); //
     }
         
-
     throw exception("asdada");
 }
 
 dVector LossFunction::ddloss(dVector y_true,dVector y_pred  ){
     if(citerion ==0){
+        //printf("%d \n ", citerion);
         return dVector::Constant(y_true.size(),0,2.0);
     }
 
     if(citerion ==1){
-        return y_pred.array().exp(); //y_pred.array()/ y_true.array().square() ;
+       // printf("%d \n ", citerion);
+        return y_pred.array().exp();
+    }
+        
+
+    throw exception("asdada");
+}
+double LossFunction::ddloss(double y_true,double y_pred  ){
+    if(citerion ==0){
+        return 2;
+    }
+
+    if(citerion ==1){
+        return exp(y_pred); //y_pred.array()/ y_true.array().square() ;
     }
         
 

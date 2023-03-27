@@ -30,8 +30,8 @@ class Splitter{
 
     public:
         Splitter();
-        Splitter(int min_samples_leaf, double _total_obs, bool _adaptive_complexity);
-        virtual tuple<bool,int,double,double,double,double,double>  find_best_split(const dMatrix  &X, const dVector  &y,const dVector &g,const dVector &h);
+        Splitter(int min_samples_leaf, double _total_obs, bool _adaptive_complexity,int max_features, double learning_rate);
+        virtual tuple<bool,int,double,double,double,double,double>  find_best_split(const dMatrix  &X, const dVector  &y,const dVector &g,const dVector &h,const iVector &features_indices);
         dMatrix cir_sim;
         virtual ~Splitter();
         double get_reduction(const dVector &g,const dVector &h, iVector mask_left);
@@ -44,6 +44,8 @@ class Splitter{
         dArray gum_cdf_mmcir_grid;
         bool adaptive_complexity;
         int min_samples_leaf;
+        int max_features;
+        double learning_rate;
 
 };
 
@@ -54,17 +56,14 @@ Splitter::Splitter(){
     cir_sim = cir_sim_mat(100,100);
 }
 
-
-
-
-
-
-Splitter::Splitter(int min_samples_leaf,double _total_obs, bool _adaptive_complexity){
+Splitter::Splitter(int min_samples_leaf,double _total_obs, bool _adaptive_complexity, int max_features, double learning_rate){
     total_obs = _total_obs;
     adaptive_complexity =_adaptive_complexity;
     this->min_samples_leaf = min_samples_leaf;
+    this->max_features = max_features;
     set_seed(1);
     cir_sim = cir_sim_mat(100,100);
+    this->learning_rate = learning_rate;
 }
 
 Splitter::~Splitter(){
@@ -84,7 +83,7 @@ double Splitter::get_reduction(const dVector &g,const dVector &h, iVector mask_l
     return reduction;
 }
 
-tuple<bool,int,double,double,double,double,double> Splitter::find_best_split(const dMatrix  &X, const dVector  &y, const dVector &g, const dVector &h){
+tuple<bool,int,double,double,double,double,double> Splitter::find_best_split(const dMatrix  &X, const dVector  &y, const dVector &g, const dVector &h,const iVector &features_indices){
     int n = y.size();
     double observed_reduction = -std::numeric_limits<double>::infinity();
     double score;
@@ -112,15 +111,19 @@ tuple<bool,int,double,double,double,double,double> Splitter::find_best_split(con
     double expected_max_S;
     double w_var = total_obs*(n/total_obs)*(optimism/(H));
     double y_var =  n * (n/total_obs) * total_obs * (optimism / H ); //(y.array() - y.array().mean()).square().mean();
-    
-    
-    
-    for(int j = 0; j<X.cols(); j++){
+
+
+   
+    //for(int j = 0; j<X.cols();j++){
+    for(int j = 0; j<features_indices.size(); j++){
+        
+        int col_index = features_indices(j);//j; //
+        //printf("%d, %d\n",j, col_index);
         int nl = 0; int nr = n;
         double Gl = 0, Gl2 = 0, Hl=0, Hl2=0, Gr=G, Gr2 = G2, Hr=H, Hr2 = H2;
-        feature = X.col(j);
+        feature = X.col(col_index);
         num_splits = 0;
-        iVector sorted_index = X_sorted_indices.col(j);
+        iVector sorted_index = X_sorted_indices.col(col_index);
         double largestValue = feature(sorted_index[n-1]);
         u_store = dVector::Zero(n);
         for (int i = 0; i < n-1; i++) {
@@ -152,18 +155,17 @@ tuple<bool,int,double,double,double,double,double> Splitter::find_best_split(con
             u_store[num_splits] = nl*prob_delta;
             num_splits +=1;
             score  =  ((Gl*Gl)/Hl + (Gr*Gr)/Hr - (G*G)/H)/(2*n);
-            any_split = true;
-            if(any_split && observed_reduction<score){
+            
+            if(observed_reduction<score){
+                any_split = true;
                 observed_reduction = score;
                 split_value = middle;
-                split_feature = j;  
+                split_feature = col_index;  
                 Gl_final = Gl;
                 Hl_final = Hl;
             }
         }
-        if(num_splits<=0){
-            any_split = false;
-        }else if(adaptive_complexity){
+        if(adaptive_complexity && num_splits>0){
             dVector u = u_store.head(num_splits);
             dArray max_cir = rmax_cir(u, cir_sim); // Input cir_sim!
             if(num_splits>1){
@@ -198,7 +200,7 @@ tuple<bool,int,double,double,double,double,double> Splitter::find_best_split(con
         gum_cdf_mmcir_complement = dVector::Ones(grid_size) - gum_cdf_mmcir_grid.matrix();
         expected_max_S = simpson( gum_cdf_mmcir_complement, grid );
         double CRt = optimism * (n/total_obs)  *expected_max_S;
-        double expected_reduction = 1.0*(2.0-1.0)*observed_reduction*((n/total_obs) )  - 1.0*CRt;
+        double expected_reduction = learning_rate*(2.0-learning_rate)*observed_reduction*((n/total_obs) )  - learning_rate*CRt;
 
         // std::cout << "local_optimism: " <<  optimism<< std::endl;
         // std::cout << "CRt: " <<  CRt << std::endl;

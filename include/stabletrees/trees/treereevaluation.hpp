@@ -9,9 +9,9 @@ using namespace std;
 
 class TreeReevaluation: public Tree{
     public:
-        TreeReevaluation(int _criterion,int max_depth, double min_split_sample,int min_samples_leaf, bool adaptive_complexity);
+        TreeReevaluation(double delta,int _criterion,int max_depth, double min_split_sample,int min_samples_leaf, bool adaptive_complexity,int max_features,double learning_rate,unsigned int random_state);
         TreeReevaluation();
-        virtual void update(dMatrix &X, dVector &y, double delta);
+        virtual void update(dMatrix &X, dVector &y);
         std::vector<double> get_eps();
         std::vector<double> get_mse_ratio();
         std::vector<double> get_obs();
@@ -25,7 +25,7 @@ class TreeReevaluation: public Tree{
         double hoeffding_bound(double delta, int n);
         int number_of_examples;
         vector<size_t> sort_index(const vector<double> &v);
-        
+        double delta;
 
 };
 
@@ -42,10 +42,12 @@ std::vector<double> TreeReevaluation::get_obs(){
 
 TreeReevaluation::TreeReevaluation():Tree(){
     Tree();
+    this->delta = 0.1;
 }
 
-TreeReevaluation::TreeReevaluation(int _criterion, int max_depth, double min_split_sample,int min_samples_leaf, bool adaptive_complexity):Tree(_criterion, max_depth,  min_split_sample,min_samples_leaf, adaptive_complexity){
-    Tree(_criterion, max_depth,  min_split_sample, min_samples_leaf, adaptive_complexity);
+TreeReevaluation::TreeReevaluation(double delta,int _criterion, int max_depth, double min_split_sample,int min_samples_leaf, bool adaptive_complexity,int max_features,double learning_rate,unsigned int random_state):Tree(_criterion, max_depth,  min_split_sample,min_samples_leaf, adaptive_complexity,max_features,learning_rate,random_state){
+    Tree(_criterion, max_depth,  min_split_sample, min_samples_leaf, adaptive_complexity,max_features,learning_rate,random_state);
+    this->delta = delta;
 }
 
 vector<size_t> TreeReevaluation::sort_index(const vector<double> &v) {
@@ -64,14 +66,14 @@ vector<size_t> TreeReevaluation::sort_index(const vector<double> &v) {
   return idx;
 }
 
-void TreeReevaluation::update(dMatrix &X, dVector &y, double delta){
+void TreeReevaluation::update(dMatrix &X, dVector &y){
     if(root == NULL){
         learn(X,y);
     }
 
     number_of_examples = y.size();
     //printf("min_samples_leaf: %d \n", min_samples_leaf);
-    splitter = new Splitter(min_samples_leaf,number_of_examples, adaptive_complexity);
+    splitter = new Splitter(min_samples_leaf,number_of_examples, adaptive_complexity, max_features,learning_rate);
     dVector g = loss_function->dloss(y,  dVector::Zero(number_of_examples,1));
     dVector h = loss_function->ddloss(y, dVector::Zero(number_of_examples,1)); 
 
@@ -108,20 +110,20 @@ Node* TreeReevaluation::update_rec(Node* node, dMatrix &X, dVector &y,dVector &g
     bool change;
     tie(node,change) = reevaluate_split(node,X,y,g,h,delta,depth);
     //printf("change %d, depth: %d \n", change, depth);
-    if(!change){
-        iVector left_mask; iVector right_mask;
-        dVector feature = X.col(node->split_feature);
-        tie(left_mask,right_mask) = get_masks(feature, node->split_value);
-        iVector keep_cols = iVector::LinSpaced(X.cols(), 0, X.cols()-1).array();
-        
-        dMatrix X_left = X(left_mask,keep_cols); dVector y_left = y(left_mask,1);
-        dVector g_left = g(left_mask,1); dVector h_left = h(left_mask,1);
-        dVector g_right = g(right_mask,1); dVector h_right = h(right_mask,1);
+    //if(!change){
+    iVector left_mask; iVector right_mask;
+    dVector feature = X.col(node->split_feature);
+    tie(left_mask,right_mask) = get_masks(feature, node->split_value);
+    iVector keep_cols = iVector::LinSpaced(X.cols(), 0, X.cols()-1).array();
+    
+    dMatrix X_left = X(left_mask,keep_cols); dVector y_left = y(left_mask,1);
+    dVector g_left = g(left_mask,1); dVector h_left = h(left_mask,1);
+    dVector g_right = g(right_mask,1); dVector h_right = h(right_mask,1);
 
-        node->left_child = update_rec(node->left_child, X_left, y_left,g_left, h_left, delta,depth+1);
-        dMatrix X_right= X(right_mask,keep_cols); dVector y_right = y(right_mask,1);
-        node->right_child = update_rec(node->right_child, X_right, y_right,g_right,h_right,delta,depth+1);
-    }
+    node->left_child = update_rec(node->left_child, X_left, y_left,g_left, h_left, delta,depth+1);
+    dMatrix X_right= X(right_mask,keep_cols); dVector y_right = y(right_mask,1);
+    node->right_child = update_rec(node->right_child, X_right, y_right,g_right,h_right,delta,depth+1);
+    //}
     return node;
 }
 
@@ -134,7 +136,7 @@ Node* TreeReevaluation::attempt_split(Node* node, dMatrix &X, dVector &y,dVector
         node->n_samples = y.rows();
         return node;
     }
-    return build_tree(X,y,g,h,depth);
+    return build_tree(X,y,g,h,depth,NULL);
 }
 
 
@@ -154,14 +156,23 @@ tuple<Node*, bool> TreeReevaluation::reevaluate_split(Node* node, dMatrix &X, dV
     double old_reduction = abs(splitter->get_reduction(g,h,left_mask)- node->impurity);//node->get_split_score();//
  
     bool changed = false;
-    tie(any_split, split_feature, split_value, new_reduction, y_var ,w_var,expected_max_S) = find_split(X,y,g,h);
+    
+
+    tie(any_split, split_feature, split_value, new_reduction, y_var ,w_var,expected_max_S) = find_split(X,y,g,h,node->features_indices);
     new_reduction = abs(new_reduction-node->impurity);
     //printf("old_reduction %f new_reduction %f\n", old_reduction,new_reduction);
     node->n_samples = y.rows();
     double eps = this->hoeffding_bound(delta, node->n_samples);
     double ratio = (old_reduction+1)/(new_reduction+1);
     if(ratio > (1+eps) && any_split){
-        node = build_tree(X,y,g,h,depth);
+        node->split_feature = split_feature;
+        node->split_value = split_value;
+        node->split_score = new_reduction;
+        node->y_var = y_var;
+        node->w_var = w_var*node->parent_expected_max_S;
+        node->left_child->parent_expected_max_S = expected_max_S;
+        node->right_child->parent_expected_max_S = expected_max_S;
+        //node = build_tree(X,y,g,h,depth);
         changed = true;
     }
     mse_ratio.push_back(ratio);

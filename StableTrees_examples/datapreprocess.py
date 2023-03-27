@@ -11,6 +11,8 @@ drop_features["Wage"].append("region")
 
 ordinal_features = {dataset:[] for dataset in datasets}
 ordinal_features["Carseats"].append("ShelveLoc")
+# ordinal_features["Carseats"].append("Urban")
+# ordinal_features["Carseats"].append("US")
 ordinal_features["Wage"].append("education")
 
 def handle_ordinal(dataset : pd.DataFrame,var : str) ->pd.DataFrame:
@@ -23,6 +25,12 @@ def handle_ordinal(dataset : pd.DataFrame,var : str) ->pd.DataFrame:
     if var == "education":
         print("asdad")
         dataset[var] = dataset[var].astype(str).str[0].astype(int)
+    if var == "Urban":
+        print(var)
+        dataset[var] = np.where(dataset[var]=="yes", 1,0)
+    if var == "US":
+        print(var)
+        dataset[var] = np.where(dataset[var]=="yes", 1,0)
 
     return dataset
         
@@ -31,7 +39,7 @@ def data_preperation(dataname:str):
     data = data.dropna(axis=0, how="any") # remove missing values if any
     for var in drop_features[dataname]:
         data = data.drop(var, axis=1)
-
+    
     for var in ordinal_features[dataname]:
         data = handle_ordinal(data,var)
     
@@ -41,6 +49,7 @@ def data_preperation(dataname:str):
         data = pd.concat([data.select_dtypes(['int','float']),cat_data],axis=1)
 
     data = data.dropna(axis=0, how="any") # remove missing values if any
+    print(data.columns)
     return data
 
 

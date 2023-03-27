@@ -21,6 +21,8 @@ using namespace std;
 #include "trees\naiveupdate.hpp"
 #include "trees\stabilityregularization.hpp"
 #include "trees\treereevaluation.hpp"
+#include "ensemble\GBT.hpp"
+#include "ensemble\randomforest.hpp"
 
 
 
@@ -61,30 +63,32 @@ PYBIND11_MODULE(_stabletrees, m)
         .def("get_split_feature", &Node::get_split_feature)
         .def("get_split_value", &Node::get_split_value)
         .def("copy", &Node::copy)
-        .def("toString", &Node::toString);
+        .def("toString", &Node::toString)
+        .def("get_features_indices", &Node::get_features_indices);
 
     
     py::class_<Tree>(m, "Tree")
-        .def(py::init<int, int , double,int, bool >())
+        .def(py::init<int, int , double,int, bool, int ,double, unsigned int>())
         .def("all_same", &Tree::all_same)
         .def("all_same_features_values", &Tree::all_same_features_values )
         .def("get_masks", &Tree::get_masks)
         .def("build_tree", &Tree::build_tree)
         .def("learn", &Tree::learn)
+        .def("learn_difference", &Tree::learn_difference)
         .def("get_root", &Tree::get_root)
         .def("predict", &Tree::predict)
         .def("update", &Tree::update)
         .def("make_node_list", &Tree::make_node_list);
     
      py::class_<NaiveUpdate>(m, "NaiveUpdate")
-        .def(py::init<int, int, double,int, bool>())
+        .def(py::init<int, int, double,int, bool, int,double,unsigned int>())
             .def("learn", &NaiveUpdate::learn)
             .def("predict", &NaiveUpdate::predict)
             .def("update", &NaiveUpdate::update)
             .def("get_root", &NaiveUpdate::get_root);
         
     py::class_<TreeReevaluation>(m, "TreeReevaluation")
-        .def(py::init<int, int, double,int, bool>())
+        .def(py::init<double,int, int, double,int, bool, int,double,unsigned int>())
             .def("learn", &TreeReevaluation::learn)
             .def("predict", &TreeReevaluation::predict)
             .def("update", &TreeReevaluation::update)
@@ -96,7 +100,7 @@ PYBIND11_MODULE(_stabletrees, m)
 
 
     py::class_<StabilityRegularization>(m, "StabilityRegularization")
-         .def(py::init<double, int, int, double, int,bool>())
+         .def(py::init<double, int, int, double, int,bool, int,double,unsigned int>())
             .def("learn", &StabilityRegularization::learn)
             .def("predict", &StabilityRegularization::predict)
             .def("update", &StabilityRegularization::update)
@@ -104,18 +108,31 @@ PYBIND11_MODULE(_stabletrees, m)
         
 
     py::class_<AbuTreeI>(m, "AbuTreeI")
-        .def(py::init<int, int, double,int,bool>())
+        .def(py::init<int, int, double,int,bool, int, double,unsigned int>())
             .def("learn", &AbuTreeI::learn)
             .def("predict", &AbuTreeI::predict)
             .def("update", &AbuTreeI::update)
             .def("get_root", &AbuTreeI::get_root);
 
     py::class_<AbuTree>(m, "AbuTree")
-        .def(py::init<int, int, double,int,bool>())
+        .def(py::init<int, int, double,int,bool, int,double,unsigned int>())
             .def("learn", &AbuTree::learn)
             .def("predict", &AbuTree::predict)
             .def("update", &AbuTree::update)
             .def("get_root", &AbuTree::get_root);
+
+    py::class_<GBT>(m, "GBT")
+        .def(py::init<int,int, int , double,int, bool ,double>())
+        .def("learn", &GBT::learn)
+        .def("predict", &GBT::predict)
+        .def("update", &GBT::update);
+    
+
+    py::class_<RandomForest>(m, "RandomForest")
+    .def(py::init<int,int, int , double,int, bool ,int,int>())
+    .def("learn", &RandomForest::learn)
+    .def("predict", &RandomForest::predict)
+    .def("update", &RandomForest::update);
 
 
     py::class_<MSE>(m, "MSE")
@@ -176,9 +193,11 @@ PYBIND11_MODULE(_stabletrees, m)
 
 
     py::class_<Splitter>(m, "Splitter")
-        .def(py::init<int, double,bool>())
+        .def(py::init<int, double,bool, int, double>())
             .def("find_best_split", &Splitter::find_best_split)
             .def("get_reduction", &Splitter::get_reduction);
+
+    
 
 
 
