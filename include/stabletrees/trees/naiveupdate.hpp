@@ -24,5 +24,13 @@ void NaiveUpdate::update(dMatrix &X, dVector &y){
     if(root == NULL){
         learn(X,y);
     }
-    root = update_tree_info(X, y, root,0);
+    pred_0 = loss_function->link_function(y.array().mean());
+    //pred_0 = 0;
+    
+    dVector pred = dVector::Constant(y.size(),0,  pred_0) ;
+    dVector g = loss_function->dloss(y, pred ); //dVector::Zero(n1,1)
+    dVector h = loss_function->ddloss(y, pred ); //dVector::Zero(n1,1)
+    root = update_tree_info(X, y,g,h, root,0);
+
+    //root = update_tree_info(X, y, root,0);
 } 

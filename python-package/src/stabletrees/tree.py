@@ -350,7 +350,7 @@ class StableTree(BaseRegressionTree):
         super().__init__(criterion,max_depth, min_samples_split,min_samples_leaf,adaptive_complexity)
         
 
-class BootstrapUpdate(BaseRegressionTree):
+class BABUTree(BaseRegressionTree):
     """
     A regression tree that uses stability regularization when updating the tree. Method 2: update method build a new tree using the prediction from the previous tree as regularization.
     
@@ -367,12 +367,11 @@ class BootstrapUpdate(BaseRegressionTree):
 
     """
     
-    def __init__(self, *,criterion = "mse", max_depth = None, min_samples_split = 2,min_samples_leaf:int = 5, adaptive_complexity : bool = False,
+    def __init__(self, *,criterion = "mse", max_depth = None, min_samples_split = 5,min_samples_leaf:int = 5, adaptive_complexity : bool = False,
                  max_features:int = None, random_state = None):
         self.root = None
         super().__init__(criterion,max_depth, min_samples_split,min_samples_leaf,adaptive_complexity,random_state,max_features)
-        self.tree = atree(criterions[self.criterion], self.max_depth, self.min_samples_split,self.min_samples_leaf,adaptive_complexity,self.max_features,self.learning_rate,0)
-    
+        self.tree = atreeI(criterions[self.criterion], self.max_depth, self.min_samples_split,self.min_samples_leaf,adaptive_complexity,self.max_features,self.learning_rate,0)
 
     def _fit(self, X: np.ndarray, y: np.ndarray):
         X,y = self.check_input(X,y)
@@ -389,38 +388,25 @@ class BootstrapUpdate(BaseRegressionTree):
 
     def fit(self, X: np.ndarray, y: np.ndarray):
         np.random.seed(0)
-        n,num_features = X.shape
         self._fit(X,y)
-        m = np.mean(X,axis=0)
-        std = np.std(X,axis=0)
+        n = X.shape[0]
+        X_ = X
+        y_ = y
+        
         for b in range(5):
-            # ind_b = np.random.choice(np.arange(0,n,1,dtype=int),replace=True, size =n//4)
-            # X_b = X[ind_b] + np.random.normal(m,std, size=(n//4,num_features))
-            # y_b = y[ind_b]
-            # residual = np.sqrt(np.mean((y_b - self.predict(X_b))**2))
-            # X_tilde = np.vstack((X,X_b))
-            # y_= self.predict(X_b) #+ np.random.normal(0,residual)
-            # y_tilde = np.concatenate((y,y_),axis=0)
+            ind_b = np.random.randint(0,n,size=n)
+            X_b = X[ind_b,:]
+            y_b = y[ind_b]
+            X_ = np.vstack((X_,X_b))
+            y_ = np.concatenate((y_,y_b),axis=0)
             self._update(X,y)
         return self
 
-    def update(self, X,y):
-        np.random.seed(0)
-        n,num_features = X.shape
-        m = np.mean(X,axis=0)
-        std = np.std(X,axis=0)
-        for b in range(5):
-            # ind_b = np.random.choice(np.arange(0,n,1,dtype=int),replace=True, size =n//4)
-            # X_b = X[ind_b] + np.random.normal(m,std, size=(n//4,num_features))
-            # y_b = y[ind_b]
-            # residual = np.sqrt(np.mean((y_b - self.predict(X_b))**2))
-            # X_tilde = np.vstack((X,X_b))
-            # y_= self.predict(X_b) #+ np.random.normal(0,residual)
-            # y_tilde = np.concatenate((y,y_),axis=0)
-            self._update(X,y)
+    def update(self, X,y): 
+        self._update(X,y)
         return self
  
- 
+
 if __name__ =="__main__":
     np.random.seed(0)
     from sklearn.model_selection import train_test_split
@@ -435,7 +421,7 @@ if __name__ =="__main__":
 
     t1 = BaseLineTree(adaptive_complexity=True).fit(X1,y1)
     t2 = AbuTreeI(adaptive_complexity=True).fit(X1,y1)
-    t = BootstrapUpdate(adaptive_complexity=True).fit(X1,y1)
+    t = BABUTree(adaptive_complexity=True).fit(X1,y1)
     t1_pred1 = t1.predict(X_test)
     t2_pred1 = t2.predict(X_test)
     t_pred1 = t.predict(X_test)

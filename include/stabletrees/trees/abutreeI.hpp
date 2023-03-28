@@ -31,10 +31,23 @@ dVector AbuTreeI::predict_info_obs(dVector  &obs){
     while(node !=NULL){
         if(node->is_leaf()){
             info(0,1) = node->predict();
+            if(std::isnan(node->y_var)||std::isnan(node->w_var) || std::isnan((node->y_var/node->w_var)/node->n_samples) ){
+                    std::cout << "y_var or w_var contains NaN:" << node->y_var << " " <<node->w_var << " " << node->n_samples<< std::endl;
+                }
+            if(node->y_var< 0 || node->w_var <0 || (node->y_var/node->w_var)/node->n_samples<0){
+                    std::cout << "y_var or w_var <0: " << node->y_var << " " <<node->w_var << " " << node->n_samples<< std::endl;
+                }
+            if(node->w_var <=0){
+                node->w_var =0.00001;
+            }
+            if(node->y_var <=0){
+                node->y_var =0.00001;
+            }
             if(_criterion ==1){ //poisson only uses prediction variance
                 info(1,1) = 1/(node->w_var/node->n_samples);
             }
             else{ //mse uses both response and prediction variance
+                
                 info(1,1) = (node->y_var/node->w_var)/node->n_samples;
             }
             return info;
@@ -64,17 +77,19 @@ dMatrix AbuTreeI::predict_info(dMatrix &X){
 
 
 void AbuTreeI::update(dMatrix &X, dVector &y){
-    
+    //printf("%d\n", n1);
     dMatrix Xb = sample_X(X,n1);
     dMatrix info = predict_info(Xb);
-    dVector weights = info.col(1);
+    dVector weights = info.col(1);//array().min(1000).max(0);
     dVector yb = info.col(0);
 
     // complete the squares 
     dVector hb = 2*weights.array();
     dVector gb = -1*hb.array().cwiseProduct(yb.array());
-    //pred_0 = loss_function->link_function(y.array().mean());//
-    pred_0 = 0;
+    pred_0 = loss_function->link_function(y.array().mean());//
+    // printf("pred_0: %f\n", pred_0);
+    //printf("index 5: %f %f \n", hb((43), yb(43)));
+    //pred_0 = 0;
     dVector pred = dVector::Constant(y.size(),0,  pred_0) ;
     dVector g = loss_function->dloss(y, pred ); //dVector::Zero(n1,1)
     dVector h = loss_function->ddloss(y, pred ); //dVector::Zero(n1,1)
@@ -84,15 +99,26 @@ void AbuTreeI::update(dMatrix &X, dVector &y){
     dVector y_concat(y.rows()+yb.rows(), 1);
     dVector g_concat(g.rows() + gb.rows(), 1); 
     dVector h_concat(h.rows() + hb.rows(), 1); 
- 
     
+
+    // for (int i = 0; i < yb.size(); i++) {
+    //     if (std::isnan(yb(i))) {
+    //         std::cout << "yb contains NaN at index " << i << std::endl;
+    //     }
+    // }
+     for (int i = 0; i < weights.size(); i++) {
+        if (std::isnan(weights(i)) || weights(i)<=0) {
+            std::cout << "weights contains NaN at index " << i <<" - "<< weights(i) << std::endl;
+        }
+    }
+
 
     g_concat <<g,gb ;
     h_concat <<h,hb;
     X_concat <<X,Xb;
-    y_concat <<y,yb.array().exp();
+    y_concat <<y,yb.array();
     
-
+  
     total_obs = X_concat.rows();
     splitter = new Splitter(min_samples_leaf,total_obs, adaptive_complexity, max_features,learning_rate);
 
@@ -113,7 +139,6 @@ dMatrix AbuTreeI::sample_X(const dMatrix &X, int n1){
             X_sample(i,j) = X(ind,j);
         } 
     }
-    
     return X_sample;
 }
 

@@ -72,13 +72,23 @@ void TreeReevaluation::update(dMatrix &X, dVector &y){
     }
 
     number_of_examples = y.size();
+    
     //printf("min_samples_leaf: %d \n", min_samples_leaf);
     splitter = new Splitter(min_samples_leaf,number_of_examples, adaptive_complexity, max_features,learning_rate);
-    dVector g = loss_function->dloss(y,  dVector::Zero(number_of_examples,1));
-    dVector h = loss_function->ddloss(y, dVector::Zero(number_of_examples,1)); 
+
+
+    pred_0 = loss_function->link_function(y.array().mean());
+    //pred_0 = 0;
+    
+    dVector pred = dVector::Constant(y.size(),0,  pred_0) ;
+    dVector g = loss_function->dloss(y, pred ); //dVector::Zero(n1,1)
+    dVector h = loss_function->ddloss(y, pred ); //dVector::Zero(n1,1)
+
+    // dVector g = loss_function->dloss(y,  dVector::Zero(number_of_examples,1));
+    // dVector h = loss_function->ddloss(y, dVector::Zero(number_of_examples,1)); 
 
     root = update_rec(root, X, y, g,h, delta,0);
-    root = update_tree_info(X, y, root,0);
+    root = update_tree_info(X, y, g,h, root,0);
 
     vector<size_t> sorted_ind = sort_index(obs);
 
@@ -163,8 +173,8 @@ tuple<Node*, bool> TreeReevaluation::reevaluate_split(Node* node, dMatrix &X, dV
     //printf("old_reduction %f new_reduction %f\n", old_reduction,new_reduction);
     node->n_samples = y.rows();
     double eps = this->hoeffding_bound(delta, node->n_samples);
-    double ratio = (old_reduction+1)/(new_reduction+1);
-    if(ratio > (1+eps) && any_split){
+    double ratio = (old_reduction)/(new_reduction);
+    if( ratio > (1+eps) && any_split){
         node->split_feature = split_feature;
         node->split_value = split_value;
         node->split_score = new_reduction;

@@ -9,7 +9,7 @@ from stabletrees.tree import SklearnTree
 from stabletrees.tree import NaiveUpdate
 from stabletrees.tree import StabilityRegularization
 from stabletrees.tree import TreeReevaluation
-from stabletrees.tree import BootstrapUpdate
+from stabletrees.tree import BABUTree
 
 
 from stabletrees.random_forest import RandomForest

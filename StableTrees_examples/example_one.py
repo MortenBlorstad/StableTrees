@@ -1,6 +1,6 @@
-from stabletrees import BaseLineTree, AbuTreeI,AbuTree,NaiveUpdate,TreeReevaluation,StabilityRegularization,BootstrapUpdate,SklearnTree
+from stabletrees import BaseLineTree, AbuTreeI,AbuTree,NaiveUpdate,TreeReevaluation,StabilityRegularization,BABUTree,SklearnTree
 from sklearn.datasets import make_regression
-from sklearn.metrics import mean_squared_error
+from sklearn.metrics import mean_squared_error,mean_poisson_deviance
 from sklearn.model_selection import train_test_split,GridSearchCV,RepeatedKFold
 from sklearn.tree import DecisionTreeRegressor
 import numpy as np
@@ -10,7 +10,7 @@ from sklearn.linear_model import LinearRegression
 from matplotlib import pyplot as plt
 
 SEED = 0
-EPSILON = 1.1
+EPSILON = 2
 
 def S1(pred1, pred2):
     return np.std(np.log((pred2+EPSILON)/(pred1+EPSILON)))#np.mean((pred1- pred2)**2)#
@@ -35,8 +35,8 @@ models = {
             "NU": NaiveUpdate(),
             "TR":TreeReevaluation(delta=0.1),
             "SR":StabilityRegularization(),
-            "iABU": BootstrapUpdate(),
-            "ABU":AbuTreeI()
+            "ABU":AbuTreeI(),
+            "BABU": BABUTree(),
             }
 stability_all = {name:[] for name in models.keys()}
 standard_stability_all= {name:[] for name in models.keys()}
@@ -71,6 +71,8 @@ for ds,target, feature in zip(datasets,targets, features):
     train_mse = {name:[] for name in models.keys()}
     orig_stability = {name:[] for name in models.keys()}
     orig_standard_stability = {name:[] for name in models.keys()}
+
+
     orig_mse = {name:[] for name in models.keys()}
     for train_index, test_index in kf.split(X):
         X_12, y_12 = X[train_index],y[train_index]
@@ -85,11 +87,11 @@ for ds,target, feature in zip(datasets,targets, features):
                 #"GLM": LinearRegression(),
                 #"sklearn": SklearnTree(criterion = criterion,min_samples_leaf=5, max_depth=10),
                 #"NU": NaiveUpdate(criterion = criterion,min_samples_leaf=5, adaptive_complexity=True,),
-                #"TR":TreeReevaluation(criterion = criterion,min_samples_leaf=5, adaptive_complexity=True, delta=0.1),
-                "SR":StabilityRegularization(criterion = criterion,min_samples_leaf=5, adaptive_complexity=True,lmbda=0.75),
-                #"iABU": BootstrapUpdate(criterion = criterion, adaptive_complexity=True),
+                #"TR":TreeReevaluation(criterion = criterion,min_samples_leaf=5, adaptive_complexity=True, delta=0.5),
+                #"SR":StabilityRegularization(criterion = criterion,min_samples_leaf=5, adaptive_complexity=True,lmbda=0.75),
                 #"ABU":AbuTree(criterion = criterion, adaptive_complexity=True,min_samples_leaf=5),
-                "ABU":AbuTreeI(criterion = criterion,min_samples_leaf=5,adaptive_complexity=True)
+                "ABU":AbuTreeI(criterion = criterion,min_samples_leaf=5,adaptive_complexity=True),
+                "BABU": BABUTree(criterion = criterion, adaptive_complexity=True)
                 
                 #  "baseline": BaseLineTree(**params), 
                 # "NU": StableTree0(**params),

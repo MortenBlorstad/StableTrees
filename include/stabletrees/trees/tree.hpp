@@ -44,7 +44,8 @@ class Tree{
         dVector predict(dMatrix  &X);
         virtual void update(dMatrix &X, dVector &y);
         virtual tuple<bool,int,double, double,double,double,double> find_split(const dMatrix &X, const dVector &y, const dVector &g, const dVector &h, const iVector &features_indices);
-        Node* update_tree_info(dMatrix &X, dVector &y, Node* node, int depth);
+        //Node* update_tree_info(dMatrix &X, dVector &y, Node* node, int depth);
+        Node* update_tree_info(dMatrix &X, dVector &y, dVector &g ,dVector &h, Node* node, int depth);
         //~Tree();
         std::vector<Node*> make_node_list();
         virtual Tree* copy();
@@ -162,8 +163,8 @@ void Tree::learn(dMatrix  &X, dVector &y){
     //printf("min_samples_leaf: %d \n", min_samples_leaf);
     splitter = new Splitter(min_samples_leaf,total_obs, adaptive_complexity,max_features, learning_rate);
     n1 = total_obs;
-    //pred_0 = loss_function->link_function(y.array().mean());
-    pred_0 = 0;
+    pred_0 = loss_function->link_function(y.array().mean());
+    //pred_0 = 0;
     
     dVector pred = dVector::Constant(y.size(),0,  pred_0) ;
     dVector g = loss_function->dloss(y, pred ); //dVector::Zero(n1,1)
@@ -227,6 +228,12 @@ Node* Tree::build_tree(const dMatrix  &X, const dVector &y, const dVector &g, co
     double H = h.array().sum();
     double pred =  -G/H; // //loss_function->inverse_link_function(0)-g.array().sum()/h.array().sum();//y.array().mean();//pred_0-G/H;//
     //printf("-g/h = %f, y.mean() = %f, -G/H = %f \n", pred, y.array().mean(),pred_0-G/H);
+    if(std::isnan(pred)){
+        std::cout << "pred: " << pred << std::endl;
+        std::cout << "G: " << G << std::endl;
+        std::cout << "H: " << H << std::endl;
+
+    }
     bool any_split;
     double score;
     
@@ -265,7 +272,40 @@ Node* Tree::build_tree(const dMatrix  &X, const dVector &y, const dVector &g, co
     
     
     tie(any_split, split_feature, split_value, score, y_var ,w_var,expected_max_S)  = find_split(X,y, g,h, features_indices);
-    
+    if(std::isnan(y_var)||std::isnan(w_var)){
+        double G=g.array().sum(), H=h.array().sum(), G2=g.array().square().sum(), H2=h.array().square().sum(), gxh=(g.array()*h.array()).sum();
+        double optimism = (G2 - 2.0*gxh*(G/H) + G*G*H2/(H*H)) / (H*n);
+
+        std::cout << "y_var: " << y_var << std::endl;
+        std::cout << "w_var: "<< w_var << std::endl;
+        std::cout << "n: "<< n << std::endl;
+        std::cout << "optimism: "<< optimism << std::endl;
+        std::cout << "expected_max_S: "<< expected_max_S << std::endl;
+        
+        
+        double y_0 = y(0);
+        bool same = true;
+        std::cout << "y"<<0 <<": "<< y_0 << std::endl;
+
+
+        for (size_t i = 1; i < y.size(); i++)
+        {
+            if(y_0 != y(i)){
+                same = false;
+            }
+            if(std::isnan(y_0) ||std::isnan(y(i))  ){
+                std::cout << "nan detected: "<< i << std::endl;
+            }
+            if(std::isnan(g(i))  ){
+                std::cout << "g"<<i <<": "<< g(i) << std::endl;
+            }
+        
+        }
+        std::cout << "all same: "<< same << std::endl;
+        throw exception("something wrong!") ;
+
+    }
+
     if(depth>=this->max_depth){
         //printf("max_depth: %d >= %d \n", depth,this->max_depth);
         return new Node(pred, n, y_var,w_var);
@@ -341,7 +381,43 @@ Node* Tree::build_tree(const dMatrix  &X, const dVector &y, const dVector &g, co
     return node;
 }
 
-Node* Tree::update_tree_info(dMatrix &X, dVector &y, Node* node, int depth){
+// Node* Tree::update_tree_info(dMatrix &X, dVector &y, Node* node, int depth){
+//     tree_depth = max(tree_depth, depth);
+//     node->n_samples = y.size();
+//     if(node->n_samples<1){
+//         return NULL;
+//     }else if(node->n_samples<1){
+//         node->prediction = y[0];
+//     }else{
+//         node->prediction = y.array().mean();
+//     }
+//     if(node->is_leaf()){
+//         return node;
+//     }
+//     dVector feature = X.col(node->split_feature);
+//     iVector mask_left;
+//     iVector mask_right;
+//     tie(mask_left, mask_right) = get_masks(feature, node->split_value);
+//     if(mask_left.size()<1 || mask_right.size()<1 ){
+//         //printf("null %d %d \n", mask_left.size()<1, mask_right.size()<1);
+//         node->left_child = NULL;
+//         node->right_child = NULL;
+//     }else{
+//         iVector keep_cols = iVector::LinSpaced(X.cols(), 0, X.cols()-1).array();
+//         dMatrix X_left = X(mask_left,keep_cols); dVector y_left = y(mask_left,1);
+//         dMatrix X_right = X(mask_right,keep_cols); dVector y_right = y(mask_right,1);
+
+//         //printf("update rec %d %d \n", mask_left.size()<1, mask_right.size()<1);
+
+//         node->left_child = update_tree_info(X_left, y_left, node->left_child, depth+1) ;
+//         node->right_child = update_tree_info(X_right, y_right, node->right_child, depth+1) ;
+//     }
+//     //printf("update %d \n", node->get_split_feature());
+//     return node;
+// }
+
+
+Node* Tree::update_tree_info(dMatrix &X, dVector &y, dVector &g ,dVector &h, Node* node, int depth){
     tree_depth = max(tree_depth, depth);
     node->n_samples = y.size();
     if(node->n_samples<1){
@@ -349,7 +425,7 @@ Node* Tree::update_tree_info(dMatrix &X, dVector &y, Node* node, int depth){
     }else if(node->n_samples<1){
         node->prediction = y[0];
     }else{
-        node->prediction = y.array().mean();
+        node->prediction = -g.array().sum()/h.array().sum();
     }
     if(node->is_leaf()){
         return node;
@@ -366,15 +442,18 @@ Node* Tree::update_tree_info(dMatrix &X, dVector &y, Node* node, int depth){
         iVector keep_cols = iVector::LinSpaced(X.cols(), 0, X.cols()-1).array();
         dMatrix X_left = X(mask_left,keep_cols); dVector y_left = y(mask_left,1);
         dMatrix X_right = X(mask_right,keep_cols); dVector y_right = y(mask_right,1);
+        dVector g_left = g(mask_left,1); dVector h_left = h(mask_left,1);
+        dVector g_right = g(mask_right,1); dVector h_right = h(mask_right,1);
 
         //printf("update rec %d %d \n", mask_left.size()<1, mask_right.size()<1);
 
-        node->left_child = update_tree_info(X_left, y_left, node->left_child, depth+1) ;
-        node->right_child = update_tree_info(X_right, y_right, node->right_child, depth+1) ;
+        node->left_child = update_tree_info(X_left, y_left,g_left,h_left, node->left_child, depth+1) ;
+        node->right_child = update_tree_info(X_right, y_right,g_right,h_right, node->right_child, depth+1) ;
     }
     //printf("update %d \n", node->get_split_feature());
     return node;
 }
+
 
 void Tree::make_node_list_rec(Node* node, std::vector<Node*> &l, size_t index ){
     if(node->is_leaf()){

@@ -27,8 +27,17 @@ void StabilityRegularization::update(dMatrix &X, dVector &y){
         this->learn(X,y);
     }else{
         dVector ypred1 = this->predict(X);
-        dVector g = loss_function->dloss(y, dVector::Zero(X.rows(),1), ypred1, lambda); 
-        dVector h = loss_function->ddloss(y, dVector::Zero(X.rows(),1), ypred1, lambda);
+
+        // dVector g = loss_function->dloss(y, dVector::Zero(X.rows(),1), ypred1, lambda); 
+        // dVector h = loss_function->ddloss(y, dVector::Zero(X.rows(),1), ypred1, lambda);
+
+        pred_0 = loss_function->link_function(y.array().mean());
+
+    
+        dVector pred = dVector::Constant(y.size(),0,  pred_0) ;
+        dVector g = loss_function->dloss(y, pred, ypred1, lambda); 
+        dVector h = loss_function->ddloss(y, pred, ypred1, lambda);
+
         splitter = new Splitter(min_samples_leaf,total_obs, adaptive_complexity, max_features, learning_rate);
         this->root = build_tree(X, y, g, h, 0,this->root );
     }     
