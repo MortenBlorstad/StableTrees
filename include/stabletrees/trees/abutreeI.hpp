@@ -14,14 +14,17 @@ class AbuTreeI: public Tree{
     private:
         dVector predict_info_obs(dVector  &obs);
         dMatrix sample_X(const dMatrix &X, int n1);
+        int bootstrap_seed ;
 };
 
 AbuTreeI::AbuTreeI():Tree(){
     Tree(); 
+    bootstrap_seed=0;
 }
 
 AbuTreeI::AbuTreeI(int _criterion,int max_depth, double min_split_sample,int min_samples_leaf, bool adaptive_complexity, int max_features, double learning_rate, unsigned int random_state):Tree(_criterion, max_depth,  min_split_sample,min_samples_leaf,adaptive_complexity,max_features,learning_rate,random_state){
     Tree(_criterion, max_depth, min_split_sample,min_samples_leaf, adaptive_complexity,max_features,learning_rate,random_state);
+    bootstrap_seed=0;
 }
 
 
@@ -44,6 +47,7 @@ dVector AbuTreeI::predict_info_obs(dVector  &obs){
                 node->y_var =0.00001;
             }
             if(_criterion ==1){ //poisson only uses prediction variance
+                //info(1,1) = (node->y_var/node->w_var)/node->n_samples;
                 info(1,1) = 1/(node->w_var/node->n_samples);
             }
             else{ //mse uses both response and prediction variance
@@ -82,17 +86,29 @@ void AbuTreeI::update(dMatrix &X, dVector &y){
     dMatrix info = predict_info(Xb);
     dVector weights = info.col(1);//array().min(1000).max(0);
     dVector yb = info.col(0);
+    // for (size_t i = 0; i < yb.size(); i++)
+    // {
+    //     printf("yb = %f \n", yb(i));
+    // }
 
     // complete the squares 
     dVector hb = 2*weights.array();
     dVector gb = -1*hb.array().cwiseProduct(yb.array());
-    pred_0 = loss_function->link_function(y.array().mean());//
+    //yb = yb.array()+pred_0;
+
+    pred_0 = loss_function->link_function(y.array().mean()+y.array().mean()/2);//
     // printf("pred_0: %f\n", pred_0);
     //printf("index 5: %f %f \n", hb((43), yb(43)));
     //pred_0 = 0;
     dVector pred = dVector::Constant(y.size(),0,  pred_0) ;
+    // for (size_t i = 0; i < pred.size(); i++)
+    // {
+    //     printf("pred = %f \n", pred(i));
+    // }
+
     dVector g = loss_function->dloss(y, pred ); //dVector::Zero(n1,1)
     dVector h = loss_function->ddloss(y, pred ); //dVector::Zero(n1,1)
+    
     // dVector g = loss_function->dloss(y, dVector::Zero(X.rows(),1)); 
     // dVector h = loss_function->ddloss(y, dVector::Zero(X.rows(),1) );
     dMatrix X_concat(X.rows()+Xb.rows(), X.cols());
@@ -116,8 +132,20 @@ void AbuTreeI::update(dMatrix &X, dVector &y){
     g_concat <<g,gb ;
     h_concat <<h,hb;
     X_concat <<X,Xb;
-    y_concat <<y,yb.array();
-    
+    y_concat <<y, loss_function->inverse_link_function(yb.array());
+    // for (size_t i = 0; i < y.size(); i++)
+    // {
+    //     printf("g = %f \n", y(i));
+    // }
+    // for (size_t i = 0; i < g.size(); i++)
+    // {
+    //     printf("g = %f \n", g(i));
+    // }
+  
+    // for (size_t i = 0; i < g_concat.size(); i++)
+    // {
+    //     printf("g_concat = %f \n", g_concat(i));
+    // }
   
     total_obs = X_concat.rows();
     splitter = new Splitter(min_samples_leaf,total_obs, adaptive_complexity, max_features,learning_rate);
@@ -128,17 +156,19 @@ void AbuTreeI::update(dMatrix &X, dVector &y){
 
 
 dMatrix AbuTreeI::sample_X(const dMatrix &X, int n1){
-    std::mt19937 gen(0);
+    std::mt19937 gen(bootstrap_seed);
     std::uniform_int_distribution<size_t>  distr(0, X.rows()-1);
     dMatrix X_sample(n1, X.cols());
     for (size_t i = 0; i < n1; i++)
     {   
         size_t ind = distr(gen);
         for (size_t j = 0; j < X.cols(); j++)
-        {
-            X_sample(i,j) = X(ind,j);
+        {   
+            double x_b = X(ind,j);
+            X_sample(i,j) = x_b;
         } 
     }
+    bootstrap_seed+=1;
     return X_sample;
 }
 

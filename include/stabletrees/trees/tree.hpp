@@ -9,6 +9,7 @@
 #include "node.hpp"
 #include "splitter.hpp"
 #include "lossfunctions.hpp"
+#include "initial_prediction.hpp"
 
 
 
@@ -41,7 +42,9 @@ class Tree{
         void learn_difference(dMatrix  &X, dVector &y, dVector &g, dVector &h);
         Node* get_root();
         double predict_obs(dVector  &obs);
+        double predict_uncertainty_obs(dVector  &obs);
         dVector predict(dMatrix  &X);
+        dVector predict_uncertainty(dMatrix  &X);
         virtual void update(dMatrix &X, dVector &y);
         virtual tuple<bool,int,double, double,double,double,double> find_split(const dMatrix &X, const dVector &y, const dVector &g, const dVector &h, const iVector &features_indices);
         //Node* update_tree_info(dMatrix &X, dVector &y, Node* node, int depth);
@@ -163,9 +166,12 @@ void Tree::learn(dMatrix  &X, dVector &y){
     //printf("min_samples_leaf: %d \n", min_samples_leaf);
     splitter = new Splitter(min_samples_leaf,total_obs, adaptive_complexity,max_features, learning_rate);
     n1 = total_obs;
-    pred_0 = loss_function->link_function(y.array().mean());
+
+
+    dVector offset =  dVector::Constant(y.size(),0,  0);
+    pred_0 = loss_function->link_function(1.5*y.array().mean());//learn_initial_prediction(y,offset,loss_function); //
     //pred_0 = 0;
-    
+    //printf("pred_0 %f %f \n", pred_0, loss_function->link_function(y.array().mean()+y.array().mean()/2));
     dVector pred = dVector::Constant(y.size(),0,  pred_0) ;
     dVector g = loss_function->dloss(y, pred ); //dVector::Zero(n1,1)
     dVector h = loss_function->ddloss(y, pred ); //dVector::Zero(n1,1)
@@ -181,6 +187,36 @@ void Tree::learn_difference(dMatrix  &X, dVector &y, dVector &g, dVector &h){
     splitter = new Splitter(min_samples_leaf,total_obs, adaptive_complexity,max_features, learning_rate );
     n1 = total_obs;
     this->root = build_tree(X, y,g, h, 0,NULL);
+}
+
+
+double Tree::predict_uncertainty_obs(dVector  &obs){
+    Node* node = this->root;
+    while(node !=NULL){
+        if(node->is_leaf()){
+            //printf("prediction %f \n", node->predict());
+            return node->w_var;
+        }else{
+            //printf("feature %d, value %f, obs %f \n", node->split_feature, node->split_value,obs(node->split_feature));
+            if(obs(node->split_feature) <= node->split_value){
+                node = node->left_child;
+            }else{
+                node = node->right_child;
+            }
+        }
+    }
+    return NULL;
+}
+
+dVector Tree::predict_uncertainty(dMatrix  &X){
+    int n = X.rows();
+    dVector w_var(n);
+    dVector obs(X.cols());
+    for(int i =0; i<n; i++){
+        dVector obs = X.row(i);
+        w_var[i] = predict_uncertainty_obs(obs);
+    }
+    return w_var;
 }
 
 
@@ -218,7 +254,7 @@ Node* Tree::build_tree(const dMatrix  &X, const dVector &y, const dVector &g, co
     number_of_nodes +=1;
     tree_depth = max(depth,tree_depth);
     if(X.rows()<2 || y.rows()<2){
-         printf("X.rows()<2 || y.rows()<2 \n");
+        printf("X.rows()<2 || y.rows()<2 \n");
         return NULL;
     }
 
@@ -226,7 +262,19 @@ Node* Tree::build_tree(const dMatrix  &X, const dVector &y, const dVector &g, co
     int n = y.size();
     double G = g.array().sum();
     double H = h.array().sum();
-    double pred =  -G/H; // //loss_function->inverse_link_function(0)-g.array().sum()/h.array().sum();//y.array().mean();//pred_0-G/H;//
+    double p = (H/(double)n)/exp(log(y.array().mean())) ;
+    double damping_h = 1.0;
+    //printf("%f %f \n", damping_h, p);
+    if(p < 0.5){
+        damping_h = 2.0/3.0;
+    }else if(p > 2.0/3.0){
+        damping_h = 3.0/2.0;
+        
+    }
+    
+    
+    //printf("%f %f / %f , %d , %f \n", damping_h, (H/(double)n), exp(log(y.array().mean())), n, H);
+    double pred =  -G/H;//-damping_h*G/H; // ////pred_0-G/H;//loss_function->link_function(y.array().mean()) - pred_0;////
     //printf("-g/h = %f, y.mean() = %f, -G/H = %f \n", pred, y.array().mean(),pred_0-G/H);
     if(std::isnan(pred)){
         std::cout << "pred: " << pred << std::endl;
@@ -272,7 +320,7 @@ Node* Tree::build_tree(const dMatrix  &X, const dVector &y, const dVector &g, co
     
     
     tie(any_split, split_feature, split_value, score, y_var ,w_var,expected_max_S)  = find_split(X,y, g,h, features_indices);
-    if(std::isnan(y_var)||std::isnan(w_var)){
+    if(any_split && (std::isnan(y_var)||std::isnan(w_var))){
         double G=g.array().sum(), H=h.array().sum(), G2=g.array().square().sum(), H2=h.array().square().sum(), gxh=(g.array()*h.array()).sum();
         double optimism = (G2 - 2.0*gxh*(G/H) + G*G*H2/(H*H)) / (H*n);
 
@@ -351,6 +399,7 @@ Node* Tree::build_tree(const dMatrix  &X, const dVector &y, const dVector &g, co
     dVector g_right = g(mask_right,1); dVector h_right = h(mask_right,1);
     
     double loss_parent = (y.array() - pred).square().sum();
+    //printf("loss_parent %f \n" ,loss_parent);
     // dVector pred_left = dVector::Constant(y_left.size(),0,loss_function->link_function(y_left.array().mean()));
     // dVector pred_right = dVector::Constant(y_right.size(),0,loss_function->link_function(y_right.array().mean()));
     // double loss_left = (y_left.array() - y_left.array().mean()).square().sum();

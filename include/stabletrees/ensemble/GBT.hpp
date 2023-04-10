@@ -14,6 +14,7 @@ class GBT{
         Tree* first_tree;
         Tree* current_tree;
         Tree* new_tree;
+        LossFunction* loss_function ;
     protected:
         int max_depth;
         bool adaptive_complexity;
@@ -40,10 +41,10 @@ GBT::GBT(int _criterion,int n_estimator,int max_depth, double min_split_sample,i
     this->learning_rate = learning_rate;
     this->n_estimator = n_estimator;
     this->random_state = 1;
+    loss_function = new LossFunction(_criterion);
 }
 
 void GBT::learn(dMatrix &X, dVector &y){
-    LossFunction* loss_function = new LossFunction(_criterion);
     initial_pred = loss_function->link_function(y.array().mean());
     dVector pred = dVector::Zero(y.size());
     pred.setConstant(initial_pred);
@@ -53,14 +54,14 @@ void GBT::learn(dMatrix &X, dVector &y){
 
     this->first_tree = new Tree(_criterion,max_depth, min_split_sample, min_samples_leaf, adaptive_complexity, INT_MAX,learning_rate,this->random_state);
     first_tree->learn_difference(X,y,g,h);
-    pred = pred + first_tree->learning_rate* first_tree->predict(X);
+    pred = pred + first_tree->learning_rate* loss_function->link_function(first_tree->predict(X));
     Tree* current_tree = this->first_tree;
     for(int i = 0; i<n_estimator;i++){
         g = loss_function->dloss(y,  pred);
         h = loss_function->ddloss(y,  pred);
         Tree* new_tree = new Tree(_criterion,max_depth, min_split_sample, min_samples_leaf, adaptive_complexity, INT_MAX, learning_rate,this->random_state);
         new_tree->learn_difference(X,y,g,h);
-        pred = pred + new_tree->learning_rate*new_tree->predict(X);
+        pred = pred + new_tree->learning_rate* loss_function->link_function(new_tree->predict(X));
         current_tree->next_tree = new_tree;
         current_tree = new_tree;
     }
@@ -73,31 +74,32 @@ dVector GBT::predict(dMatrix &X){
     dVector pred =  dVector::Zero(X.rows());
     pred.setConstant(initial_pred);
     while(current_tree !=NULL){
-        pred = pred + current_tree->learning_rate*current_tree->predict(X);
+        pred = pred + learning_rate*loss_function->link_function( current_tree->predict(X));
         current_tree = current_tree->next_tree;
+
     }
-    return pred;
+    return loss_function->inverse_link_function(pred);
 }
 
 void GBT::update(dMatrix &X, dVector &y){
-    LossFunction* loss_function = new LossFunction(_criterion);
+    
     initial_pred = loss_function->link_function(y.array().mean());
     dVector pred = dVector::Zero(y.size());
     pred.setConstant(initial_pred);
-    dVector pred1 = this->predict(X);
-    dVector g = loss_function->dloss(y, dVector::Zero(X.rows(),1), pred, 0.25); 
-    dVector h = loss_function->ddloss(y, dVector::Zero(X.rows(),1), pred, 0.25);
+    dVector pred1 = loss_function->link_function(this->predict(X));
+    dVector g = loss_function->dloss(y,pred, pred1, 0.25); 
+    dVector h = loss_function->ddloss(y, pred, pred1, 0.25);
 
     this->first_tree = new Tree(_criterion,max_depth, min_split_sample, min_samples_leaf, adaptive_complexity, INT_MAX,learning_rate,this->random_state);
     first_tree->learn_difference(X,y,g,h);
-    pred = pred + first_tree->learning_rate* first_tree->predict(X);
+    pred = pred + first_tree->learning_rate* loss_function->link_function(first_tree->predict(X));
     Tree* current_tree = this->first_tree;
     for(int i = 0; i<n_estimator;i++){
         g = loss_function->dloss(y, pred, pred1, 0.25); 
         h = loss_function->ddloss(y, pred, pred1, 0.25);
         Tree* new_tree = new Tree(_criterion,max_depth, min_split_sample, min_samples_leaf, adaptive_complexity, INT_MAX, learning_rate,this->random_state);
         new_tree->learn_difference(X,y,g,h);
-        pred = pred + new_tree->learning_rate*new_tree->predict(X);
+        pred = pred + new_tree->learning_rate*loss_function->link_function(new_tree->predict(X));
         current_tree->next_tree = new_tree;
         current_tree = new_tree;
     }

@@ -39,12 +39,15 @@ if __name__ =="__main__":
     n = 2000
 
     X = np.random.uniform(size=(n,1),low=0,high=4)
-    y = np.random.normal(loc=X.ravel(),scale=1,size = n)
+    #y = np.random.normal(loc=X.ravel(),scale=1,size = n)
+    y = np.random.poisson(lam=np.exp(X.ravel()),size = n)
     X1,X2,y1,y2 = train_test_split(X,y,test_size=0.5,random_state=0)
     X_test = np.random.uniform(size=(n,1),low=0,high=4)
-    y_test = np.random.normal(loc=X.ravel(),scale=1,size = n)
+    #y_test = np.random.po(loc=X_test.ravel(),scale=1,size = n)
+    y_test = np.random.poisson(lam=np.exp(X_test.ravel()),size = n)
 
-    gtb = GradientBoosting(250  , criterion="mse",adaptive_complexity=True, learning_rate=0.01).fit(X1,y1)
+    criterion = "poisson"
+    gtb = GradientBoosting(1000  , criterion=criterion,adaptive_complexity=True, learning_rate=0.01).fit(X1,y1)
     print("fitted")
     gtb_pred1 = gtb.predict(X)
     print("predicted")
@@ -55,7 +58,7 @@ if __name__ =="__main__":
     plt.subplot(3,2,1)
     
     plt.scatter(X[:,0],y, alpha = 0.1)
-    t = AbuTreeI(adaptive_complexity=True, max_depth=0).fit(X1,y1)
+    t = AbuTreeI(criterion=criterion, adaptive_complexity=True, max_depth=0).fit(X1,y1)
     t_pred1 = t.predict(X)
     plt.title(f"ABU (D1)")
     print(mean_squared_error(y_test,t.predict(X_test)))
@@ -82,13 +85,13 @@ if __name__ =="__main__":
 
     plt.subplot(3,2,4)
 
-    gtb1 = GradientBoosting(250  , criterion="mse",adaptive_complexity=True, learning_rate=0.01).fit(X,y)
+    gtb1 = GradientBoosting(1000  , criterion=criterion,adaptive_complexity=True, learning_rate=0.01).fit(X,y)
     gtb_pred12 = gtb1.predict(X)
     print(mean_squared_error(y_test,gtb.predict(X_test)))
-    print(S2(t_pred1,t_pred2))
-    print(S2(gtb_pred1,gtb_pred12))
+    print(S1(t_pred1,t_pred2))
+    print(S1(gtb_pred1,gtb_pred12))
     plt.scatter(X[:,0],y, alpha = 0.1)
-    plt.title(f"GTB retrained (D2) - stability: {S2(gtb_pred1,gtb_pred12):.3f}")
+    plt.title(f"GTB retrained (D2) - stability: {S1(gtb_pred1,gtb_pred12):.3f}")
     plt.scatter(X[:,0],gtb_pred12[:],c ="red", alpha = 0.5, label = f"mse: {mean_squared_error(y_test,gtb1.predict(X_test)):.3f}")
     plt.legend()
     #---
@@ -105,10 +108,10 @@ if __name__ =="__main__":
     gtb_pred2 = gtb.predict(X)
     print(mean_squared_error(y_test,gtb.predict(X_test)))
     plt.scatter(X[:,0],y, alpha = 0.1)
-    plt.title(f"GTB updated (D2) - stability: {S2(gtb_pred1,gtb_pred2):.3f}")
+    plt.title(f"GTB updated (D2) - stability: {S1(gtb_pred1,gtb_pred2):.3f}")
     plt.scatter(X[:,0],gtb_pred2[:],c ="red", alpha = 0.5, label=f'mse: {mean_squared_error(y_test,gtb.predict(X_test)):.3f}')
-    print(S2(t_pred1,t_pred2))
-    print(S2(gtb_pred1,gtb_pred12))
-    print(S2(gtb_pred1,gtb_pred2))
+    print(S1(t_pred1,t_pred2))
+    print(S1(gtb_pred1,gtb_pred12))
+    print(S1(gtb_pred1,gtb_pred2))
     plt.legend()
     plt.show()

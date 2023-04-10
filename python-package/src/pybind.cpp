@@ -13,6 +13,7 @@ using namespace std;
 #include "splitters\splitter.hpp"
 #include "criterions\criterion.hpp"
 #include "trees\tree.hpp"
+#include "trees\newtree.hpp"
 #include "trees\abutree.hpp"
 #include "trees\abutreeI.hpp"
 #include "criterions\MSE.hpp"
@@ -77,8 +78,11 @@ PYBIND11_MODULE(_stabletrees, m)
         .def("learn_difference", &Tree::learn_difference)
         .def("get_root", &Tree::get_root)
         .def("predict", &Tree::predict)
+        .def("predict_uncertainty", &Tree::predict_uncertainty)
         .def("update", &Tree::update)
         .def("make_node_list", &Tree::make_node_list);
+    
+    
     
      py::class_<NaiveUpdate>(m, "NaiveUpdate")
         .def(py::init<int, int, double,int, bool, int,double,unsigned int>())
@@ -88,7 +92,7 @@ PYBIND11_MODULE(_stabletrees, m)
             .def("get_root", &NaiveUpdate::get_root);
         
     py::class_<TreeReevaluation>(m, "TreeReevaluation")
-        .def(py::init<double,int, int, double,int, bool, int,double,unsigned int>())
+        .def(py::init<double, double,int, int, double,int, bool, int,double,unsigned int>())
             .def("learn", &TreeReevaluation::learn)
             .def("predict", &TreeReevaluation::predict)
             .def("update", &TreeReevaluation::update)
@@ -112,6 +116,8 @@ PYBIND11_MODULE(_stabletrees, m)
             .def("learn", &AbuTreeI::learn)
             .def("predict", &AbuTreeI::predict)
             .def("update", &AbuTreeI::update)
+            .def("predict_uncertainty", &AbuTreeI::predict_uncertainty)
+            .def("predict_info", &AbuTreeI::predict_info)
             .def("get_root", &AbuTreeI::get_root);
 
     py::class_<AbuTree>(m, "AbuTree")
@@ -196,6 +202,15 @@ PYBIND11_MODULE(_stabletrees, m)
         .def(py::init<int, double,bool, int, double>())
             .def("find_best_split", &Splitter::find_best_split)
             .def("get_reduction", &Splitter::get_reduction);
+
+    py::class_<NewTree>(m, "NewTree")
+        .def(py::init<int, int , double,int, bool, int ,double, unsigned int>())
+            .def("build_tree", &NewTree::build_tree)
+            .def("learn", &NewTree::learn)
+            .def("get_root", &NewTree::get_root)
+            .def("predict", &NewTree::predict)
+            .def("update", &NewTree::update);
+
 
     
 

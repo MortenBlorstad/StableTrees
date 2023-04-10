@@ -1,5 +1,5 @@
 
-from _stabletrees import Node, Tree
+from _stabletrees import Node, Tree, NewTree
 from _stabletrees import AbuTree as atree
 from _stabletrees import AbuTreeI as atreeI
 from _stabletrees import NaiveUpdate as NuTree
@@ -74,6 +74,9 @@ class BaseRegressionTree(BaseEstimator, metaclass=ABCMeta):
     
     def predict(self, X: np.ndarray) -> np.ndarray:
         return self.tree.predict(X)
+    
+    def predict_uncertainty(self, X: np.ndarray) -> np.ndarray:
+        return self.tree.predict_uncertainty(X)
 
     def plot(self):
         '''
@@ -138,10 +141,16 @@ class BaseLineTree(BaseRegressionTree):
         
         self.root = None
         super().__init__(criterion,max_depth, min_samples_split,min_samples_leaf, adaptive_complexity,max_features, random_state)
-        self.tree = Tree(criterions[self.criterion], self.max_depth,self.min_samples_split,self.min_samples_leaf, self.adaptive_complexity,self.max_features,self.learning_rate,self.random_state)
+        self.tree = NewTree(criterions[self.criterion], self.max_depth,self.min_samples_split,self.min_samples_leaf, self.adaptive_complexity,self.max_features,self.learning_rate,self.random_state)
     
     def update(self,X : np.ndarray ,y : np.ndarray):
         return self.fit(X,y)
+    # def update(self,X : np.ndarray ,y : np.ndarray):
+    #     X,y = self.check_input(X,y)
+    #     self.tree.update(X,y)
+    #     self.root = self.tree.get_root()
+    #     return self
+    
     
     def fit_difference(self, X : np.ndarray ,y : np.ndarray,y_pred : np.ndarray ):
         X,y = self.check_input(X,y)
@@ -225,11 +234,12 @@ class TreeReevaluation(BaseRegressionTree):
     """
     
     def __init__(self, *,criterion = "mse", max_depth = None, min_samples_split = 2,min_samples_leaf:int = 5, adaptive_complexity : bool = False,
-                 max_features:int = None, random_state = None,delta : float=0.1):
+                 max_features:int = None, random_state = None,delta : float=0.1, alpha:float = 0.05):
         self.root = None
         self.delta = delta
+        self.alpha = alpha
         super().__init__(criterion,max_depth, min_samples_split,min_samples_leaf,adaptive_complexity,max_features)
-        self.tree = TrTree(self.delta ,criterions[self.criterion], self.max_depth, self.min_samples_split,self.min_samples_leaf,adaptive_complexity,self.max_features,self.learning_rate,self.random_state)
+        self.tree = TrTree(self.alpha,self.delta ,criterions[self.criterion], self.max_depth, self.min_samples_split,self.min_samples_leaf,adaptive_complexity,self.max_features,self.learning_rate,self.random_state)
         
     
     def fit(self,X : np.ndarray ,y : np.ndarray): 
@@ -332,6 +342,9 @@ class AbuTreeI(BaseRegressionTree):
         self.root = None
         super().__init__(criterion,max_depth, min_samples_split,min_samples_leaf,adaptive_complexity,max_features)
         self.tree = atreeI(criterions[self.criterion], self.max_depth, self.min_samples_split,self.min_samples_leaf,adaptive_complexity,self.max_features,self.learning_rate,0)
+    
+    def predict_info(self, X):
+        return self.tree.predict_info(X)
     
     def predict(self, X):
         return self.tree.predict(X)

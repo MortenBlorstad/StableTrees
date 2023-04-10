@@ -14,6 +14,9 @@ method_to_int = {"base":0,
                  "abu":4}
 criterions = {"mse":0, "poisson":1}
 
+
+
+
 class RandomForest(BaseRegressionTree):
     def __init__(self,n_estimators:int,max_features:str = "sqrt", criterion: str = "mse", max_depth: int = None, min_samples_split: int = 2, min_samples_leaf: int = 5, adaptive_complexity: bool = False, random_state: int = None) -> None:
         super().__init__(criterion, max_depth, min_samples_split, min_samples_leaf, adaptive_complexity, random_state)

@@ -8,8 +8,8 @@ import pandas as pd
 from sklearn.datasets import load_diabetes,make_regression,load_boston
 from matplotlib import pyplot as plt
 
-X,y = make_regression(2000,10,random_state=0, noise=10)
-y = y + np.abs(np.min(y))
+X,y = make_regression(1000,4,random_state=0, noise=10)
+#y = (y - np.min(y ))/(np.max(y ) - np.min(y ))
 
 #X,y = load_diabetes(return_X_y=True)
 # print(X, len(y))
@@ -23,7 +23,7 @@ X1,X2, y1,y2 = train_test_split(X,y,test_size=0.5,random_state=0)
 
 # X1 = np.array([4,5,6]).reshape(-1,1)
 # y1 = np.array([0,1,4])
-tree = TreeReevaluation( delta=0.1,max_depth=3)
+tree = TreeReevaluation( delta=0.05,adaptive_complexity=True)
 tree.fit(X1,y1)
 print( tree.root.get_impurity(), tree.root.get_split_score())
 
@@ -39,7 +39,7 @@ print(tree.tree.get_obs())
 plt.plot(tree.tree.get_mse_ratio(), label = "mse ratio")
 plt.plot([i for i in tree.tree.get_eps()], label = "1+eps")
 
-plt.ylim((-0.1,2))
+plt.ylim((-0.1,5))
 ind = [i for i in range(0,len(tree.tree.get_mse_ratio()),1)]
 plt.xticks(ind,
     [tree.tree.get_obs()[i]  for i in ind])

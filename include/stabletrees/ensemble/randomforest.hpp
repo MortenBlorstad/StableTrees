@@ -34,6 +34,7 @@ class RandomForest{
         int method;
         double lambda;
         double delta;
+        double alpha;
         Tree* create_tree(int method,int random_state_);
         iMatrix sample_indices(int start, int end);
         iMatrix bootstrap_indices;
@@ -57,6 +58,7 @@ RandomForest::RandomForest(int _criterion,int n_estimator,int max_depth, double 
     this->method = method;
     this->lambda = 0.25;
     this->delta = 0.1;
+    this->alpha = 0.05;
 }
 
 Tree* RandomForest::create_tree(int method, int random_state_){
@@ -66,7 +68,7 @@ Tree* RandomForest::create_tree(int method, int random_state_){
         case 1:
             return new NaiveUpdate(this->_criterion,this->max_depth, this->min_split_sample, this->min_samples_leaf, this->adaptive_complexity, this->max_features, 1, 0);
         case 2:
-            return new TreeReevaluation(delta,this->_criterion,this->max_depth, this->min_split_sample, this->min_samples_leaf, this->adaptive_complexity, this->max_features, 1, 0);
+            return new TreeReevaluation(alpha,delta,this->_criterion,this->max_depth, this->min_split_sample, this->min_samples_leaf, this->adaptive_complexity, this->max_features, 1, 0);
         case 3:
             return new StabilityRegularization(lambda,  _criterion, max_depth,  min_split_sample, min_samples_leaf,  adaptive_complexity, max_features, 1, 0);
         case 4:
