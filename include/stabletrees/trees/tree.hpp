@@ -36,7 +36,7 @@ class Tree{
         explicit Tree(); 
         bool all_same(const dVector &vec);
         bool all_same_features_values(const dMatrix  &X);
-        virtual Node* build_tree(const dMatrix  &X, const dVector &y, const dVector &g, const dVector &h, int depth, Node* previuos_tree_node);
+        virtual Node* build_tree(const dMatrix  &X, const dVector &y, const dVector &g, const dVector &h, int depth, Node* previuos_tree_node,const dVector &indicator = dVector(), const dVector &gamma = dVector());
         tuple<iVector, iVector> get_masks(dVector &feature, double value);
         virtual void learn(dMatrix  &X, dVector &y);
         void learn_difference(dMatrix  &X, dVector &y, dVector &g, dVector &h);
@@ -169,14 +169,16 @@ void Tree::learn(dMatrix  &X, dVector &y){
 
 
     dVector offset =  dVector::Constant(y.size(),0,  0);
-    pred_0 = loss_function->link_function(1.5*y.array().mean());//learn_initial_prediction(y,offset,loss_function); //
+    pred_0 = loss_function->link_function(y.array().mean());//learn_initial_prediction(y,offset,loss_function); //
     //pred_0 = 0;
     //printf("pred_0 %f %f \n", pred_0, loss_function->link_function(y.array().mean()+y.array().mean()/2));
     dVector pred = dVector::Constant(y.size(),0,  pred_0) ;
     dVector g = loss_function->dloss(y, pred ); //dVector::Zero(n1,1)
     dVector h = loss_function->ddloss(y, pred ); //dVector::Zero(n1,1)
+    dVector gamma = dVector::Constant(y.size(),0,  0) ;
+    dVector indicator = dVector::Constant(y.size(),0,  1) ;
     
-    this->root = build_tree(X, y,g, h, 0, NULL);
+    this->root = build_tree(X, y,g, h, 0, NULL,indicator,gamma);//
     
 }
 
@@ -186,7 +188,10 @@ void Tree::learn_difference(dMatrix  &X, dVector &y, dVector &g, dVector &h){
     //printf("min_samples_leaf: %d \n", min_samples_leaf);
     splitter = new Splitter(min_samples_leaf,total_obs, adaptive_complexity,max_features, learning_rate );
     n1 = total_obs;
-    this->root = build_tree(X, y,g, h, 0,NULL);
+    dVector gamma = dVector::Constant(y.size(),0,  0) ;
+    dVector indicator = dVector::Constant(y.size(),0,  1) ;
+    
+    this->root = build_tree(X, y,g, h, 0, NULL,indicator,gamma);//
 }
 
 
@@ -250,7 +255,7 @@ dVector Tree::predict(dMatrix  &X){
 }
 
 
-Node* Tree::build_tree(const dMatrix  &X, const dVector &y, const dVector &g, const dVector &h, int depth, Node* previuos_tree_node){
+Node* Tree::build_tree(const dMatrix  &X, const dVector &y, const dVector &g, const dVector &h, int depth, Node* previuos_tree_node,const dVector &indicator, const dVector &gamma){
     number_of_nodes +=1;
     tree_depth = max(depth,tree_depth);
     if(X.rows()<2 || y.rows()<2){
@@ -262,24 +267,25 @@ Node* Tree::build_tree(const dMatrix  &X, const dVector &y, const dVector &g, co
     int n = y.size();
     double G = g.array().sum();
     double H = h.array().sum();
-    double p = (H/(double)n)/exp(log(y.array().mean())) ;
-    double damping_h = 1.0;
-    //printf("%f %f \n", damping_h, p);
-    if(p < 0.5){
-        damping_h = 2.0/3.0;
-    }else if(p > 2.0/3.0){
-        damping_h = 3.0/2.0;
-        
-    }
     
-    
-    //printf("%f %f / %f , %d , %f \n", damping_h, (H/(double)n), exp(log(y.array().mean())), n, H);
-    double pred =  -G/H;//-damping_h*G/H; // ////pred_0-G/H;//loss_function->link_function(y.array().mean()) - pred_0;////
+   
+    double n2 = indicator.array().sum();
+    double gamma_sum = gamma.array().sum();
+    double y_sum = (y.array()*indicator.array()).sum();
+    double yprev_sum = (gamma.array()*y.array()*(1-indicator.array())).sum();
+    double pred = loss_function->link_function((y_sum+yprev_sum)/(n2+gamma_sum)) - pred_0;
+    //double pred = -G/H;
     //printf("-g/h = %f, y.mean() = %f, -G/H = %f \n", pred, y.array().mean(),pred_0-G/H);
-    if(std::isnan(pred)){
+    if(std::isnan(pred)|| std::isinf(pred)|| indicator.size()<=0){
         std::cout << "pred: " << pred << std::endl;
         std::cout << "G: " << G << std::endl;
         std::cout << "H: " << H << std::endl;
+        // std::cout << "n2: " << n2 << std::endl;
+        // std::cout << "gamma_sum: " << gamma_sum << std::endl;
+        // std::cout << "y_sum: " << y_sum << std::endl;
+        // std::cout << "yprev_sum: " << yprev_sum << std::endl;
+        // std::cout << "y: " << y.array().sum() << std::endl;
+        // std::cout << "indicator: " << indicator.size() << std::endl;
 
     }
     bool any_split;
@@ -397,6 +403,9 @@ Node* Tree::build_tree(const dMatrix  &X, const dVector &y, const dVector &g, co
     dMatrix X_right = X(mask_right,keep_cols); dVector y_right = y(mask_right,1);
     dVector g_left = g(mask_left,1); dVector h_left = h(mask_left,1);
     dVector g_right = g(mask_right,1); dVector h_right = h(mask_right,1);
+
+    dVector indicator_left = indicator(mask_left,1); dVector gamma_left = gamma(mask_left,1);
+    dVector indicator_right = indicator(mask_right,1); dVector gamma_right = gamma(mask_right,1);
     
     double loss_parent = (y.array() - pred).square().sum();
     //printf("loss_parent %f \n" ,loss_parent);
@@ -409,18 +418,18 @@ Node* Tree::build_tree(const dMatrix  &X, const dVector &y, const dVector &g, co
     Node* node = new Node(split_value, loss_parent/n, score, split_feature, y.rows() , pred, y_var, w_var,features_indices);
     
     if(previuos_tree_node !=NULL){//only applivable for random forest for remembering previous node sub features when updating a tree (or if max_features are less then total number of features)
-        node->left_child = build_tree( X_left, y_left, g_left,h_left, depth+1,previuos_tree_node->left_child);
+        node->left_child = build_tree( X_left, y_left, g_left,h_left, depth+1,previuos_tree_node->left_child, indicator_left,gamma_left);
     }else{
-        node->left_child = build_tree( X_left, y_left, g_left,h_left, depth+1,NULL);
+        node->left_child = build_tree( X_left, y_left, g_left,h_left, depth+1,NULL,indicator_left,gamma_left);
     }
     if(node->left_child!=NULL){
         node->left_child->w_var*=expected_max_S;
         node->left_child->parent_expected_max_S=expected_max_S;
     }
     if(previuos_tree_node !=NULL){ //only applivable for random forest for remembering previous node sub features when updating a tree (or if max_features are less then total number of features)
-        node->right_child = build_tree(X_right, y_right,g_right,h_right, depth+1,previuos_tree_node->right_child) ;
+        node->right_child = build_tree(X_right, y_right,g_right,h_right, depth+1,previuos_tree_node->right_child,indicator_right,gamma_right) ;
     }else{
-        node->right_child = build_tree(X_right, y_right,g_right,h_right, depth+1,NULL) ;
+        node->right_child = build_tree(X_right, y_right,g_right,h_right, depth+1,NULL,indicator_right,gamma_right) ;
     }
     if(node->right_child!=NULL){
         node->right_child->w_var *=expected_max_S;

@@ -11,18 +11,21 @@ from matplotlib import pyplot as plt
 n = 1000
 np.random.seed(0)
 X = np.random.uniform(low=0,high=4,size=(n,1))
+
 y = np.random.poisson(lam=np.exp(X[:,0]),size=n)
+print(X.shape, y.shape)
+print(X, y.shape)
 #y = np.random.normal(loc = X.ravel()**2,scale=1,size=  n)
 X1,X2,y1,y2 = train_test_split(X,y,test_size=0.5,random_state=0)
 
-criterion = "mse"
+criterion = "poisson"
 
 
-t = DecisionTreeRegressor(criterion=criterion, max_depth=10,min_samples_leaf=5, ccp_alpha=0.01).fit(X1,y1)
 
-t2 =BABUTree(criterion=criterion, adaptive_complexity=True,min_samples_leaf=5).fit(X1,y1)
+t2 =AbuTreeI(criterion=criterion, adaptive_complexity=True,min_samples_leaf=5).fit(X1,y1)
 t1 = BaseLineTree(criterion=criterion, adaptive_complexity=True,min_samples_leaf=5).fit(X1,y1)
-pred = t1.predict(X)
+ind = np.argsort(X, axis=0).ravel()
+pred = t1.predict(X[ind,:])
 # t1.update(X,y)
 
 print(y.sum())
@@ -36,22 +39,22 @@ print(y1.sum())
 #pred3 =t1.predict(X)
 t1.update(X,y)
 t2.update(X,y)
-pred4 =t1.predict(X)
-pred2 =t2.predict(X)
+pred4 =t1.predict(X[ind,:])
+pred2 =t2.predict(X[ind,:])
 #print(pred)
-t1 = BaseLineTree(criterion=criterion, adaptive_complexity=True,min_samples_leaf=5).fit(X,y)
-pred5 =t1.predict(X)
-plt.scatter(X,y)
+t = BaseLineTree(criterion=criterion, adaptive_complexity=True,min_samples_leaf=5).fit(X,y)
+pred5 =t.predict(X[ind,:])
+plt.scatter(X,y, s= 10)
 
-plt.scatter(X,pred4,c ="g",label= "my baseline", s = 2) #first
+plt.plot(X[ind,:],pred,c ="black",label= "base") #first
 #plt.scatter(X,pred3,c ="orange", s = 8) #t2
-#plt.scatter(X,pred4,c ="r", s = 2) #combined
-plt.scatter(X,pred2,c ="r", s = 2,label= "babu") #combined
-plt.scatter(X,pred5,c ="m", s = 2)
+plt.plot(X[ind,:],pred2,c ="r",label= "ABU") #combined
+
+plt.plot(X[ind,:],pred5,c ="y",label= "base retrained")
 
 plt.legend()
 plt.show()
-print(pred2-pred4)
+print(pred-pred5)
 
 
 # X1 = np.array([1,2,3,4]).reshape(-1,1)

@@ -94,20 +94,20 @@ void AbuTreeI::update(dMatrix &X, dVector &y){
     // complete the squares 
     dVector hb = 2*weights.array();
     dVector gb = -1*hb.array().cwiseProduct(yb.array());
-    //yb = yb.array()+pred_0;
+    dVector indicator_b = dVector::Constant(yb.size(),0,  0) ;
+    yb = yb.array()+pred_0;
 
-    pred_0 = loss_function->link_function(y.array().mean()+y.array().mean()/2);//
-    // printf("pred_0: %f\n", pred_0);
-    //printf("index 5: %f %f \n", hb((43), yb(43)));
-    //pred_0 = 0;
+    pred_0 = loss_function->link_function(y.array().mean());//
     dVector pred = dVector::Constant(y.size(),0,  pred_0) ;
     // for (size_t i = 0; i < pred.size(); i++)
     // {
     //     printf("pred = %f \n", pred(i));
     // }
 
-    dVector g = loss_function->dloss(y, pred ); //dVector::Zero(n1,1)
-    dVector h = loss_function->ddloss(y, pred ); //dVector::Zero(n1,1)
+    dVector g = loss_function->dloss(y, pred ); 
+    dVector h = loss_function->ddloss(y, pred );
+    dVector gamma = dVector::Constant(y.size(),0,  0) ;
+    dVector indicator = dVector::Constant(y.size(),0,  1) ;
     
     // dVector g = loss_function->dloss(y, dVector::Zero(X.rows(),1)); 
     // dVector h = loss_function->ddloss(y, dVector::Zero(X.rows(),1) );
@@ -115,13 +115,11 @@ void AbuTreeI::update(dMatrix &X, dVector &y){
     dVector y_concat(y.rows()+yb.rows(), 1);
     dVector g_concat(g.rows() + gb.rows(), 1); 
     dVector h_concat(h.rows() + hb.rows(), 1); 
+
+    dVector gamma_concat(y.rows() + yb.rows(), 1); 
+    dVector indicator_concat(y.rows() + yb.rows(), 1);
     
 
-    // for (int i = 0; i < yb.size(); i++) {
-    //     if (std::isnan(yb(i))) {
-    //         std::cout << "yb contains NaN at index " << i << std::endl;
-    //     }
-    // }
      for (int i = 0; i < weights.size(); i++) {
         if (std::isnan(weights(i)) || weights(i)<=0) {
             std::cout << "weights contains NaN at index " << i <<" - "<< weights(i) << std::endl;
@@ -133,24 +131,14 @@ void AbuTreeI::update(dMatrix &X, dVector &y){
     h_concat <<h,hb;
     X_concat <<X,Xb;
     y_concat <<y, loss_function->inverse_link_function(yb.array());
-    // for (size_t i = 0; i < y.size(); i++)
-    // {
-    //     printf("g = %f \n", y(i));
-    // }
-    // for (size_t i = 0; i < g.size(); i++)
-    // {
-    //     printf("g = %f \n", g(i));
-    // }
-  
-    // for (size_t i = 0; i < g_concat.size(); i++)
-    // {
-    //     printf("g_concat = %f \n", g_concat(i));
-    // }
+    gamma_concat <<gamma, weights;
+    indicator_concat <<indicator, indicator_b;
+    
   
     total_obs = X_concat.rows();
     splitter = new Splitter(min_samples_leaf,total_obs, adaptive_complexity, max_features,learning_rate);
 
-    this->root = build_tree(X_concat, y_concat, g_concat, h_concat, 0,this->root);
+    this->root = build_tree(X_concat, y_concat, g_concat, h_concat, 0,this->root,indicator_concat, gamma_concat);
     n1 = total_obs;
 }
 

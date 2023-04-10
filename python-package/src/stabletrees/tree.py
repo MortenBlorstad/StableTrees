@@ -141,7 +141,7 @@ class BaseLineTree(BaseRegressionTree):
         
         self.root = None
         super().__init__(criterion,max_depth, min_samples_split,min_samples_leaf, adaptive_complexity,max_features, random_state)
-        self.tree = NewTree(criterions[self.criterion], self.max_depth,self.min_samples_split,self.min_samples_leaf, self.adaptive_complexity,self.max_features,self.learning_rate,self.random_state)
+        self.tree = Tree(criterions[self.criterion], self.max_depth,self.min_samples_split,self.min_samples_leaf, self.adaptive_complexity,self.max_features,self.learning_rate,self.random_state)
     
     def update(self,X : np.ndarray ,y : np.ndarray):
         return self.fit(X,y)

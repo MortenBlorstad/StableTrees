@@ -147,7 +147,7 @@ void NewTree::learn(dMatrix  &X, dVector &y){
 
 
     dVector offset =  dVector::Constant(y.size(),0,  0);
-    pred_0 = loss_function->link_function(1.5*y.array().mean());//learn_initial_prediction(y,offset,loss_function); //
+    pred_0 = loss_function->link_function(y.array().mean());//learn_initial_prediction(y,offset,loss_function); //
     //pred_0 = 0;
     //printf("pred_0 %f %f \n", pred_0, loss_function->link_function(y.array().mean()+y.array().mean()/2));
     dVector pred = dVector::Constant(y.size(),0,  pred_0) ;
@@ -253,12 +253,15 @@ Node* NewTree::build_tree(const dMatrix  &X, const dVector &y, const dVector &g,
     double y_sum = (y.array()*indicator.array()).sum();
     double yprev_sum = (gamma.array()*y.array()*(1-indicator.array())).sum();
     double pred = loss_function->link_function((y_sum+yprev_sum)/(n2+gamma_sum)) - pred_0;
+
     //double pred =  loss_function->link_function(y.array().mean()) - pred_0;//-G/H;//loss_function->link_function(y.array().mean()) - pred_0;//loss_function->link_function((y_sum+yprev_sum)/(n2+gamma_sum)) - pred_0;
     if(std::isnan(pred)|| std::isinf(pred)){
         std::cout << "pred: " << pred << std::endl;
         std::cout << "G: " << G << std::endl;
         std::cout << "H: " << H << std::endl;
-
+        std::cout << "n2: " << n2 << std::endl;
+        std::cout << "gamma_sum: " << gamma_sum << std::endl;
+        std::cout << "yprev_sum: " << yprev_sum << std::endl;
     }
     bool any_split;
     double score;
@@ -494,10 +497,7 @@ void NewTree::update(dMatrix &X, dVector &y){
     dVector indicator_b = dVector::Constant(yb.size(),0,  0) ;
     yb = yb.array()+pred_0;
 
-    pred_0 = loss_function->link_function(y.array().mean()+y.array().mean()/2);//
-    // printf("pred_0: %f\n", pred_0);
-    //printf("index 5: %f %f \n", hb((43), yb(43)));
-    //pred_0 = 0;
+    pred_0 = loss_function->link_function(y.array().mean()+y.array().mean()/2);
     dVector pred = dVector::Constant(y.size(),0,  pred_0) ;
 
     // for (size_t i = 0; i < pred.size(); i++)
