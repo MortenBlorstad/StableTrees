@@ -3,7 +3,7 @@
 #include "naiveupdate.hpp"
 #include "treereevaluation.hpp"
 #include "stabilityregularization.hpp"
-#include "abutreeI.hpp"
+#include "abutree.hpp"
 #include "utils.hpp"
 #include "lossfunctions.hpp"
 #include <omp.h>
@@ -72,7 +72,7 @@ Tree* RandomForest::create_tree(int method, int random_state_){
         case 3:
             return new StabilityRegularization(lambda,  _criterion, max_depth,  min_split_sample, min_samples_leaf,  adaptive_complexity, max_features, 1, 0);
         case 4:
-            return new AbuTreeI( _criterion, max_depth,  min_split_sample, min_samples_leaf,  adaptive_complexity, max_features, 1, 0);
+            return new AbuTree( _criterion, max_depth,  min_split_sample, min_samples_leaf,  adaptive_complexity, max_features, 1, 0);
         default:
             throw exception("Invalid method");
             break;

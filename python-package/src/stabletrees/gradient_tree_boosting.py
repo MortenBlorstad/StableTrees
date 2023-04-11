@@ -1,4 +1,4 @@
-from stabletrees.tree import BaseRegressionTree,BaseLineTree,NaiveUpdate,AbuTreeI,TreeReevaluation,criterions
+from stabletrees.tree import BaseRegressionTree,BaseLineTree,NaiveUpdate,AbuTree,TreeReevaluation,criterions
 from _stabletrees import GBT
 import numpy as np
 

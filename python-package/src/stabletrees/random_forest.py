@@ -1,5 +1,5 @@
 
-from stabletrees.tree import BaseRegressionTree,BaseLineTree,NaiveUpdate,AbuTreeI,TreeReevaluation
+from stabletrees.tree import BaseRegressionTree,BaseLineTree,NaiveUpdate,AbuTree,TreeReevaluation
 from _stabletrees import RandomForest as rf
 import numpy as np
 

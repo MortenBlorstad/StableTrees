@@ -262,6 +262,7 @@ Node* NewTree::build_tree(const dMatrix  &X, const dVector &y, const dVector &g,
         std::cout << "n2: " << n2 << std::endl;
         std::cout << "gamma_sum: " << gamma_sum << std::endl;
         std::cout << "yprev_sum: " << yprev_sum << std::endl;
+        throw exception("pred is nan or inf: %f",pred);
     }
     bool any_split;
     double score;

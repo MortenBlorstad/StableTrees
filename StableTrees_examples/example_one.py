@@ -95,7 +95,7 @@ for ds,target, feature in zip(datasets,targets, features):
                 #"sklearn": SklearnTree(criterion = criterion,**params),
                 #"NU": NaiveUpdate(criterion = criterion,min_samples_leaf=5, adaptive_complexity=True,),
                 #"TR":TreeReevaluation(criterion = criterion,min_samples_leaf=5, adaptive_complexity=True, delta=0.25),
-                #"SL":StabilityRegularization(criterion = criterion,min_samples_leaf=5, adaptive_complexity=True,lmbda=0.75),
+                "SL":StabilityRegularization(criterion = criterion,min_samples_leaf=5, adaptive_complexity=True,gamma=0.75),
                 "ABU":AbuTreeI(criterion = criterion,min_samples_leaf=5,adaptive_complexity=True),
                 "BABU": BABUTree(criterion = criterion,min_samples_leaf=5, adaptive_complexity=True)
                 

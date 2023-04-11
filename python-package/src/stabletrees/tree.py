@@ -1,7 +1,6 @@
 
 from _stabletrees import Node, Tree, NewTree
 from _stabletrees import AbuTree as atree
-from _stabletrees import AbuTreeI as atreeI
 from _stabletrees import NaiveUpdate as NuTree
 from _stabletrees import StabilityRegularization as SrTree
 from _stabletrees import TreeReevaluation as TrTree
@@ -274,52 +273,20 @@ class StabilityRegularization(BaseRegressionTree):
     """
     
     def __init__(self, *,criterion = "mse", max_depth = None, min_samples_split = 2,min_samples_leaf:int = 5, adaptive_complexity : bool = False,
-                 max_features:int = None, random_state = None, lmbda :float= 0.5):
+                 max_features:int = None, random_state = None, gamma :float= 0.5):
         self.root = None
-        self.lmbda = lmbda
+        self.gamma = gamma
         super().__init__(criterion,max_depth, min_samples_split,min_samples_leaf,adaptive_complexity,max_features,random_state)
-        self.tree = SrTree(self.lmbda, criterions[self.criterion], self.max_depth,self.min_samples_split,self.min_samples_leaf, self.adaptive_complexity,self.max_features,self.learning_rate,self.random_state)
+        self.tree = SrTree(self.gamma, criterions[self.criterion], self.max_depth,self.min_samples_split,self.min_samples_leaf, self.adaptive_complexity,self.max_features,self.learning_rate,self.random_state)
     
     def update(self, X,y):
         X,y = self.check_input(X,y)
         self.tree.update(X,y)
         self.root = self.tree.get_root()
         return self  
+
 
 class AbuTree(BaseRegressionTree):
-    """
-   
-
-    Parameters
-    ----------
-    criterion : string, {'mse', 'poisson'}, default = 'mse'
-                Function to optimize when selecting split feature and value.
-    max_depth : int, default = None.
-                Hyperparameter to determine the max depth of the tree.
-                If None, then nodes are expanded until all leaves are pure or until all leaves contain less than
-                min_samples_split samples.
-    min_samples_split : int,  default = 2.
-                Hyperparameter to determine the minimum number of samples required in order to split a internel node.
-
-    """
-    
-    def __init__(self, *,criterion = "mse", max_depth = None, min_samples_split = 2,min_samples_leaf:int = 5, adaptive_complexity : bool = False,
-                 max_features:int = None):
-        
-        self.root = None
-        super().__init__(criterion,max_depth, min_samples_split,min_samples_leaf,adaptive_complexity,max_features)
-        self.tree = atree(criterions[self.criterion], self.max_depth, self.min_samples_split,self.min_samples_leaf,adaptive_complexity,self.max_features,self.learning_rate,0)
-    
-    def predict(self, X):
-        return self.tree.predict(X)
-
-    def update(self, X,y):
-        X,y = self.check_input(X,y)
-        self.tree.update(X,y)
-        self.root = self.tree.get_root()
-        return self  
-
-class AbuTreeI(BaseRegressionTree):
     """
     A regression tree that uses stability regularization when updating the tree. Method 2: update method build a new tree using the prediction from the previous tree as regularization.
     
@@ -341,7 +308,7 @@ class AbuTreeI(BaseRegressionTree):
         
         self.root = None
         super().__init__(criterion,max_depth, min_samples_split,min_samples_leaf,adaptive_complexity,max_features)
-        self.tree = atreeI(criterions[self.criterion], self.max_depth, self.min_samples_split,self.min_samples_leaf,adaptive_complexity,self.max_features,self.learning_rate,0)
+        self.tree = atree(criterions[self.criterion], self.max_depth, self.min_samples_split,self.min_samples_leaf,adaptive_complexity,self.max_features,self.learning_rate,0)
     
     def predict_info(self, X):
         return self.tree.predict_info(X)
@@ -355,7 +322,7 @@ class AbuTreeI(BaseRegressionTree):
         self.root = self.tree.get_root()
         return self  
     
-methods = {"baseline":BaseLineTree, "NU":NaiveUpdate , "TR":TreeReevaluation, "SR":StabilityRegularization, "ABU":AbuTreeI}
+methods = {"baseline":BaseLineTree, "NU":NaiveUpdate , "TR":TreeReevaluation, "SR":StabilityRegularization, "ABU":AbuTree}
 
 
 class StableTree(BaseRegressionTree):
@@ -384,7 +351,7 @@ class BABUTree(BaseRegressionTree):
                  max_features:int = None, random_state = None):
         self.root = None
         super().__init__(criterion,max_depth, min_samples_split,min_samples_leaf,adaptive_complexity,random_state,max_features)
-        self.tree = atreeI(criterions[self.criterion], self.max_depth, self.min_samples_split,self.min_samples_leaf,adaptive_complexity,self.max_features,self.learning_rate,0)
+        self.tree = atree(criterions[self.criterion], self.max_depth, self.min_samples_split,self.min_samples_leaf,adaptive_complexity,self.max_features,self.learning_rate,0)
 
     def _fit(self, X: np.ndarray, y: np.ndarray):
         X,y = self.check_input(X,y)
@@ -433,7 +400,7 @@ if __name__ =="__main__":
     y_test = np.random.normal(loc=X.ravel(),scale=1,size = n)
 
     t1 = BaseLineTree(adaptive_complexity=True).fit(X1,y1)
-    t2 = AbuTreeI(adaptive_complexity=True).fit(X1,y1)
+    t2 = AbuTree(adaptive_complexity=True).fit(X1,y1)
     t = BABUTree(adaptive_complexity=True).fit(X1,y1)
     t1_pred1 = t1.predict(X_test)
     t2_pred1 = t2.predict(X_test)

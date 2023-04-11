@@ -15,7 +15,6 @@ using namespace std;
 #include "trees\tree.hpp"
 #include "trees\newtree.hpp"
 #include "trees\abutree.hpp"
-#include "trees\abutreeI.hpp"
 #include "criterions\MSE.hpp"
 #include "criterions\Poisson.hpp"
 #include "optimism\cir.hpp"
@@ -111,20 +110,13 @@ PYBIND11_MODULE(_stabletrees, m)
             .def("get_root", &StabilityRegularization::get_root);
         
 
-    py::class_<AbuTreeI>(m, "AbuTreeI")
-        .def(py::init<int, int, double,int,bool, int, double,unsigned int>())
-            .def("learn", &AbuTreeI::learn)
-            .def("predict", &AbuTreeI::predict)
-            .def("update", &AbuTreeI::update)
-            .def("predict_uncertainty", &AbuTreeI::predict_uncertainty)
-            .def("predict_info", &AbuTreeI::predict_info)
-            .def("get_root", &AbuTreeI::get_root);
-
     py::class_<AbuTree>(m, "AbuTree")
-        .def(py::init<int, int, double,int,bool, int,double,unsigned int>())
+        .def(py::init<int, int, double,int,bool, int, double,unsigned int>())
             .def("learn", &AbuTree::learn)
             .def("predict", &AbuTree::predict)
             .def("update", &AbuTree::update)
+            .def("predict_uncertainty", &AbuTree::predict_uncertainty)
+            .def("predict_info", &AbuTree::predict_info)
             .def("get_root", &AbuTree::get_root);
 
     py::class_<GBT>(m, "GBT")

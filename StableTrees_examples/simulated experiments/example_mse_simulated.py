@@ -1,5 +1,5 @@
 
-from stabletrees import BaseLineTree, AbuTreeI, NaiveUpdate,TreeReevaluation,StabilityRegularization,BABUTree
+from stabletrees import BaseLineTree, AbuTree, NaiveUpdate,TreeReevaluation,StabilityRegularization,BABUTree
 import numpy as np
 from matplotlib import pyplot as plt
 from sklearn.model_selection import train_test_split,RepeatedKFold
@@ -88,8 +88,8 @@ for case, info in cases.items():
                         #"glm": LinearRegression(),
                         "NU": NaiveUpdate(criterion = criterion,min_samples_leaf=5, adaptive_complexity=True),
                         "TR":TreeReevaluation(criterion = criterion,min_samples_leaf=5, adaptive_complexity=True, delta=0.1),
-                        "SL":StabilityRegularization(criterion = criterion,min_samples_leaf=5, adaptive_complexity=True,lmbda=0.75),
-                        "ABU":AbuTreeI(criterion = criterion,min_samples_leaf=5, adaptive_complexity=True),
+                        "SL":StabilityRegularization(criterion = criterion,min_samples_leaf=5, adaptive_complexity=True,gamma=0.75),
+                        "ABU":AbuTree(criterion = criterion,min_samples_leaf=5, adaptive_complexity=True),
                         "BABU": BABUTree(criterion = criterion,min_samples_leaf=5,adaptive_complexity=True)
                         }
         preds  = {k :np.zeros((200,100)) for k in models.keys()}
@@ -99,7 +99,6 @@ for case, info in cases.items():
 
                 X_12, y_12 = x[train_index],y[train_index]
                 X_test,y_test = x[test_index],y[test_index]
-                X_test = np.sort(X_test)
                 X1,X2,y1,y2 =  train_test_split(X_12, y_12, test_size=0.5, random_state=SEED)
                 for name, model in models.items():
                         model.fit(X1,y1)
@@ -111,7 +110,7 @@ for case, info in cases.items():
                         pred2 = model.predict(X_test)
                         preds[name][:,i] = (pred1-pred2)**2
                         stability[name].append( S2(pred1,pred2))
-                        performance[name] = mean_squared_error(y_test, pred2,)
+                        performance[name].append(mean_squared_error(y_test, pred2))
         print(case)
         for name in models.keys():
                 print("="*80)
@@ -122,7 +121,7 @@ for case, info in cases.items():
                 print(f"test - mse: {np.mean(performance[name]):.3f} ({np.mean(performance[name])/mse_scale:.2f}), stability: {np.mean(stability[name]):.3f} ({np.mean(stability[name])/S_scale:.2f})")
                 print("="*80)
                 if name != "baseline":
-                        x = (performance[name])/mse_scale
+                        x = np.mean((performance[name]))/mse_scale
                         y = np.mean(stability[name])/S_scale
                         plot_info.append((x,y,colors[case],markers[name]))
 

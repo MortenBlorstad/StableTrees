@@ -172,7 +172,7 @@ void Node::set_right_node(Node* node){
 
 double Node::predict(){
     if(std::isnan(this->prediction)|| std::isinf(this->prediction)){
-        throw exception("node prediction is nan or inf: %f", this->prediction);
+        throw exception("node prediction is nan or inf: %f\n", this->prediction);
     }
     return this->prediction;
 }
