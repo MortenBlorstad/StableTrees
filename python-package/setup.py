@@ -28,6 +28,13 @@ ext_modules = [
         define_macros=[("VERSION_INFO", __version__)],
     ),
 ]
+from setuptools.command.build_ext import build_ext
+class BuildExt(build_ext):
+    def build_extensions(self):
+        for ext in self.extensions:
+            # add /openmp and /openmp:llvm to extra_compile_args
+            ext.extra_compile_args += ['/openmp', '/openmp:llvm']
+        build_ext.build_extensions(self)
 
 setup(
     name='stabletrees',
@@ -39,6 +46,7 @@ setup(
     package_dir={"": "src"},
     packages=find_packages(where="src"),
     ext_modules=ext_modules,
+    cmdclass = {'build_ext': BuildExt},
     install_requires=['numpy', "scikit-learn", "matplotlib"],
     python_requires=">=3.6",
 

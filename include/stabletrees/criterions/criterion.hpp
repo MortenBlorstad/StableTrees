@@ -22,10 +22,9 @@ class Criterion{
         explicit Criterion();
         virtual void init(double n, const dVector &y,const dVector &yprev);
         virtual void init(double n, const dVector &y);
-        virtual void init(double n, const dVector &y, dMatrix leaf_info);
+
 
         virtual void update(double y_i, double yp_i);
-        virtual void update(double y_i, const iVector &sorted_index,const dArray &feature_sample, const dMatrix &leaf_info, double split_value);
         virtual void update(double y_i);
 
         virtual void reset();
@@ -35,6 +34,7 @@ class Criterion{
         void set_lambda(double lambda);
 
         double get_score();
+        double get_reg();
         double node_score;
         double observed_reduction;
         double score_reg;
@@ -64,7 +64,7 @@ class Criterion{
         
         
         
-        
+        double reg;
         double score;
         double eps = 0.000000000000001;    
 
@@ -109,6 +109,10 @@ double Criterion::node_impurity(const dVector &y){
     return 0;
 }
 
+double Criterion::get_reg(){
+    return reg;
+}
+
 void Criterion::update(double y_i){
     sum_y_l+= y_i;
     sum_y_r-=y_i;
@@ -120,9 +124,7 @@ void Criterion::update(double y_i, double yp_i){
 
 }
 
-void Criterion::update(double y_i, const iVector &sorted_index,const dArray &feature_sample, const dMatrix &leaf_info, double split_value){
-    
-}
+
 
 
 void Criterion::reset(){
@@ -153,7 +155,5 @@ void Criterion::init(double _n, const dVector &y){
 void Criterion::init(double _n, const dVector &y, const dVector &yprev){
 
 }
-void Criterion::init(double n, const dVector &y, dMatrix leaf_info){
 
-}
 #endif

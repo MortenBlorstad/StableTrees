@@ -24,11 +24,17 @@ void set_seed(unsigned int s)
     seed = s;
 }
 
+int get_seed()
+{
+    return seed;
+}
+
 /*
 * from https://github.com/SurajGupta/r-source/blob/master/src/nmath/rnchisq.c
 */
 double rnchisq(double df, double lambda)
 {
+    //thread_local 
     std::mt19937 gen(seed);
     seed = 36969*(seed & 0177777) + (seed>>16);
     if (df < 0.0 || lambda <0.0){
@@ -60,9 +66,10 @@ double rnchisq(double df, double lambda)
  */
 dVector cir_sim_vec(int m)
 {
+    //thread_local 
     std::gamma_distribution<> rgamma(0.5, 2.0 );
     std::mt19937 gen(seed);
-    seed = 36969*(seed & 0177777) + (seed>>16);
+    //seed = 36969*(seed & 0177777) + (seed>>16);
     double EPS = 1e-12;
     
     // Find original time of sim: assumption equidistant steps on u\in(0,1)
