@@ -1,7 +1,6 @@
 # StableTrees
 
-<!-- adjust width and height as per your need -->
-<table style="width: 50%; height: 200px;">
+
 |                                   | Baseline        | NU             | TR             | SL             | ABU            | BABU          |
 |-----------------------------------|----------------|----------------|----------------|----------------|----------------|---------------|
 | **Panel A: loss (MSE)**           |                |                |                |                |                |               |
@@ -20,7 +19,7 @@
 | Hitters                           | 55772.055 (1.00) | 4007.482 (0.07) | 12829.108 (0.23) | **226
 
 
-</table>
+
 
 ## Installation
 
