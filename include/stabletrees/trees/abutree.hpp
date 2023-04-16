@@ -141,7 +141,6 @@ void AbuTree::update(dMatrix &X, dVector &y){
 
     this->root = update_tree(X_concat, y_concat, g_concat, h_concat, 0,this->root,indicator_concat, gamma_concat);
     n1 = total_obs;
-    printf("%d \n",n1 );
 }
 
 
