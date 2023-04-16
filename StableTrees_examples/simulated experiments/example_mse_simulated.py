@@ -49,7 +49,7 @@ cases = {"Case 1": {"features": [0], "p":p1},
 # tikzplotlib.save("test.tex")
 
 np.random.seed(SEED)
-n = 1000
+n = 5000
 X1 = np.random.uniform(0,4,size=(n,1))
 X2 = np.random.uniform(0,4,size=(n,1))
 X3 = np.round(np.random.uniform(0,1,size=(n,1)),decimals=0)
@@ -60,6 +60,8 @@ X = np.hstack((X1,X2,X3,X4))
 colors = {"Case 1":"orange", "Case 2": "g", "Case 3":"r"}
 #markers = {"baseline":"o", "NU": "v", "TR":"^", "TR":"s", "SL":"D","ABU":"+", "BABU": "*" }
 markers = {"baseline":"$B$", "NU": "$NU$", "TR":"$TR$", "SL":"$SL$","ABU":"$ABU$", "BABU": "$BABU$" }
+
+
 
 
 plot_info  = [] # (x,y,colors,marker)
@@ -74,25 +76,28 @@ params = {"ytick.color" : "black",
           "font.serif" : ["Computer Modern Serif"]}
 fig = plt.figure(dpi=500)
 plt.rcParams.update(params)
+criterion = "poisson"
 for case, info in cases.items():
         np.random.seed(SEED)
         features = info["features"]
         p = info["p"]
         x = X[:,features]
-        y = np.random.normal(loc = p(X), scale=1,size=n)
+        if criterion =="poisson":
+            y = np.random.poisson(lam = p(X),size=n)
+        else:
+            y = np.random.normal(loc = p(X), scale=1,size=n)
         kf = RepeatedKFold(n_splits= 5,n_repeats=10, random_state=SEED)
-        criterion = "mse"
         models = {  
                         "baseline": BaseLineTree(criterion = criterion,min_samples_leaf=5, adaptive_complexity=True),
                         #"sklearn": DecisionTreeRegressor(criterion = criterion,min_samples_leaf=5, max_depth=10),
-                        #"glm": LinearRegression(),
+                        "glm": PoissonRegressor(),
                         "NU": NaiveUpdate(criterion = criterion,min_samples_leaf=5, adaptive_complexity=True),
                         "TR":TreeReevaluation(criterion = criterion,min_samples_leaf=5, adaptive_complexity=True, delta=0.1),
                         "SL":StabilityRegularization(criterion = criterion,min_samples_leaf=5, adaptive_complexity=True,gamma=0.75),
                         "ABU":AbuTree(criterion = criterion,min_samples_leaf=5, adaptive_complexity=True),
                         "BABU": BABUTree(criterion = criterion,min_samples_leaf=5,adaptive_complexity=True)
                         }
-        preds  = {k :np.zeros((200,100)) for k in models.keys()}
+
         stability = {k :[] for k in models.keys()}
         performance = {k :[] for k in models.keys()}
         for i,(train_index, test_index) in enumerate(kf.split(x)):
@@ -108,9 +113,8 @@ for case, info in cases.items():
                         else:
                                 model.update(X_12,y_12)
                         pred2 = model.predict(X_test)
-                        preds[name][:,i] = (pred1-pred2)**2
-                        stability[name].append( S2(pred1,pred2))
-                        performance[name].append(mean_squared_error(y_test, pred2))
+                        stability[name].append( S1(pred1,pred2))
+                        performance[name].append(mean_poisson_deviance(y_test, pred2))
         print(case)
         for name in models.keys():
                 print("="*80)
@@ -120,7 +124,7 @@ for case, info in cases.items():
 
                 print(f"test - mse: {np.mean(performance[name]):.3f} ({np.mean(performance[name])/mse_scale:.2f}), stability: {np.mean(stability[name]):.3f} ({np.mean(stability[name])/S_scale:.2f})")
                 print("="*80)
-                if name != "baseline":
+                if name != "baseline" and name !="glm":
                         x = np.mean((performance[name]))/mse_scale
                         y = np.mean(stability[name])/S_scale
                         plot_info.append((x,y,colors[case],markers[name]))

@@ -6,7 +6,7 @@ import numpy as np
 
 class GradientBoosting(BaseRegressionTree):
     def __init__(self,n_estimators:int,max_features:str = "sqrt", criterion: str = "mse", max_depth: int = None, min_samples_split: int = 5, min_samples_leaf: int = 5,
-                adaptive_complexity: bool = False,learning_rate: float = 0.3, random_state: int = None) -> None:
+                adaptive_complexity: bool = False,learning_rate: float = 0.1, random_state: int = None) -> None:
         super().__init__(criterion, max_depth, min_samples_split, min_samples_leaf, adaptive_complexity, random_state)
         assert n_estimators>=1
         self.n_estimators = n_estimators
@@ -46,7 +46,7 @@ if __name__ =="__main__":
     #y_test = np.random.po(loc=X_test.ravel(),scale=1,size = n)
     y_test = np.random.poisson(lam=np.exp(X_test.ravel()),size = n)
 
-    criterion = "poisson"
+    criterion = "mse"
     gtb = GradientBoosting(1000  , criterion=criterion,adaptive_complexity=True, learning_rate=0.01).fit(X1,y1)
     print("fitted")
     gtb_pred1 = gtb.predict(X)
@@ -58,7 +58,7 @@ if __name__ =="__main__":
     plt.subplot(3,2,1)
     
     plt.scatter(X[:,0],y, alpha = 0.1)
-    t = AbuTreeI(criterion=criterion, adaptive_complexity=True, max_depth=0).fit(X1,y1)
+    t = AbuTree(criterion=criterion, adaptive_complexity=True, max_depth=0).fit(X1,y1)
     t_pred1 = t.predict(X)
     plt.title(f"ABU (D1)")
     print(mean_squared_error(y_test,t.predict(X_test)))

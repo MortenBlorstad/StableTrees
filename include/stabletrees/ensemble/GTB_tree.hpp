@@ -1,7 +1,7 @@
 #pragma once
-#ifndef __TREE_HPP_INCLUDED__
+#ifndef __GTBTREE_HPP_INCLUDED__
 
-#define __TREE_HPP_INCLUDED__
+#define __GTBTREE_HPP_INCLUDED__
 
 
 #include <Eigen/Dense>
@@ -28,31 +28,29 @@ using namespace Eigen;
 #include <algorithm>    // std::sort, std::stable_sort
 
 
-class Tree{
+class GTBTREE{
 
     public:
         Node* root  = NULL;
-        explicit Tree(int _criterion,int max_depth, double min_split_sample,int min_samples_leaf, bool adaptive_complexity, int max_features,double learning_rate, unsigned int random_state); 
-        explicit Tree(); 
+        explicit GTBTREE(int _criterion,int max_depth, double min_split_sample,int min_samples_leaf, bool adaptive_complexity, int max_features,double learning_rate, unsigned int random_state); 
+        explicit GTBTREE(); 
         bool all_same(const dVector &vec);
         bool all_same_features_values(const dMatrix  &X);
         virtual Node* build_tree(const dMatrix  &X, const dVector &y, const dVector &g, const dVector &h, int depth, Node* previuos_tree_node);
         tuple<iVector, iVector> get_masks(dVector &feature, double value);
-        virtual void learn(dMatrix  &X, dVector &y);
-        void learn_difference(dMatrix  &X, dVector &y, dVector &g, dVector &h);
+        virtual void learn(dMatrix  &X, dVector &y,dVector &g, dVector &h);
         Node* get_root();
         double predict_obs(dVector  &obs);
         double predict_uncertainty_obs(dVector  &obs);
         dVector predict(dMatrix  &X);
         dVector predict_uncertainty(dMatrix  &X);
-        virtual void update(dMatrix &X, dVector &y);
         virtual tuple<bool,int,double, double,double,double,double> find_split(const dMatrix &X, const dVector &y, const dVector &g, const dVector &h, const iVector &features_indices);
         //Node* update_tree_info(dMatrix &X, dVector &y, Node* node, int depth);
         Node* update_tree_info(dMatrix &X, dVector &y, dVector &g ,dVector &h, Node* node, int depth);
         //~Tree();
         std::vector<Node*> make_node_list();
-        virtual Tree* copy();
-        Tree* next_tree = NULL; // only needed for gradient boosting
+        virtual GTBTREE* copy();
+        GTBTREE* next_tree = NULL; // only needed for gradient boosting
         int tree_depth;
         double learning_rate; // only needed for gradient boosting (shrinkage)
         
@@ -72,7 +70,7 @@ class Tree{
         int number_of_nodes;
         void make_node_list_rec(Node* node, std::vector<Node*> &l, size_t index );
 };
-Tree::Tree(){
+GTBTREE::GTBTREE(){
     int max_depth = INT_MAX;
     double min_split_sample = 2.0;
     _criterion = 0;
@@ -87,14 +85,14 @@ Tree::Tree(){
 }
 
 
- Tree* Tree::copy(){
-    Tree* tree = new Tree(*this);
+ GTBTREE* GTBTREE::copy(){
+    GTBTREE* tree = new GTBTREE(*this);
     tree->root = root->copy();
     return tree;
  }
  
 
-Tree::Tree(int _criterion, int max_depth, double min_split_sample,int min_samples_leaf, bool adaptive_complexity,int max_features,double learning_rate, unsigned int random_state){
+GTBTREE::GTBTREE(int _criterion, int max_depth, double min_split_sample,int min_samples_leaf, bool adaptive_complexity,int max_features,double learning_rate, unsigned int random_state){
     //this->splitter = Splitter(_criterion);
     if(max_depth !=NULL){
        this-> max_depth =  max_depth;
@@ -114,12 +112,12 @@ Tree::Tree(int _criterion, int max_depth, double min_split_sample,int min_sample
 
 } 
 
-tuple<bool,int,double, double,double,double,double>  Tree::find_split(const dMatrix &X, const dVector &y, const dVector &g, const dVector &h, const iVector &features_indices){
+tuple<bool,int,double, double,double,double,double>  GTBTREE::find_split(const dMatrix &X, const dVector &y, const dVector &g, const dVector &h, const iVector &features_indices){
     return splitter->find_best_split(X, y, g, h,features_indices);
 }
 
 
-bool Tree::all_same(const dVector &vec){
+bool GTBTREE::all_same(const dVector &vec){
     bool same = true;
     for(int i=0; i< vec.rows(); i++){
         if(vec(i)!=vec(0) ){
@@ -130,7 +128,7 @@ bool Tree::all_same(const dVector &vec){
     return same;
 }
 
-bool Tree::all_same_features_values(const dMatrix &X){
+bool GTBTREE::all_same_features_values(const dMatrix &X){
     bool same = true;
     dVector feature;
     for(int i =0; i<X.cols(); i++){
@@ -143,7 +141,7 @@ bool Tree::all_same_features_values(const dMatrix &X){
     return same;
 }
 
-tuple<iVector, iVector> Tree::get_masks(dVector &feature, double value){
+tuple<iVector, iVector> GTBTREE::get_masks(dVector &feature, double value){
     std::vector<int> left_values;
     std::vector<int> right_values;
     for(int i=0; i<feature.rows();i++){
@@ -161,67 +159,17 @@ tuple<iVector, iVector> Tree::get_masks(dVector &feature, double value){
 
 
 
-void Tree::learn(dMatrix  &X, dVector &y){
-    total_obs = y.size();
-    //printf("min_samples_leaf: %d \n", min_samples_leaf);
-    splitter = new Splitter(min_samples_leaf,total_obs, adaptive_complexity,max_features, learning_rate);
-    n1 = total_obs;
-
-
-    dVector offset =  dVector::Constant(y.size(),0,  0);
-    pred_0 = loss_function->link_function(y.array().mean());//learn_initial_prediction(y,offset,loss_function); //
-    //pred_0 = 0;
-    //printf("pred_0 %f %f \n", pred_0, loss_function->link_function(y.array().mean()+y.array().mean()/2));
-    dVector pred = dVector::Constant(y.size(),0,  pred_0) ;
-    dVector g = loss_function->dloss(y, pred ); //dVector::Zero(n1,1)
-    dVector h = loss_function->ddloss(y, pred ); //dVector::Zero(n1,1)
-
-    this->root = build_tree(X, y,g, h, 0, NULL);//
-    
-}
-
-
-void Tree::learn_difference(dMatrix  &X, dVector &y, dVector &g, dVector &h){
+void GTBTREE::learn(dMatrix  &X, dVector &y,dVector &g, dVector &h){
     total_obs = y.size();
     //printf("min_samples_leaf: %d \n", min_samples_leaf);
     splitter = new Splitter(min_samples_leaf,total_obs, adaptive_complexity,max_features, learning_rate );
     n1 = total_obs;
     
     this->root = build_tree(X, y,g, h, 0, NULL);//
+    
 }
 
-
-double Tree::predict_uncertainty_obs(dVector  &obs){
-    Node* node = this->root;
-    while(node !=NULL){
-        if(node->is_leaf()){
-            //printf("prediction %f \n", node->predict());
-            return node->w_var;
-        }else{
-            //printf("feature %d, value %f, obs %f \n", node->split_feature, node->split_value,obs(node->split_feature));
-            if(obs(node->split_feature) <= node->split_value){
-                node = node->left_child;
-            }else{
-                node = node->right_child;
-            }
-        }
-    }
-    return NULL;
-}
-
-dVector Tree::predict_uncertainty(dMatrix  &X){
-    int n = X.rows();
-    dVector w_var(n);
-    dVector obs(X.cols());
-    for(int i =0; i<n; i++){
-        dVector obs = X.row(i);
-        w_var[i] = predict_uncertainty_obs(obs);
-    }
-    return w_var;
-}
-
-
-double Tree::predict_obs(dVector  &obs){
+double GTBTREE::predict_obs(dVector  &obs){
     Node* node = this->root;
     while(node !=NULL){
         if(node->is_leaf()){
@@ -239,7 +187,7 @@ double Tree::predict_obs(dVector  &obs){
     return NULL;
 }
 
-dVector Tree::predict(dMatrix  &X){
+dVector GTBTREE::predict(dMatrix  &X){
     int n = X.rows();
     dVector y_pred(n);
     dVector obs(X.cols());
@@ -251,7 +199,7 @@ dVector Tree::predict(dMatrix  &X){
 }
 
 
-Node* Tree::build_tree(const dMatrix  &X, const dVector &y, const dVector &g, const dVector &h, int depth, Node* previuos_tree_node){
+Node* GTBTREE::build_tree(const dMatrix  &X, const dVector &y, const dVector &g, const dVector &h, int depth, Node* previuos_tree_node){
     number_of_nodes +=1;
     tree_depth = max(depth,tree_depth);
     if(X.rows()<2 || y.rows()<2){
@@ -265,26 +213,11 @@ Node* Tree::build_tree(const dMatrix  &X, const dVector &y, const dVector &g, co
     double H = h.array().sum();
     
    
-    double eps = 0.0;
-    if(_criterion ==1){ // for poisson need to ensure not log(0)
-        eps=0.0000000001;
-    }
+    
 
-    double y_sum = y.array().sum();
-    double pred = loss_function->link_function(y_sum/n+eps) - pred_0;
-    //double pred = -G/H;
-    //printf("-g/h = %f, y.mean() = %f, -G/H = %f \n", pred, y.array().mean(),pred_0-G/H);
-    if(std::isnan(pred)|| std::isinf(pred)){
-        std::cout << "_criterion: " << _criterion << std::endl;
-        std::cout << "eps: " << eps << std::endl;
-        std::cout << "pred: " << pred << std::endl;
-        std::cout << "G: " << G << std::endl;
-        std::cout << "H: " << H << std::endl;
-        std::cout << "y_sum: " << y_sum << std::endl;
 
-        throw exception("pred is nan or inf: %f \n",pred);
-
-    }
+    double pred = -G/H;
+    
     bool any_split;
     double score;
     
@@ -317,8 +250,6 @@ Node* Tree::build_tree(const dMatrix  &X, const dVector &y, const dVector &g, co
     }
 
 
-    //printf("%d \n", features_indices.allFinite());
-    
     
     
     
@@ -435,118 +366,9 @@ Node* Tree::build_tree(const dMatrix  &X, const dVector &y, const dVector &g, co
     return node;
 }
 
-// Node* Tree::update_tree_info(dMatrix &X, dVector &y, Node* node, int depth){
-//     tree_depth = max(tree_depth, depth);
-//     node->n_samples = y.size();
-//     if(node->n_samples<1){
-//         return NULL;
-//     }else if(node->n_samples<1){
-//         node->prediction = y[0];
-//     }else{
-//         node->prediction = y.array().mean();
-//     }
-//     if(node->is_leaf()){
-//         return node;
-//     }
-//     dVector feature = X.col(node->split_feature);
-//     iVector mask_left;
-//     iVector mask_right;
-//     tie(mask_left, mask_right) = get_masks(feature, node->split_value);
-//     if(mask_left.size()<1 || mask_right.size()<1 ){
-//         //printf("null %d %d \n", mask_left.size()<1, mask_right.size()<1);
-//         node->left_child = NULL;
-//         node->right_child = NULL;
-//     }else{
-//         iVector keep_cols = iVector::LinSpaced(X.cols(), 0, X.cols()-1).array();
-//         dMatrix X_left = X(mask_left,keep_cols); dVector y_left = y(mask_left,1);
-//         dMatrix X_right = X(mask_right,keep_cols); dVector y_right = y(mask_right,1);
-
-//         //printf("update rec %d %d \n", mask_left.size()<1, mask_right.size()<1);
-
-//         node->left_child = update_tree_info(X_left, y_left, node->left_child, depth+1) ;
-//         node->right_child = update_tree_info(X_right, y_right, node->right_child, depth+1) ;
-//     }
-//     //printf("update %d \n", node->get_split_feature());
-//     return node;
-// }
 
 
-Node* Tree::update_tree_info(dMatrix &X, dVector &y, dVector &g ,dVector &h, Node* node, int depth){
-    tree_depth = max(tree_depth, depth);
-    node->n_samples = y.size();
-    double eps = 0.0;
-    if(_criterion ==1){ // for poisson need to ensure not log(0)
-        eps=0.0000000001;
-    }
-    if(node->n_samples<1){
-        return NULL;
-    }else if(node->n_samples<1){
-        node->prediction = y[0] - pred_0;
-    }else{
-        double y_mean = y.array().mean();
-        double pred = loss_function->link_function(y_mean+eps) - pred_0;
-        node->prediction = pred; //-g.array().sum()/h.array().sum();
-    }
-    if(node->is_leaf()){
-        return node;
-    }
-    dVector feature = X.col(node->split_feature);
-    iVector mask_left;
-    iVector mask_right;
-    tie(mask_left, mask_right) = get_masks(feature, node->split_value);
-    if(mask_left.size()<1 || mask_right.size()<1 ){
-        //printf("null %d %d \n", mask_left.size()<1, mask_right.size()<1);
-        node->left_child = NULL;
-        node->right_child = NULL;
-    }else{
-        iVector keep_cols = iVector::LinSpaced(X.cols(), 0, X.cols()-1).array();
-        dMatrix X_left = X(mask_left,keep_cols); dVector y_left = y(mask_left,1);
-        dMatrix X_right = X(mask_right,keep_cols); dVector y_right = y(mask_right,1);
-        dVector g_left = g(mask_left,1); dVector h_left = h(mask_left,1);
-        dVector g_right = g(mask_right,1); dVector h_right = h(mask_right,1);
-
-        //printf("update rec %d %d \n", mask_left.size()<1, mask_right.size()<1);
-
-        node->left_child = update_tree_info(X_left, y_left,g_left,h_left, node->left_child, depth+1) ;
-        node->right_child = update_tree_info(X_right, y_right,g_right,h_right, node->right_child, depth+1) ;
-    }
-    //printf("update %d \n", node->get_split_feature());
-    return node;
-}
-
-
-void Tree::make_node_list_rec(Node* node, std::vector<Node*> &l, size_t index ){
-    if(node->is_leaf()){
-        return;
-    }
-    size_t left_index = index*2+1;
-    size_t right_index = index*2+2;
-    l[left_index] = node->left_child;
-    l[right_index] = node->right_child;
-    make_node_list_rec(node->left_child, l, left_index);
-    make_node_list_rec(node->right_child, l, right_index);
-
-}
-
-std::vector<Node*> Tree::make_node_list(){
-    size_t index = 0;
-    int max_number_of_nodes = pow(2,tree_depth+1)-1;
-    std::vector<Node*> l(max_number_of_nodes);
-    Node* node = root;
-    l[index] = node;
-    make_node_list_rec(node,l, index);
-
-    return l;
-}
-
-
-
-void Tree::update(dMatrix &X, dVector &y){
-    this->random_state =0;
-    this->learn(X,y);
-}
-
-Node* Tree::get_root(){
+Node* GTBTREE::get_root(){
     return this->root;
 }
 

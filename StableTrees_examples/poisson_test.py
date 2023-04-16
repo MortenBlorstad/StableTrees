@@ -8,11 +8,12 @@ import pandas as pd
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.tree import plot_tree
 from matplotlib import pyplot as plt
-n = 400
+from sklearn.linear_model import PoissonRegressor
+n = 5000
 np.random.seed(0)
 X = np.random.uniform(low=0,high=4,size=(n,1))
 
-y = np.random.poisson(lam=np.exp(X[:,0]),size=n)
+y = np.random.poisson(lam=X[:,0]**2+ np.sin(X[:,0]),size=n)
 
 #y = np.random.normal(loc = X.ravel()**2,scale=1,size=  n)
 X1,X2,y1,y2 = train_test_split(X,y,test_size=0.5,random_state=0)
@@ -20,10 +21,10 @@ X1,X2,y1,y2 = train_test_split(X,y,test_size=0.5,random_state=0)
 criterion = "mse"
 
 
-
-t2 =AbuTree(criterion=criterion, adaptive_complexity=True,min_samples_leaf=5).fit(X1,y1)
+lm = PoissonRegressor().fit(X,y)
+t2 =BABUTree(criterion=criterion, adaptive_complexity=True,min_samples_leaf=5).fit(X1,y1)
 t1 = BaseLineTree(criterion=criterion, adaptive_complexity=True,min_samples_leaf=5).fit(X1,y1)
-t3 = StabilityRegularization(criterion=criterion, adaptive_complexity=True,min_samples_leaf=5,gamma = 0.1).fit(X1,y1)
+t3 = StabilityRegularization(criterion=criterion, adaptive_complexity=True,min_samples_leaf=5,gamma = 0.75).fit(X1,y1)
 ind = np.argsort(X, axis=0).ravel()
 pred = t1.predict(X[ind,:])
 # t1.update(X,y)
@@ -38,7 +39,7 @@ print(y1.sum())
 #t1.update(X2,y2)
 #pred3 =t1.predict(X)
 t1.update(X,y)
-t2.update(X,y)
+
 t3.update(X,y)
 pred4 =t1.predict(X[ind,:])
 pred2 =t2.predict(X[ind,:])
@@ -50,13 +51,14 @@ plt.scatter(X[:,0],y, s= 10)
 
 plt.scatter(X[ind,0],pred,c ="black",label= "base") #first
 #plt.scatter(X,pred3,c ="orange", s = 8) #t2
-plt.scatter(X[ind,0],pred2,c ="r",label= "ABU") #combined
+plt.scatter(X[ind,0],pred2,c ="r",label= "BABU",alpha=0.5,s = 8) #combined
 plt.scatter(X[ind,0],pred6,c ="m",label= "SL",s = 8) #combined
+
 
 #plt.plot(X[ind,:],pred5,c ="y",label= "base retrained")
 
 plt.legend()
 plt.show()
-# print(pred-pred5)
+print(pred-pred2)
 
 

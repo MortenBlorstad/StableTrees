@@ -141,6 +141,7 @@ void AbuTree::update(dMatrix &X, dVector &y){
 
     this->root = update_tree(X_concat, y_concat, g_concat, h_concat, 0,this->root,indicator_concat, gamma_concat);
     n1 = total_obs;
+    printf("%d \n",n1 );
 }
 
 
@@ -175,7 +176,7 @@ Node* AbuTree::update_tree(const dMatrix  &X, const dVector &y, const dVector &g
     
     double eps = 0.0;
     if(_criterion ==1){ // for poisson need to ensure not log(0)
-        eps+0.0000000001;
+        eps=0.0000000001;
     }
     double n2 = indicator.array().sum();
     double gamma_sum = gamma.array().sum();
@@ -185,6 +186,8 @@ Node* AbuTree::update_tree(const dMatrix  &X, const dVector &y, const dVector &g
     //double pred = -G/H;
     //printf("-g/h = %f, y.mean() = %f, -G/H = %f \n", pred, y.array().mean(),pred_0-G/H);
     if(std::isnan(pred)|| std::isinf(pred)|| indicator.size()<=0){
+        std::cout << "_criterion: " << _criterion << std::endl;
+        std::cout << "eps: " << eps << std::endl;
         std::cout << "pred: " << pred << std::endl;
         std::cout << "G: " << G << std::endl;
         std::cout << "H: " << H << std::endl;

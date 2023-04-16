@@ -27,12 +27,13 @@ void StabilityRegularization::update(dMatrix &X, dVector &y){
      if(this->root == NULL){
         this->learn(X,y);
     }else{
-        dVector ypred1 = loss_function->link_function(this->predict(X));
+        dVector ypred1 = this->predict(X);
+        dVector ypred1_linked = loss_function->link_function(ypred1);
 
         // dVector g = loss_function->dloss(y, dVector::Zero(X.rows(),1), ypred1, lambda); 
         // dVector h = loss_function->ddloss(y, dVector::Zero(X.rows(),1), ypred1, lambda);
 
-        double original_mean = y.array().mean() +y.array().mean()/2 ;
+        double original_mean = y.array().mean() ;
 
         // // a quick fix for SL, since for some updates some of the prediction become extremely large (inf). fix by unsuring log lambda is is at least 0.
         // if(_criterion ==1){ // if poisson loss,
@@ -44,10 +45,9 @@ void StabilityRegularization::update(dMatrix &X, dVector &y){
         pred_0 = loss_function->link_function(original_mean);
 
         dVector pred = dVector::Constant(y.size(),0,  pred_0) ;
-        dVector g = loss_function->dloss(y, pred, ypred1, gamma); 
-        dVector h = loss_function->ddloss(y, pred, ypred1, gamma);
-        dVector gamma = dVector::Constant(y.size(),0,  0) ;
-        dVector indicator = dVector::Constant(y.size(),0,  1) ;
+        dVector g = loss_function->dloss(y, pred, ypred1_linked, gamma); 
+        dVector h = loss_function->ddloss(y, pred, ypred1_linked, gamma);
+
 
         splitter = new Splitter(min_samples_leaf,total_obs, adaptive_complexity, max_features, learning_rate);
         this->root = update_tree(X, y, g, h, 0,this->root,ypred1);
@@ -64,7 +64,7 @@ Node* StabilityRegularization::update_tree(const dMatrix  &X, const dVector &y, 
 
     double eps = 0.0;
     if(_criterion ==1){ // for poisson need to ensure not log(0)
-        eps+0.0000000001;
+        eps=0.0000000001;
     }
     int n = y.size();
     double G = g.array().sum();
@@ -75,7 +75,7 @@ Node* StabilityRegularization::update_tree(const dMatrix  &X, const dVector &y, 
     double pred = loss_function->link_function((y_sum+ypred1_sum)/((1+gamma)*n)+eps) - pred_0;
 
     //double pred = -G/H;
-    if(std::isnan(pred)|| std::isinf(pred)|| abs(pred +G/H)>0.000001){
+    if(std::isnan(pred)|| std::isinf(pred)){//|| abs(pred +G/H)>0.000001
         std::cout << "pred: " << pred << std::endl;
         std::cout << "G: " << G << std::endl;
         std::cout << "H: " << H << std::endl;
@@ -83,6 +83,8 @@ Node* StabilityRegularization::update_tree(const dMatrix  &X, const dVector &y, 
         std::cout << "n: " << n << std::endl;
         std::cout << "y_sum: " << y_sum << std::endl;
         std::cout << "ypred1_sum: " << ypred1_sum << std::endl;
+        std::cout << "ypred1 size: " << ypred1.size() << std::endl;
+        std::cout << "y size: " << y.size() << std::endl;
         std::cout << "y: " << y.array().sum() << std::endl;
         throw exception("pred is nan or inf: %f \n",pred);
 

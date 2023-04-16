@@ -1,4 +1,4 @@
-from stabletrees import BaseLineTree, AbuTreeI,AbuTree,NaiveUpdate,TreeReevaluation,StabilityRegularization,BABUTree,SklearnTree
+from stabletrees import BaseLineTree,AbuTree,NaiveUpdate,TreeReevaluation,StabilityRegularization,BABUTree,SklearnTree
 from sklearn.datasets import make_regression
 from sklearn.metrics import mean_squared_error,mean_poisson_deviance
 from sklearn.model_selection import train_test_split,GridSearchCV,RepeatedKFold
@@ -40,7 +40,7 @@ models = {
             "NU": NaiveUpdate(),
             "TR":TreeReevaluation(delta=0.1),
             "SL":StabilityRegularization(),
-            "ABU":AbuTreeI(),
+            "ABU":AbuTree(),
             "BABU": BABUTree(),
             }
 stability_all = {name:[] for name in models.keys()}
@@ -96,7 +96,7 @@ for ds,target, feature in zip(datasets,targets, features):
                 #"NU": NaiveUpdate(criterion = criterion,min_samples_leaf=5, adaptive_complexity=True,),
                 #"TR":TreeReevaluation(criterion = criterion,min_samples_leaf=5, adaptive_complexity=True, delta=0.25),
                 "SL":StabilityRegularization(criterion = criterion,min_samples_leaf=5, adaptive_complexity=True,gamma=0.75),
-                "ABU":AbuTreeI(criterion = criterion,min_samples_leaf=5,adaptive_complexity=True),
+                "ABU":AbuTree(criterion = criterion,min_samples_leaf=5,adaptive_complexity=True),
                 "BABU": BABUTree(criterion = criterion,min_samples_leaf=5, adaptive_complexity=True)
                 
                 #  "baseline": BaseLineTree(**params), 

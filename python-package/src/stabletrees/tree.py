@@ -370,15 +370,14 @@ class BABUTree(BaseRegressionTree):
         np.random.seed(0)
         self._fit(X,y)
         n = X.shape[0]
-        X_ = X
-        y_ = y
-        
+        # X_ = X
+        # y_ = y
         for b in range(5):
-            ind_b = np.random.randint(0,n,size=n)
-            X_b = X[ind_b,:]
-            y_b = y[ind_b]
-            X_ = np.vstack((X_,X_b))
-            y_ = np.concatenate((y_,y_b),axis=0)
+            # ind_b = np.random.randint(0,n,size=n)
+            # # X_b = X[ind_b,:]
+            # y_b = y[ind_b]
+            # X_ = np.vstack((X_,X_b))
+            # y_ = np.concatenate((y_,y_b),axis=0)
             self._update(X,y)
         return self
 
