@@ -20,8 +20,8 @@ class GradientBoosting(BaseRegressionTree):
         self.ensemble.learn(X,y)
         return self
         
-    def update(self, X: np.ndarray, y: np.ndarray):
-        self.ensemble.update(X,y)
+    def update(self, X: np.ndarray, y: np.ndarray, gamma:float = 0.5):
+        self.ensemble.update(X,y,gamma)
         return self
     
     def predict(self, X: np.ndarray) -> np.ndarray:
@@ -39,12 +39,12 @@ if __name__ =="__main__":
     n = 2000
 
     X = np.random.uniform(size=(n,1),low=0,high=4)
-    #y = np.random.normal(loc=X.ravel(),scale=1,size = n)
-    y = np.random.poisson(lam=np.exp(X.ravel()),size = n)
+    y = np.random.normal(loc=X.ravel()**2,scale=1,size = n)
+    #y = np.random.poisson(lam=np.exp(X.ravel()),size = n)
     X1,X2,y1,y2 = train_test_split(X,y,test_size=0.5,random_state=0)
     X_test = np.random.uniform(size=(n,1),low=0,high=4)
-    #y_test = np.random.po(loc=X_test.ravel(),scale=1,size = n)
-    y_test = np.random.poisson(lam=np.exp(X_test.ravel()),size = n)
+    y_test = np.random.normal(loc=X_test.ravel()**2,scale=1,size = n)
+    #y_test = np.random.poisson(lam=np.exp(X_test.ravel()),size = n)
 
     criterion = "mse"
     gtb = GradientBoosting(1000  , criterion=criterion,adaptive_complexity=True, learning_rate=0.01).fit(X1,y1)
@@ -104,7 +104,7 @@ if __name__ =="__main__":
     plt.legend()
     plt.subplot(3,2,6)
 
-    gtb.update(X,y)
+    gtb.update(X,y,0.75)
     gtb_pred2 = gtb.predict(X)
     print(mean_squared_error(y_test,gtb.predict(X_test)))
     plt.scatter(X[:,0],y, alpha = 0.1)

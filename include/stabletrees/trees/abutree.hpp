@@ -8,7 +8,7 @@ class AbuTree: public Tree{
     public:
         AbuTree(int _criterion,int max_depth, double min_split_sample,int min_samples_leaf, bool adaptive_complexity,int max_features,double learning_rate, unsigned int random_state);
         AbuTree();
-        virtual void update(dMatrix &X, dVector &y);
+        virtual void update(dMatrix &X, dVector &y, dVector &sample_weights = Eigen::VectorXd());
         dMatrix predict_info(dMatrix &X);
         tuple<bool,int,double, double,double,double,double,double>  AbuTree::find_update_split(const dMatrix &X,const dVector &y, const dVector &g,const dVector &h,const dVector &weights);
         Node* update_tree(const dMatrix  &X, const dVector &y, const dVector &g, const dVector &h, int depth, Node* previuos_tree_node,const dVector &indicator, const dVector &gamma);
@@ -31,22 +31,23 @@ AbuTree::AbuTree(int _criterion,int max_depth, double min_split_sample,int min_s
 
 dVector AbuTree::predict_info_obs(dVector  &obs){
     Node* node = this->root;
-    dVector info = dVector::Zero(2,1);
+    dVector info = dVector::Zero(3,1);
     while(node !=NULL){
         if(node->is_leaf()){
             info(0,1) = node->predict();
-            if(std::isnan(node->y_var)||std::isnan(node->w_var) || std::isnan((node->y_var/node->w_var)/node->n_samples) ){
-                    std::cout << "y_var or w_var contains NaN:" << node->y_var << " " <<node->w_var << " " << node->n_samples<< std::endl;
-                }
-            if(node->y_var< 0 || node->w_var <0 || (node->y_var/node->w_var)/node->n_samples<0){
-                    std::cout << "y_var or w_var <0: " << node->y_var << " " <<node->w_var << " " << node->n_samples<< std::endl;
-                }
+            
             if(node->w_var <=0){
                 node->w_var =0.00001;
             }
             if(node->y_var <=0){
                 node->y_var =0.00001;
             }
+            if(std::isnan(node->y_var)||std::isnan(node->w_var) || std::isnan((node->y_var/node->w_var)/node->n_samples) ){
+                    std::cout << "y_var or w_var contains NaN:" << node->y_var << " " <<node->w_var << " " << node->n_samples<< std::endl;
+                }
+            if(node->y_var< 0 || node->w_var <0 || (node->y_var/node->w_var)/node->n_samples<0){
+                    std::cout << "y_var or w_var <0: " << node->y_var << " " <<node->w_var << " " << node->n_samples<< std::endl;
+                }
             if(_criterion ==1){ //poisson only uses prediction variance
                 info(1,1) = (node->y_var/node->w_var)/node->n_samples; //Based on experimental tries
                 //info(1,1) = 1/(node->w_var/node->n_samples); //based on theory
@@ -55,6 +56,7 @@ dVector AbuTree::predict_info_obs(dVector  &obs){
                 
                 info(1,1) = (node->y_var/node->w_var)/node->n_samples;
             }
+            info(2,1) = node->w_var;
             return info;
         }else{
             if(obs(node->split_feature) <= node->split_value){
@@ -67,7 +69,7 @@ dVector AbuTree::predict_info_obs(dVector  &obs){
 }
 dMatrix AbuTree::predict_info(dMatrix &X){
     int n = X.rows();
-    dMatrix leaf_info(n,2);
+    dMatrix leaf_info(n,3);
     dVector obs(X.cols());
     for(int i =0; i<n; i++){
         dVector obs = X.row(i);
@@ -81,16 +83,30 @@ dMatrix AbuTree::predict_info(dMatrix &X){
 }
 
 
-void AbuTree::update(dMatrix &X, dVector &y){
+void AbuTree::update(dMatrix &X, dVector &y, dVector &sample_weights){
     //printf("%d\n", n1);
     dMatrix Xb = sample_X(X,n1);
     dMatrix info = predict_info(Xb);
     dVector weights = info.col(1);//array().min(1000).max(0);
     dVector yb = info.col(0);
+    std::mt19937 gen(bootstrap_seed);
+    dVector w_wars = info.col(2);
+    // for (size_t i = 0; i < yb.size(); i++)
+    // {
+    //     std::normal_distribution<double> distribution(0.0, sqrt(w_wars(i)));
+    //     double noise = distribution(gen);
+    //     yb(i)+= noise;
+    // }
     // for (size_t i = 0; i < yb.size(); i++)
     // {
     //     printf("yb = %f \n", yb(i));
     // }
+
+
+
+    if (sample_weights.size()<=0) {
+            sample_weights = dVector::Constant(y.size(),1 );
+    }
 
     // complete the squares 
     dVector hb = 2*weights.array();
@@ -105,10 +121,10 @@ void AbuTree::update(dMatrix &X, dVector &y){
     //     printf("pred = %f \n", pred(i));
     // }
 
-    dVector g = loss_function->dloss(y, pred ); 
-    dVector h = loss_function->ddloss(y, pred );
+    dVector g = loss_function->dloss(y, pred ).array()*sample_weights.array(); 
+    dVector h = loss_function->ddloss(y, pred ).array()*sample_weights.array();
     dVector gamma = dVector::Constant(y.size(),0,  0) ;
-    dVector indicator = dVector::Constant(y.size(),0,  1) ;
+    dVector indicator = dVector::Constant(y.size(),0,  1).array() *sample_weights.array() ;
     
     // dVector g = loss_function->dloss(y, dVector::Zero(X.rows(),1)); 
     // dVector h = loss_function->ddloss(y, dVector::Zero(X.rows(),1) );
@@ -141,7 +157,6 @@ void AbuTree::update(dMatrix &X, dVector &y){
 
     this->root = update_tree(X_concat, y_concat, g_concat, h_concat, 0,this->root,indicator_concat, gamma_concat);
     n1 = total_obs;
-    printf("%d \n",n1 );
 }
 
 
@@ -178,11 +193,12 @@ Node* AbuTree::update_tree(const dMatrix  &X, const dVector &y, const dVector &g
     if(_criterion ==1){ // for poisson need to ensure not log(0)
         eps=0.0000000001;
     }
-    double n2 = indicator.array().sum();
-    double gamma_sum = gamma.array().sum();
+    double n2 = (indicator.array()).sum();
+    double gamma_sum = (gamma.array()).sum();
     double y_sum = (y.array()*indicator.array()).sum();
     double yprev_sum = (gamma.array()*y.array()*(1-indicator.array())).sum();
     double pred = loss_function->link_function((y_sum+yprev_sum)/(n2+gamma_sum)+eps) - pred_0;
+
     //double pred = -G/H;
     //printf("-g/h = %f, y.mean() = %f, -G/H = %f \n", pred, y.array().mean(),pred_0-G/H);
     if(std::isnan(pred)|| std::isinf(pred)|| indicator.size()<=0){
@@ -217,21 +233,21 @@ Node* AbuTree::update_tree(const dMatrix  &X, const dVector &y, const dVector &g
     iVector mask_left;
     iVector mask_right;
     double expected_max_S;
-    iVector features_indices(X.cols(),1);
-    for (int i=0; i<X.cols(); i++){features_indices(i) = i; } 
-    if(previuos_tree_node ==NULL){
-        //for (int i=0; i<X.cols(); i++){features_indices(i) = i; } 
-    
+    std::vector<int> features_indices(X.cols());
+    for (int i=0; i<X.cols(); i++){features_indices[i] = i; } 
+     if(previuos_tree_node ==NULL){
+
         if(max_features<INT_MAX){
             std::mt19937 gen(random_state);
-            std::shuffle(features_indices.data(), features_indices.data() + features_indices.size(), gen);
-            features_indices = features_indices.block(0,0,max_features,1);
+            std::iota(features_indices.begin(), features_indices.end(), 0);
+            std::shuffle(features_indices.begin(), features_indices.end(), gen);
+            features_indices.resize(max_features);
             this->random_state +=1;
         }
-    }else if(previuos_tree_node->get_features_indices().size()>0) {
+    }else 
+    if(previuos_tree_node->get_features_indices().size()>0) {
         features_indices = previuos_tree_node->get_features_indices();
     }
-
 
 
     

@@ -1,13 +1,15 @@
 #pragma once
 #include "tree.hpp"
 
-
+#include <mutex>
+#include <vector>
+#include <thread>
 class StabilityRegularization: public Tree{
     public:
         StabilityRegularization(double gamma, int _criterion,int max_depth, double min_split_sample,int min_samples_leaf,bool adaptive_complexity,int max_features,double learning_rate,unsigned int random_state);
         StabilityRegularization();
-        virtual void update(dMatrix &X, dVector &y);
-        Node* update_tree(const dMatrix  &X, const dVector &y, const dVector &g, const dVector &h, int depth, Node* previuos_tree_node, const dVector &ypred1);
+        virtual void update(const dMatrix X, const dVector y, const dVector weights);
+        Node* update_tree(const dMatrix  &X, const dVector &y, const dVector &g, const dVector &h, int depth, Node* previuos_tree_node, const dVector &ypred1, const dVector &weights);
     private:
         double gamma;
         
@@ -23,17 +25,19 @@ StabilityRegularization::StabilityRegularization(double gamma, int _criterion,in
     this->gamma = gamma;
 }
 
-void StabilityRegularization::update(dMatrix &X, dVector &y){
-     if(this->root == NULL){
-        this->learn(X,y);
+void StabilityRegularization::update(const dMatrix X, const dVector y, const dVector weights){
+    //printf("sl \n");
+    this->random_state =0;
+    if(this->root == NULL){
+        this->learn(X,y,weights);
     }else{
+        std::lock_guard<std::mutex> lock(mutex);
         dVector ypred1 = this->predict(X);
         dVector ypred1_linked = loss_function->link_function(ypred1);
 
         // dVector g = loss_function->dloss(y, dVector::Zero(X.rows(),1), ypred1, lambda); 
         // dVector h = loss_function->ddloss(y, dVector::Zero(X.rows(),1), ypred1, lambda);
-
-        double original_mean = y.array().mean() ;
+        double original_mean = (y.array()).mean() ;
 
         // // a quick fix for SL, since for some updates some of the prediction become extremely large (inf). fix by unsuring log lambda is is at least 0.
         // if(_criterion ==1){ // if poisson loss,
@@ -42,19 +46,23 @@ void StabilityRegularization::update(dMatrix &X, dVector &y){
         //                                              //  If $\bar{y}$ is small, then the Poisson distribution is better approximated by a gamma distribution.
         // }
         
-        pred_0 = loss_function->link_function(original_mean);
 
+        pred_0 = loss_function->link_function(original_mean);
+        
         dVector pred = dVector::Constant(y.size(),0,  pred_0) ;
-        dVector g = loss_function->dloss(y, pred, ypred1_linked, gamma); 
-        dVector h = loss_function->ddloss(y, pred, ypred1_linked, gamma);
+        pred+=weights;
+        dVector g = loss_function->dloss(y.array(), pred,ypred1, gamma,weights ); //dVector::Zero(n1,1)
+        dVector h = loss_function->ddloss(y.array(), pred,ypred1,gamma,weights); //dVector::Zero(n1,1)
 
 
         splitter = new Splitter(min_samples_leaf,total_obs, adaptive_complexity, max_features, learning_rate);
-        this->root = update_tree(X, y, g, h, 0,this->root,ypred1);
+        this->root = update_tree(X, y, g, h, 0,this->root, ypred1, weights );
     }     
 }
 
-Node* StabilityRegularization::update_tree(const dMatrix  &X, const dVector &y, const dVector &g, const dVector &h, int depth, Node* previuos_tree_node, const dVector &ypred1){
+
+
+Node* StabilityRegularization::update_tree(const dMatrix  &X, const dVector &y, const dVector &g, const dVector &h, int depth, Node* previuos_tree_node, const dVector &ypred1, const dVector &weights){
     number_of_nodes +=1;
     tree_depth = max(depth,tree_depth);
     if(X.rows()<2 || y.rows()<2){
@@ -70,9 +78,21 @@ Node* StabilityRegularization::update_tree(const dMatrix  &X, const dVector &y, 
     double G = g.array().sum();
     double H = h.array().sum();
     
-    double y_sum = y.array().sum();
-    double ypred1_sum = ypred1.array().sum()*gamma;
-    double pred = loss_function->link_function((y_sum+ypred1_sum)/((1+gamma)*n)+eps) - pred_0;
+    double y_sum = (y.array()*weights.array()).sum();
+    double ypred1_sum = (ypred1.array()*gamma).sum();
+    // if(ypred1_sum !=0){
+    //     printf("%f\n",ypred1_sum );
+    // }
+    double sum_weights = weights.array().sum();
+
+    // if(y_sum+ypred1_sum !=y_sum){
+    //     printf("%f\n",ypred1_sum );
+    // }
+    // if((1+gamma)*sum_weights !=sum_weights){
+    //     printf("%f\n",sum_weights );
+    // }
+    // printf("%f %f %f %f\n",y_sum,ypred1_sum,sum_weights,gamma );
+    double pred = loss_function->link_function((y_sum+ypred1_sum)/((sum_weights+gamma*n)) +eps) - pred_0;
 
     //double pred = -G/H;
     if(std::isnan(pred)|| std::isinf(pred)){//|| abs(pred +G/H)>0.000001
@@ -105,18 +125,19 @@ Node* StabilityRegularization::update_tree(const dMatrix  &X, const dVector &y, 
     iVector mask_left;
     iVector mask_right;
     double expected_max_S;
-    iVector features_indices(X.cols(),1);
-    for (int i=0; i<X.cols(); i++){features_indices(i) = i; } 
-    if(previuos_tree_node ==NULL){
-        //for (int i=0; i<X.cols(); i++){features_indices(i) = i; } 
-    
+    std::vector<int> features_indices(X.cols());
+    for (int i=0; i<X.cols(); i++){features_indices[i] = i; } 
+     if(previuos_tree_node ==NULL){
+
         if(max_features<INT_MAX){
             std::mt19937 gen(random_state);
-            std::shuffle(features_indices.data(), features_indices.data() + features_indices.size(), gen);
-            features_indices = features_indices.block(0,0,max_features,1);
+            std::iota(features_indices.begin(), features_indices.end(), 0);
+            std::shuffle(features_indices.begin(), features_indices.end(), gen);
+            features_indices.resize(max_features);
             this->random_state +=1;
         }
-    }else if(previuos_tree_node->get_features_indices().size()>0) {
+    }else 
+    if(previuos_tree_node->get_features_indices().size()>0) {
         features_indices = previuos_tree_node->get_features_indices();
     }
 
@@ -176,16 +197,16 @@ Node* StabilityRegularization::update_tree(const dMatrix  &X, const dVector &y, 
 
     if(score == std::numeric_limits<double>::infinity()){
         printf("X.size %d y.size %d, reduction %f, expected_max_S %f, min_samples_leaf = %d \n", X.rows(), y.rows(),score,expected_max_S, min_samples_leaf);
-        cout<<"\n Two Dimensional Array is : \n";
-        for(int r=0; r<X.rows(); r++)
-        {
-                for(int c=0; c<X.cols(); c++)
-                {
-                        cout<<" "<<X(r,c)<<" ";
-                }
-                cout<<"\n";
-        }
-         cout<<"\n one Dimensional Array is : \n";
+        // cout<<"\n Two Dimensional Array is : \n";
+        // for(int r=0; r<X.rows(); r++)
+        // {
+        //         for(int c=0; c<X.cols(); c++)
+        //         {
+        //                 cout<<" "<<X(r,c)<<" ";
+        //         }
+        //         cout<<"\n";
+        // }
+        cout<<"\n one Dimensional Array is : \n";
         for(int c=0; c<y.size(); c++)
         {
                 cout<<" "<<y(c)<<" ";
@@ -204,9 +225,10 @@ Node* StabilityRegularization::update_tree(const dMatrix  &X, const dVector &y, 
     dMatrix X_right = X(mask_right,keep_cols); dVector y_right = y(mask_right,1);
     dVector g_left = g(mask_left,1); dVector h_left = h(mask_left,1);
     dVector g_right = g(mask_right,1); dVector h_right = h(mask_right,1);
-
+    
     dVector ypred1_left = ypred1(mask_left,1); dVector ypred1_right = ypred1(mask_right,1);
 
+    dVector weights_left  = weights(mask_left,1); dVector weights_right = weights(mask_right,1);
 
     double loss_parent = (y.array() - pred).square().sum();
     //printf("loss_parent %f \n" ,loss_parent);
@@ -219,18 +241,18 @@ Node* StabilityRegularization::update_tree(const dMatrix  &X, const dVector &y, 
     Node* node = new Node(split_value, loss_parent/n, score, split_feature, y.rows() , pred, y_var, w_var,features_indices);
     
     if(previuos_tree_node !=NULL){//only applicable for random forest for remembering previous node sub features when updating a tree (or if max_features are less then total number of features)
-        node->left_child = update_tree( X_left, y_left, g_left,h_left, depth+1,previuos_tree_node->left_child,ypred1_left);
+        node->left_child = update_tree( X_left, y_left, g_left,h_left, depth+1,previuos_tree_node->left_child,ypred1_left,weights_left);
     }else{
-        node->left_child = update_tree( X_left, y_left, g_left,h_left, depth+1,NULL,ypred1_left);
+        node->left_child = update_tree( X_left, y_left, g_left,h_left, depth+1,NULL,ypred1_left,weights_left);
     }
     if(node->left_child!=NULL){
         node->left_child->w_var*=expected_max_S;
         node->left_child->parent_expected_max_S=expected_max_S;
     }
     if(previuos_tree_node !=NULL){ //only applicable for random forest for remembering previous node sub features when updating a tree (or if max_features are less then total number of features)
-        node->right_child = update_tree(X_right, y_right,g_right,h_right, depth+1,previuos_tree_node->right_child,ypred1_right) ;
+        node->right_child = update_tree(X_right, y_right,g_right,h_right, depth+1,previuos_tree_node->right_child,ypred1_right,weights_right) ;
     }else{
-        node->right_child = update_tree(X_right, y_right,g_right,h_right, depth+1,NULL,ypred1_right) ;
+        node->right_child = update_tree(X_right, y_right,g_right,h_right, depth+1,NULL,ypred1_right,weights_right) ;
     }
     if(node->right_child!=NULL){
         node->right_child->w_var *=expected_max_S;

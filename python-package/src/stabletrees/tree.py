@@ -4,6 +4,8 @@ from _stabletrees import AbuTree as atree
 from _stabletrees import NaiveUpdate as NuTree
 from _stabletrees import StabilityRegularization as SrTree
 from _stabletrees import TreeReevaluation as TrTree
+from _stabletrees import STTree as sttree
+
 
 
 from abc import ABCMeta
@@ -62,12 +64,14 @@ class BaseRegressionTree(BaseEstimator, metaclass=ABCMeta):
         return X,y
 
     @abstractmethod
-    def update(self,X : np.ndarray ,y : np.ndarray):
+    def update(self,X : np.ndarray ,y : np.ndarray,sample_weight: np.ndarray = None):
         pass
 
-    def fit(self,X : np.ndarray ,y : np.ndarray): 
+    def fit(self,X : np.ndarray ,y : np.ndarray, sample_weight: np.ndarray = None): 
         X,y = self.check_input(X,y)
-        self.tree.learn(X,y)
+        if sample_weight is None:
+            sample_weight = np.ones(shape=(len(y),))
+        self.tree.learn(X,y,sample_weight)
         self.root = self.tree.get_root()
         return self
     
@@ -142,8 +146,8 @@ class BaseLineTree(BaseRegressionTree):
         super().__init__(criterion,max_depth, min_samples_split,min_samples_leaf, adaptive_complexity,max_features, random_state)
         self.tree = Tree(criterions[self.criterion], self.max_depth,self.min_samples_split,self.min_samples_leaf, self.adaptive_complexity,self.max_features,self.learning_rate,self.random_state)
     
-    def update(self,X : np.ndarray ,y : np.ndarray):
-        return self.fit(X,y)
+    def update(self,X : np.ndarray ,y : np.ndarray, sample_weight: np.ndarray = None):
+        return self.fit(X,y,sample_weight)
     # def update(self,X : np.ndarray ,y : np.ndarray):
     #     X,y = self.check_input(X,y)
     #     self.tree.update(X,y)
@@ -180,6 +184,8 @@ class SklearnTree(DecisionTreeRegressor):
         super().__init__(criterion = criterion,max_depth= max_depth, min_samples_split= min_samples_split,min_samples_leaf = min_samples_leaf, random_state = random_state)
 
     def update(self, X,y):
+        if sample_weight is None:
+            sample_weight = np.ones(shape=(len(y),))
         self.fit(X,y)
         return self
     
@@ -207,9 +213,11 @@ class NaiveUpdate(BaseRegressionTree):
         super().__init__(criterion,max_depth, min_samples_split,min_samples_leaf,adaptive_complexity, max_features)
         self.tree = NuTree(criterions[self.criterion], self.max_depth, self.min_samples_split,self.min_samples_leaf,adaptive_complexity,self.max_features,self.learning_rate,self.random_state)
     
-    def update(self, X,y):
+    def update(self, X,y, sample_weight: np.ndarray = None):
         X,y = self.check_input(X,y)
-        self.tree.update(X,y)
+        if sample_weight is None:
+            sample_weight = np.ones(shape=(len(y),))
+        self.tree.update(X,y,sample_weight)
         self.root = self.tree.get_root()
         return self 
     
@@ -241,17 +249,12 @@ class TreeReevaluation(BaseRegressionTree):
         self.tree = TrTree(self.alpha,self.delta ,criterions[self.criterion], self.max_depth, self.min_samples_split,self.min_samples_leaf,adaptive_complexity,self.max_features,self.learning_rate,self.random_state)
         
     
-    def fit(self,X : np.ndarray ,y : np.ndarray): 
-        X,y = self.check_input(X,y)
-        #y = (y - np.min(y))/(np.max(y)-np.min(y))
-        self.tree.learn(X,y)
-        self.root = self.tree.get_root()
-        return self
     
-    def update(self, X,y):
+    def update(self, X,y,sample_weight: np.ndarray = None):
         X,y = self.check_input(X,y)
-        #y = (y - np.min(y))/(np.max(y)-np.min(y))
-        self.tree.update(X,y)
+        if sample_weight is None:
+            sample_weight = np.ones(shape=(len(y),))
+        self.tree.update(X,y,sample_weight)
         self.root = self.tree.get_root()
         return self  
     
@@ -279,9 +282,11 @@ class StabilityRegularization(BaseRegressionTree):
         super().__init__(criterion,max_depth, min_samples_split,min_samples_leaf,adaptive_complexity,max_features,random_state)
         self.tree = SrTree(self.gamma, criterions[self.criterion], self.max_depth,self.min_samples_split,self.min_samples_leaf, self.adaptive_complexity,self.max_features,self.learning_rate,self.random_state)
     
-    def update(self, X,y):
+    def update(self, X,y,sample_weight=None):
         X,y = self.check_input(X,y)
-        self.tree.update(X,y)
+        if sample_weight is None:
+            sample_weight = np.ones(shape=(len(y),))
+        self.tree.update(X,y,sample_weight)
         self.root = self.tree.get_root()
         return self  
 
@@ -304,11 +309,11 @@ class AbuTree(BaseRegressionTree):
     """
     
     def __init__(self, *,criterion = "mse", max_depth = None, min_samples_split = 2,min_samples_leaf:int = 5, adaptive_complexity : bool = False,
-                 max_features:int = None):
+                 max_features:int = None, random_state = 0):
         
         self.root = None
-        super().__init__(criterion,max_depth, min_samples_split,min_samples_leaf,adaptive_complexity,max_features)
-        self.tree = atree(criterions[self.criterion], self.max_depth, self.min_samples_split,self.min_samples_leaf,adaptive_complexity,self.max_features,self.learning_rate,0)
+        super().__init__(criterion,max_depth, min_samples_split,min_samples_leaf,adaptive_complexity,max_features,random_state)
+        self.tree = atree(criterions[self.criterion], self.max_depth, self.min_samples_split,self.min_samples_leaf,adaptive_complexity,self.max_features,self.learning_rate,self.random_state)
     
     def predict_info(self, X):
         return self.tree.predict_info(X)
@@ -316,9 +321,11 @@ class AbuTree(BaseRegressionTree):
     def predict(self, X):
         return self.tree.predict(X)
 
-    def update(self, X,y):
+    def update(self, X,y,sample_weight=None):
         X,y = self.check_input(X,y)
-        self.tree.update(X,y)
+        if sample_weight is None:
+            sample_weight = np.ones(shape=(len(y),))
+        self.tree.update(X,y,sample_weight)
         self.root = self.tree.get_root()
         return self  
     
@@ -348,12 +355,78 @@ class BABUTree(BaseRegressionTree):
     """
     
     def __init__(self, *,criterion = "mse", max_depth = None, min_samples_split = 5,min_samples_leaf:int = 5, adaptive_complexity : bool = False,
-                 max_features:int = None, random_state = None):
+                 max_features:int = None, random_state = 0, bumping_iterations:int = 5):
+        self.root = None
+        super().__init__(criterion,max_depth, min_samples_split,min_samples_leaf,adaptive_complexity,max_features,random_state)
+        self.tree =atree(criterions[self.criterion], self.max_depth, self.min_samples_split,self.min_samples_leaf,adaptive_complexity,self.max_features,self.learning_rate,self.random_state)
+        self.bumping_iterations = bumping_iterations
+
+
+    def _fit(self, X: np.ndarray, y: np.ndarray,sample_weight):
+        X,y = self.check_input(X,y)
+        self.tree.learn(X,y,sample_weight)
+        self.root = self.tree.get_root()
+        return self
+    
+    def _update(self, X: np.ndarray, y: np.ndarray,sample_weight):
+        X,y = self.check_input(X,y)
+        self.tree.update(X,y,sample_weight)
+        self.root = self.tree.get_root()
+        return self  
+        
+
+    def fit(self, X: np.ndarray, y: np.ndarray,sample_weight=None):
+        np.random.seed(0)
+        if sample_weight is None:
+            sample_weight = np.ones(shape=(len(y),))
+        self._fit(X,y,sample_weight)
+        n = X.shape[0]
+        # X_ = X
+        # y_ = y
+        for b in range(self.bumping_iterations):
+            # ind_b = np.random.randint(0,n,size=n)
+            # # X_b = X[ind_b,:]
+            # y_b = y[ind_b]
+            # X_ = np.vstack((X_,X_b))
+            # y_ = np.concatenate((y_,y_b),axis=0)
+            self._update(X,y,sample_weight)
+        self.root = self.tree.get_root()
+        return self
+
+    def update(self, X,y,sample_weight=None): 
+        if sample_weight is None:
+            sample_weight = np.ones(shape=(len(y),))
+        self._update(X,y,sample_weight)
+        return self
+ 
+from sklearn.model_selection import KFold
+
+class BABUTreeI(BaseRegressionTree):
+    """
+    A regression tree that uses stability regularization when updating the tree. Method 2: update method build a new tree using the prediction from the previous tree as regularization.
+    
+    Parameters
+    ----------
+    criterion : string, {'mse', 'poisson'}, default = 'mse'
+                Function to optimize when selecting split feature and value.
+    max_depth : int, default = None.
+                Hyperparameter to determine the max depth of the tree.
+                If None, then nodes are expanded until all leaves are pure or until all leaves contain less than
+                min_samples_split samples.
+    min_samples_split : int,  default = 2.
+                Hyperparameter to determine the minimum number of samples required in order to split a internel node.
+
+    """
+    
+    def __init__(self, *,criterion = "mse", max_depth = None, min_samples_split = 5,min_samples_leaf:int = 5, adaptive_complexity : bool = False,
+                 max_features:int = None, random_state = None, bumping_iterations:int = 5):
         self.root = None
         super().__init__(criterion,max_depth, min_samples_split,min_samples_leaf,adaptive_complexity,random_state,max_features)
         self.tree = atree(criterions[self.criterion], self.max_depth, self.min_samples_split,self.min_samples_leaf,adaptive_complexity,self.max_features,self.learning_rate,0)
+        self.bumping_iterations = bumping_iterations
 
     def _fit(self, X: np.ndarray, y: np.ndarray):
+       
         X,y = self.check_input(X,y)
         self.tree.learn(X,y)
         self.root = self.tree.get_root()
@@ -370,37 +443,131 @@ class BABUTree(BaseRegressionTree):
         np.random.seed(0)
         self._fit(X,y)
         n = X.shape[0]
+        kf = KFold(n_splits=self.bumping_iterations)
         # X_ = X
         # y_ = y
-        for b in range(5):
-            # ind_b = np.random.randint(0,n,size=n)
-            # # X_b = X[ind_b,:]
-            # y_b = y[ind_b]
-            # X_ = np.vstack((X_,X_b))
-            # y_ = np.concatenate((y_,y_b),axis=0)
-            self._update(X,y)
+        for train_index, test_index in kf.split(X):   
+            X_train, X_test = X[train_index], X[test_index]
+            y_train, y_test = y[train_index], y[test_index]
+            self._update(X_train,y_train)
+        self._update(X,y)
         return self
+
+    # def update(self, X,y): 
+    #     kf = KFold(n_splits=self.bumping_iterations)
+    #     # X_ = X
+    #     # y_ = y
+    #     for train_index, test_index in kf.split(X):   
+    #         X_train, X_test = X[train_index], X[test_index]
+    #         y_train, y_test = y[train_index], y[test_index]
+    #         self._update(X_train,y_train)
+    #     self._update(X,y)
+    def update(self, X,y): 
+        self._update(X,y)
+        return self
+
+
+
+class STTree(BaseRegressionTree):
+    """
+    A regression tree that uses stability regularization when updating the tree. Method 2: update method build a new tree using the prediction from the previous tree as regularization.
+    
+    Parameters
+    ----------
+    criterion : string, {'mse', 'poisson'}, default = 'mse'
+                Function to optimize when selecting split feature and value.
+    max_depth : int, default = None.
+                Hyperparameter to determine the max depth of the tree.
+                If None, then nodes are expanded until all leaves are pure or until all leaves contain less than
+                min_samples_split samples.
+    min_samples_split : int,  default = 2.
+                Hyperparameter to determine the minimum number of samples required in order to split a internel node.
+
+    """
+    
+    def __init__(self, *,criterion = "mse", max_depth = None, min_samples_split = 5,min_samples_leaf:int = 5, adaptive_complexity : bool = False,
+                 max_features:int = None, random_state = None, bumping_iterations:int = 5):
+        self.root = None
+        super().__init__(criterion,max_depth, min_samples_split,min_samples_leaf,adaptive_complexity,random_state,max_features)
+        self.tree = sttree(criterions[self.criterion], self.max_depth, self.min_samples_split,self.min_samples_leaf,adaptive_complexity,self.max_features,self.learning_rate,0)
+        self.bumping_iterations = bumping_iterations
+
+
+
+    # def fit(self, X: np.ndarray, y: np.ndarray):
+    #     np.random.seed(0)
+    #     self._fit(X,y)
+    #     n = X.shape[0]
+    #     # X_ = X
+    #     # y_ = y
+    #     for b in range(self.bumping_iterations):
+    #         # ind_b = np.random.randint(0,n,size=n)
+    #         # # X_b = X[ind_b,:]
+    #         # y_b = y[ind_b]
+    #         # X_ = np.vstack((X_,X_b))
+    #         # y_ = np.concatenate((y_,y_b),axis=0)
+    #         self._update(X,y)
+    #     return self
+    
+    def fit(self, X: np.ndarray, y: np.ndarray):
+        np.random.seed(0)
+        self.tree.learn(X,y)
+        self.root = self.tree.get_root()
+        n = X.shape[0]
+        ind = np.random.randint(low=0, high = n, size = 10*n)
+        X_u = X[ind]
+        print(X_u.shape)
+        increase = len(ind)//10
+        n_tilde = increase
+        X_tilde = X_u[0:n_tilde]
+        np.random.normal(0, np.std(X, axis=0),10*n)
+        for b in range(10):  
+
+            self.tree.update(X,y,X_tilde)
+   
+            self.root = self.tree.get_root()
+            n_tilde += increase
+            X_tilde = X_u[0:n_tilde]
+        
+        self.root = self.tree.get_root()
+        return self
+
+    def _fit(self, X: np.ndarray, y: np.ndarray):
+        X,y = self.check_input(X,y)
+        self.tree.learn(X,y)
+        self.root = self.tree.get_root()
+        return self
+    
+    def _update(self, X: np.ndarray, y: np.ndarray):
+        X,y = self.check_input(X,y)
+        self.tree.update(X,y,X)
+        self.root = self.tree.get_root()
+        return self  
+        
+
+    
 
     def update(self, X,y): 
         self._update(X,y)
         return self
- 
+
+
 
 if __name__ =="__main__":
     np.random.seed(0)
     from sklearn.model_selection import train_test_split
     from sklearn.metrics import mean_squared_error
-    n = 2000
+    n = 200
 
     X = np.random.uniform(size=(n,1),low=0,high=4)
     y = np.random.normal(loc=X.ravel(),scale=1,size = n)
     X1,X2,y1,y2 = train_test_split(X,y,test_size=0.5,random_state=0)
     X_test = np.random.uniform(size=(n,1),low=0,high=4)
-    y_test = np.random.normal(loc=X.ravel(),scale=1,size = n)
+    y_test = np.random.normal(loc=X_test.ravel(),scale=1,size = n)
 
     t1 = BaseLineTree(adaptive_complexity=True).fit(X1,y1)
     t2 = AbuTree(adaptive_complexity=True).fit(X1,y1)
-    t = BABUTree(adaptive_complexity=True).fit(X1,y1)
+    t = STTree(adaptive_complexity=True).fit(X1,y1)
     t1_pred1 = t1.predict(X_test)
     t2_pred1 = t2.predict(X_test)
     t_pred1 = t.predict(X_test)
@@ -419,12 +586,12 @@ if __name__ =="__main__":
     print("update")
     print(mean_squared_error(y_test,t1_pred2))
     print(mean_squared_error(y_test,t2_pred2))
-    print(mean_squared_error(y_test,t_pred2))
+    print("t: ", mean_squared_error(y_test,t_pred2))
 
     def S2(pred1, pred2):
         return np.mean((pred1- pred2)**2)
 
     print("stability")
-    print(S2(t1_pred1,t1_pred2))
-    print(S2(t2_pred1,t2_pred2))
-    print(S2(t_pred1,t_pred2))
+    print("base ",S2(t1_pred1,t1_pred2))
+    print("AbuTree: ",S2(t2_pred1,t2_pred2))
+    print("t: ",S2(t_pred1,t_pred2))

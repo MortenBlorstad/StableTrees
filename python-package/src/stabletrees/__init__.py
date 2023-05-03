@@ -9,6 +9,8 @@ from stabletrees.tree import NaiveUpdate
 from stabletrees.tree import StabilityRegularization
 from stabletrees.tree import TreeReevaluation
 from stabletrees.tree import BABUTree
+from stabletrees.tree import BABUTreeI
+from stabletrees.tree import STTree
 
 
 from stabletrees.random_forest import RandomForest
@@ -17,7 +19,7 @@ from stabletrees.random_forest import AbuRandomForest
 from stabletrees.random_forest import ReevaluateRandomForest
 
 
-from stabletrees.gradient_tree_boosting import GBT
+from stabletrees.gradient_tree_boosting import GradientBoosting
 
 
 from _stabletrees import rnchisq

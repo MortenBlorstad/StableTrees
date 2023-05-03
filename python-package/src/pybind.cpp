@@ -2,6 +2,7 @@
 #include <pybind11\pybind11.h>
 #include <pybind11\eigen.h>
 #include <cstdio>
+#include <omp.h>
 
 
 using namespace std;
@@ -9,10 +10,12 @@ using namespace std;
 
 #include <pybind11/stl.h>
 
+
 #include "node.hpp"
 #include "splitters\splitter.hpp"
 #include "criterions\criterion.hpp"
 #include "trees\tree.hpp"
+#include "trees\sttree.hpp"
 #include "trees\newtree.hpp"
 #include "trees\abutree.hpp"
 #include "criterions\MSE.hpp"
@@ -23,10 +26,66 @@ using namespace std;
 #include "trees\treereevaluation.hpp"
 #include "ensemble\GBT.hpp"
 #include "ensemble\randomforest.hpp"
+#include "ensemble\stablelossrandomforest.hpp"
+#include "ensemble\naiveupdaterandomforest.hpp"
+#include "ensemble\treereevaluationrandomforest.hpp"
+#include "ensemble\baburandomforest.hpp"
+#include "ensemble\aburandomforest.hpp"
+#include "test_parallel_function.hpp"
+#include <string>
+#include <sstream>
+#include <iostream>
+#include <fstream>
 
+// std::string serialize(Node *node)
+// {   
+//     if (node == nullptr) {
+//         return "null";
+//     }
+//     std::ostringstream oss;
+//     // Else, store information on node
+//     oss << node->split_feature << ','
+//         << node->prediction << ','
+//         << node->n_samples << ','
+//         << node->split_score << ','
+//         << node->split_value << ','
+//         << node->impurity << ','
+//         << node->y_var << ','
+//         << node->w_var << ','
+//         << node->parent_expected_max_S << '\n';
+//     if (node->left_child != nullptr) {
+//         oss << serialize(node->left_child);
+//     } else {
+//         oss << "null\n";
+//     }
+//     if (node->right_child != nullptr) {
+//         oss << serialize(node->right_child);
+//     } else {
+//         oss << "null\n";
+//     }
+//     return oss.str();
+    
+// }
 
+// Node* deserialize(std::istringstream &iss) {
+//     std::string token;
+//     std::getline<char>(iss, token, ',');
+//     if (token == "null") {
+//         return nullptr;
+//     }
+//     int split_feature = std::stoi(token);
 
+//     Node *node = new Node;
+//     node->split_feature = split_feature;
+//     iss >> node->prediction >> node->n_samples >> node->split_score
+//         >> node->split_value >> node->impurity >> node->y_var
+//         >> node->w_var >> node->parent_expected_max_S;
 
+//     node->left_child = deserialize(iss);
+//     node->right_child = deserialize(iss);
+
+//     return node;
+// }
 
 #define STRINGIFY(x) #x
 #define MACRO_STRINGIFY(x) STRINGIFY(x)
@@ -48,8 +107,17 @@ PYBIND11_MODULE(_stabletrees, m)
 
     )pbdoc";
 
+    py::class_<ParallelSum>(m, "ParallelSum")
+        .def(py::init<const std::vector<double>&>())
+        .def("sum", &ParallelSum::sum)
+        .def("slowsum", &ParallelSum::slowsum)
+        .def("learn", &ParallelSum::learn)
+        .def("learnslow", &ParallelSum::learnslow);
+
+
+
     py::class_<Node>(m, "Node")
-        .def(py::init<double,double, double, int, int, double>())
+        .def(py::init<double,double, double, int, int, double,double,double,std::vector<int>>())
         .def(py::init<double, int>())
         .def("is_leaf", &Node::is_leaf)
         .def("set_left_node", &Node::set_left_node)
@@ -62,9 +130,37 @@ PYBIND11_MODULE(_stabletrees, m)
         .def("get_impurity", &Node::get_impurity)
         .def("get_split_feature", &Node::get_split_feature)
         .def("get_split_value", &Node::get_split_value)
-        .def("copy", &Node::copy)
+        // .def("copy", &Node::copy)
         .def("toString", &Node::toString)
-        .def("get_features_indices", &Node::get_features_indices);
+        .def("get_features_indices", &Node::get_features_indices)
+        // .def(py::pickle(
+        //     // Pickle function
+        //     [](Node* obj) {
+        //         return serialize(obj);
+        //     },
+        //     // Unpickle function
+        //     [](std::istringstream &data) {
+        //         return deserialize(data);
+        //     }
+        // ))
+        //  .def(py::pickle(
+        // [](const Node& node) { // dump
+        //     return py::make_tuple(node.split_value,  node.split_score,
+        //      node.n_samples, node.split_feature, node.left_child , node.right_child, node.prediction, node.y_var, node.w_var, node.features_indices );
+        // },
+        // [](py::tuple t) { // load
+        //     return Node{t[0].cast<double>(), t[1].cast<double>(), t[2].cast<double>(), t[3].cast<int>(), t[4].cast<int>(), t[5].cast<double>(), t[6].cast<double>(),
+        //                 t[7].cast<double>(), t[8].cast<iVector>()};
+        // }))
+
+        .def_readwrite("split_feature", &Node::split_feature)
+        .def_readwrite("prediction", &Node::prediction)
+        .def_readwrite("n_samples", &Node::n_samples)
+        .def_readwrite("split_score", &Node::split_score)
+        .def_readwrite("split_value", &Node::split_value)
+        .def_readwrite("impurity", &Node::impurity)
+        .def_readwrite("y_var", &Node::y_var)
+        .def_readwrite("w_var", &Node::w_var);
 
     
     py::class_<Tree>(m, "Tree")
@@ -118,6 +214,15 @@ PYBIND11_MODULE(_stabletrees, m)
             .def("predict_uncertainty", &AbuTree::predict_uncertainty)
             .def("predict_info", &AbuTree::predict_info)
             .def("get_root", &AbuTree::get_root);
+    
+    py::class_<STTree>(m, "STTree")
+        .def(py::init<int, int, double,int,bool, int, double,unsigned int>())
+            .def("learn", &STTree::learn)
+            .def("update", &STTree::update)
+            .def("predict", &STTree::predict)
+            .def("predict_uncertainty", &STTree::predict_uncertainty)
+            .def("predict_info", &STTree::predict_info)
+            .def("get_root", &STTree::get_root);
 
     py::class_<GBT>(m, "GBT")
         .def(py::init<int,int, int , double,int, bool ,double>())
@@ -127,10 +232,40 @@ PYBIND11_MODULE(_stabletrees, m)
     
 
     py::class_<RandomForest>(m, "RandomForest")
-    .def(py::init<int,int, int , double,int, bool ,int,int>())
-    .def("learn", &RandomForest::learn)
+    .def(py::init<int,int, int , double,int, bool ,int>())
+    .def("learn", &RandomForest::learn,py::call_guard<py::gil_scoped_release>())
     .def("predict", &RandomForest::predict)
     .def("update", &RandomForest::update);
+
+    py::class_<RandomForestSL>(m, "RandomForestSL")
+    .def(py::init<int,int, int , double,int, bool ,int, double>())
+    .def("learn", &RandomForestSL::learn,py::call_guard<py::gil_scoped_release>())
+    .def("predict", &RandomForestSL::predict)
+    .def("update", &RandomForestSL::update);
+
+    py::class_<RandomForestNU>(m, "RandomForestNU")
+    .def(py::init<int,int, int , double,int, bool ,int>())
+    .def("learn", &RandomForestNU::learn,py::call_guard<py::gil_scoped_release>())
+    .def("predict", &RandomForestNU::predict)
+    .def("update", &RandomForestNU::update);
+       
+    py::class_<RandomForestTR>(m, "RandomForestTR")
+    .def(py::init<int,int, int , double,int, bool ,int,double,double>())
+    .def("learn", &RandomForestTR::learn,py::call_guard<py::gil_scoped_release>())
+    .def("predict", &RandomForestTR::predict)
+    .def("update", &RandomForestTR::update);
+
+    py::class_<RandomForestABU>(m, "RandomForestABU")
+    .def(py::init<int,int, int , double,int, bool ,int>())
+    .def("learn", &RandomForestABU::learn,py::call_guard<py::gil_scoped_release>())
+    .def("predict", &RandomForestABU::predict)
+    .def("update", &RandomForestABU::update);
+
+    py::class_<RandomForestBABU>(m, "RandomForestBABU")
+    .def(py::init<int,int, int , double,int, bool ,int,int>())
+    .def("learn", &RandomForestBABU::learn,py::call_guard<py::gil_scoped_release>())
+    .def("predict", &RandomForestBABU::predict)
+    .def("update", &RandomForestBABU::update);
 
 
     py::class_<MSE>(m, "MSE")

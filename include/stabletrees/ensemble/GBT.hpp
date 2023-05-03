@@ -8,7 +8,7 @@ class GBT{
     public:
         explicit GBT(int _criterion,int n_estimator,int max_depth, double min_split_sample,int min_samples_leaf, bool adaptive_complexity,double learning_rate);
         explicit GBT();
-        void update(dMatrix &X, dVector &y);
+        void update(dMatrix &X, dVector &y, double gamma = 0.5);
         void learn(dMatrix &X, dVector &y);
         dVector predict(dMatrix &X);
         GTBTREE* first_tree;
@@ -81,22 +81,25 @@ dVector GBT::predict(dMatrix &X){
     return loss_function->inverse_link_function(pred);
 }
 
-void GBT::update(dMatrix &X, dVector &y){
+void GBT::update(dMatrix &X, dVector &y, double gamma){
+    
+    dVector weights = dVector::Constant(y.size(),1 );
+    
     
     initial_pred = loss_function->link_function(y.array().mean());
     dVector pred = dVector::Zero(y.size());
     pred.setConstant(initial_pred);
     dVector pred1 = loss_function->link_function(this->predict(X));
-    dVector g = loss_function->dloss(y,pred, pred1, 0.25); 
-    dVector h = loss_function->ddloss(y, pred, pred1, 0.25);
-
+    dVector g = loss_function->dloss(y,pred, pred1, gamma,weights); 
+    dVector h = loss_function->ddloss(y, pred, pred1, gamma,weights);
+    
     this->first_tree = new GTBTREE(_criterion,max_depth, min_split_sample, min_samples_leaf, adaptive_complexity, INT_MAX,learning_rate,this->random_state);
     first_tree->learn(X,y,g,h);
     pred = pred + first_tree->learning_rate* loss_function->link_function(first_tree->predict(X));
     GTBTREE* current_tree = this->first_tree;
     for(int i = 0; i<n_estimator;i++){
-        g = loss_function->dloss(y, pred, pred1, 0.25); 
-        h = loss_function->ddloss(y, pred, pred1, 0.25);
+        g = loss_function->dloss(y, pred, pred1, gamma,weights); 
+        h = loss_function->ddloss(y, pred, pred1, gamma,weights);
         GTBTREE* new_tree = new GTBTREE(_criterion,max_depth, min_split_sample, min_samples_leaf, adaptive_complexity, INT_MAX, learning_rate,this->random_state);
         new_tree->learn(X,y,g,h);
         pred = pred + new_tree->learning_rate*loss_function->link_function(new_tree->predict(X));

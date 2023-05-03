@@ -1,4 +1,4 @@
-from stabletrees import BaseLineTree,AbuTree,NaiveUpdate,TreeReevaluation,StabilityRegularization,BABUTree,SklearnTree
+from stabletrees import BaseLineTree,AbuTree,NaiveUpdate,TreeReevaluation,StabilityRegularization,BABUTree,SklearnTree,BABUTreeI
 from sklearn.datasets import make_regression
 from sklearn.metrics import mean_squared_error,mean_poisson_deviance
 from sklearn.model_selection import train_test_split,GridSearchCV,RepeatedKFold
@@ -30,7 +30,7 @@ EPSILON = 1.1
 
 colors = {"Boston":"orange", "Carseats": "g", "College":"r", "Hitters":"c", "Wage":"m"}
 #markers = {"baseline":"o", "NU": "v", "TR":"^", "TR":"s", "SL":"D","ABU":"+", "BABU": "*" }
-markers = {"baseline":"$B$", "NU": "$NU$", "TR":"$TR$", "TR":"$TR$", "SL":"$SL$","ABU":"$ABU$", "BABU": "$BABU$" }
+markers = {"baseline":"$B$", "NU": "$NU$", "TR":"$TR$", "TR":"$TR$", "SL":"$SL$", "SL1":"$SL1$", "SL2":"$SL2$","ABU":"$ABU$", "BABU": "$BABU$" }
 
 
 models = {  
@@ -40,6 +40,8 @@ models = {
             "NU": NaiveUpdate(),
             "TR":TreeReevaluation(delta=0.1),
             "SL":StabilityRegularization(),
+            "SL1":StabilityRegularization(),
+            "SL2":StabilityRegularization(),
             "ABU":AbuTree(),
             "BABU": BABUTree(),
             }
@@ -65,8 +67,8 @@ for ds,target, feature in zip(datasets,targets, features):
     
     y = data[target].to_numpy()
     X = data.drop(target, axis=1).to_numpy()
-    #if ds == "College":
-    #    y = np.log(y)
+    if ds in ["College","Hitters", "Wage"]:
+       y = np.log(y)
    
     # initial model 
     
@@ -93,11 +95,13 @@ for ds,target, feature in zip(datasets,targets, features):
                 "baseline": BaseLineTree(criterion = criterion,min_samples_leaf=5, adaptive_complexity=True),
                 #"GLM": LinearRegression(),
                 #"sklearn": SklearnTree(criterion = criterion,**params),
-                #"NU": NaiveUpdate(criterion = criterion,min_samples_leaf=5, adaptive_complexity=True,),
-                #"TR":TreeReevaluation(criterion = criterion,min_samples_leaf=5, adaptive_complexity=True, delta=0.25),
+                "NU": NaiveUpdate(criterion = criterion,min_samples_leaf=5, adaptive_complexity=True,),
+                "TR":TreeReevaluation(criterion = criterion,min_samples_leaf=5, adaptive_complexity=True, delta=0.25),
                 "SL":StabilityRegularization(criterion = criterion,min_samples_leaf=5, adaptive_complexity=True,gamma=0.75),
+                "SL1":StabilityRegularization(criterion = criterion,min_samples_leaf=5, adaptive_complexity=True,gamma=0.25),
+                "SL2":StabilityRegularization(criterion = criterion,min_samples_leaf=5, adaptive_complexity=True,gamma=0.5),
                 "ABU":AbuTree(criterion = criterion,min_samples_leaf=5,adaptive_complexity=True),
-                "BABU": BABUTree(criterion = criterion,min_samples_leaf=5, adaptive_complexity=True)
+                "BABU": BABUTree(criterion = criterion,min_samples_leaf=5, adaptive_complexity=True,bumping_iterations=5)
                 
                 #  "baseline": BaseLineTree(**params), 
                 # "NU": StableTree0(**params),

@@ -40,7 +40,7 @@ class NewTree{
         double predict_obs(dVector  &obs);
         dVector predict(dMatrix  &X);
         virtual void update(dMatrix &X, dVector &y);
-        virtual tuple<bool,int,double, double,double,double,double> find_split(const dMatrix &X, const dVector &y, const dVector &g, const dVector &h, const iVector &features_indices);
+        virtual tuple<bool,int,double, double,double,double,double> find_split(const dMatrix &X, const dVector &y, const dVector &g, const dVector &h, const std::vector<int> &features_indices);
         //Node* update_tree_info(dMatrix &X, dVector &y, Node* node, int depth);
         NewTree* next_tree = NULL; // only needed for gradient boosting
         int tree_depth;
@@ -91,7 +91,7 @@ NewTree::NewTree(int _criterion, int max_depth, double min_split_sample,int min_
 
 } 
 
-tuple<bool,int,double, double,double,double,double>  NewTree::find_split(const dMatrix &X, const dVector &y, const dVector &g, const dVector &h, const iVector &features_indices){
+tuple<bool,int,double, double,double,double,double>  NewTree::find_split(const dMatrix &X, const dVector &y, const dVector &g, const dVector &h, const std::vector<int> &features_indices){
     return splitter->find_best_split(X, y, g, h,features_indices);
 }
 
@@ -279,20 +279,20 @@ Node* NewTree::build_tree(const dMatrix  &X, const dVector &y, const dVector &g,
     iVector mask_left;
     iVector mask_right;
     double expected_max_S;
-    iVector features_indices(X.cols(),1);
-    for (int i=0; i<X.cols(); i++){features_indices(i) = i; } 
-    if(previuos_tree_node ==NULL){
-        //for (int i=0; i<X.cols(); i++){features_indices(i) = i; } 
+    std::vector<int> features_indices(X.cols(),1);
+    for (int i=0; i<X.cols(); i++){features_indices[i] = i; } 
+    // if(previuos_tree_node ==NULL){
+    //     //for (int i=0; i<X.cols(); i++){features_indices(i) = i; } 
     
-        if(max_features<INT_MAX){
-            std::mt19937 gen(random_state);
-            std::shuffle(features_indices.data(), features_indices.data() + features_indices.size(), gen);
-            features_indices = features_indices.block(0,0,max_features,1);
-            this->random_state +=1;
-        }
-    }else if(previuos_tree_node->get_features_indices().size()>0) {
-        features_indices = previuos_tree_node->get_features_indices();
-    }
+    //     if(max_features<INT_MAX){
+    //         std::mt19937 gen(random_state);
+    //         std::shuffle(features_indices.data(), features_indices.data() + features_indices.size(), gen);
+    //         features_indices = features_indices.block(0,0,max_features,1);
+    //         this->random_state +=1;
+    //     }
+    // }else if(previuos_tree_node->get_features_indices().size()>0) {
+    //     features_indices = previuos_tree_node->get_features_indices();
+    // }
 
 
     //printf("%d \n", features_indices.allFinite());

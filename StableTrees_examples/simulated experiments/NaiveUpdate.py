@@ -1,4 +1,4 @@
-from stabletrees import BaseLineTree, AbuTreeI, NaiveUpdate,TreeReevaluation,StabilityRegularization,BABUTree
+from stabletrees import BaseLineTree, AbuTree, NaiveUpdate,TreeReevaluation,StabilityRegularization,BABUTree
 import numpy as np
 from matplotlib import pyplot as plt
 from sklearn.model_selection import train_test_split,RepeatedKFold
@@ -18,9 +18,9 @@ def S2(pred1, pred2):
 def p1(X):
     return X[:,0]
 def p2(X):
-    return X[:,0]**2 + X[:,3]
+    return X[:,0]**2 + 0.75*X[:,1]
 def p3(X):
-    return X[:,0]**2 + X[:,1]*X[:,2] + X[:,3]
+    return X[:,0]**2 + 0.75*X[:,1] -  0.25*X[:,3] + 0.1*X[:,0]*X[:,2]
 
 
 cases = {"case 1": {"features": [0], "p":p1},
@@ -37,9 +37,9 @@ models = {
                 "NU": NaiveUpdate(criterion = criterion,min_samples_leaf=5, adaptive_complexity=True),
                 }
 
-#ns = [500,1000,1500,2000,2500,3000,3500,4000,4500, 5000]#
+ns = [500,1000,1500,2000,2500,3000,3500,4000,4500, 5000]#
 
-ns = [1000]
+#ns = [1000]
 stability = {k :[] for k in cases.keys()}
 performance = {k :[] for k in cases.keys()}
 

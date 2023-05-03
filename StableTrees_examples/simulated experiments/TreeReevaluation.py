@@ -1,5 +1,5 @@
 
-from stabletrees import BaseLineTree, AbuTreeI, NaiveUpdate,TreeReevaluation,StabilityRegularization,BABUTree
+from stabletrees import BaseLineTree, AbuTree, NaiveUpdate,TreeReevaluation,StabilityRegularization,BABUTree
 import numpy as np
 from matplotlib import pyplot as plt
 from sklearn.model_selection import train_test_split,RepeatedKFold
@@ -20,9 +20,9 @@ def S2(pred1, pred2):
 def p1(X):
     return X[:,0]
 def p2(X):
-    return X[:,0]**2 + X[:,3]
+    return X[:,0]**2 + 0.75*X[:,1]
 def p3(X):
-    return X[:,0]**2 + X[:,1]*X[:,2] + X[:,3]
+    return X[:,0]**2 + 0.75*X[:,1] -  0.25*X[:,3] + 0.1*X[:,0]*X[:,2] - 0.05*X[:,1]*X[:,3]
 
 cases = {"Case 1": {"features": [0], "p":p1},
          "Case 2": {"features": [0,3], "p":p2},
@@ -75,6 +75,7 @@ params = {"ytick.color" : "black",
           "font.family" : "serif",
           'text.latex.preamble': r"\usepackage{amsmath}",
           "font.serif" : ["Computer Modern Serif"]}
+
 fig, ax  = plt.subplots(dpi=500)
 plt.rcParams.update(params)
 for case, info in cases.items():
@@ -132,22 +133,22 @@ for case, info in cases.items():
 
         print(" ")
 from matplotlib.lines import Line2D
-frontier = []
-X = np.zeros((len(plot_info), 2))
-X[:,0] = [x for (x,y,c,s) in plot_info]
-X[:,1] = [y for (x,y,c,s) in plot_info]
-for i in range(X.shape[0]):
-    if is_pareto_optimal(i, X):
-        frontier.append((X[i,0],X[i,1]))
-frontier = sorted(frontier)
+# frontier = []
+# X = np.zeros((len(plot_info), 2))
+# X[:,0] = [x for (x,y,c,s) in plot_info]
+# X[:,1] = [y for (x,y,c,s) in plot_info]
+# for i in range(X.shape[0]):
+#     if is_pareto_optimal(i, X):
+#         frontier.append((X[i,0],X[i,1]))
+# frontier = sorted(frontier)
 
-frontier = [ (frontier[0][0], 2) ] + frontier+ [ (2, frontier[-1][1]) ]
-for (x,y,c,s) in plot_info:
-      print((x,y) in frontier )
-      print((x,y) )
-      print(frontier )
+# frontier = [ (frontier[0][0], 2) ] + frontier+ [ (2, frontier[-1][1]) ]
+# for (x,y,c,s) in plot_info:
+#       print((x,y) in frontier )
+#       print((x,y) )
+#       print(frontier )
 
-texts = [ax.text(x = x, y=y, s = r"$\mathbf{"+s+"}$",fontsize=6, ha='right', va='center',weight='heavy') if (x,y) in frontier else plt.text(x = x, y=y, s = "$"+s+"$",fontsize=6, ha='center', va='center') for (x,y,c,s) in plot_info]
+texts = [plt.text(x = x, y=y, s = "$"+s+"$",fontsize=8, ha='center', va='center') for (x,y,c,s) in plot_info]
 scatters = [ax.scatter(x = x, y=y, s = 4, c =c) for (x,y,c,_) in plot_info]
 adjust_text(texts,add_objects=scatters, arrowprops=dict(arrowstyle="-", color='k', lw=0.1),ax= ax)
 legend_elements = [Line2D([0], [0], marker='s', color='w', label=k,
@@ -158,8 +159,8 @@ plt.axvline(x=1, linestyle = "--")
 plt.axhline(y=1, linestyle = "--")
 plt.xlabel("mse",fontsize=10)
 plt.ylabel(r'$\left(f_1(x_i)-f_2(x_i)\right)^2$',fontsize=10)
-plt.ylim((0.3,1.025))
-plt.xlim((0.995,1.13))
+plt.ylim((0.25,1.025))
+plt.xlim((0.995,1.06))
 plt.legend(loc='upper right' , handles=legend_elements,fontsize="10")
 plt.savefig(f"StableTrees_examples\plots\\example_mse_simulated_TR.png")
 plt.close()

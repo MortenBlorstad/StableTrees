@@ -1,4 +1,5 @@
 
+#pragma once
 #ifndef __LOSSFUNCTIONS_HPP_INCLUDED__
 #define __LOSSFUNCTIONS_HPP_INCLUDED__
 #include <Eigen/Dense>
@@ -30,8 +31,8 @@ class LossFunction{
         dVector ddloss(dVector y_true,dVector y_pred );
         double ddloss(double y_true,double y_pred );
         dVector loss(dVector y_true,dVector y_pred2, dVector y_pred1 , double gamma);
-        dVector dloss(dVector y_true,dVector y_pred2, dVector y_pred1 , double gamma);
-        dVector ddloss(dVector y_true,dVector y_pred2, dVector y_pred1 , double gamma);
+        dVector dloss(dVector y_true,dVector y_pred2, dVector y_pred1 , double gamma, dVector weights );
+        dVector ddloss(dVector y_true,dVector y_pred2, dVector y_pred1 , double gamma, dVector weights );
         int citerion;
         
 };
@@ -147,33 +148,36 @@ dVector LossFunction::loss(dVector y_true,dVector y_pred2, dVector y_pred1, doub
 
 
 
-dVector LossFunction::dloss(dVector y_true,dVector y_pred2, dVector y_pred1, double gamma ){
+dVector LossFunction::dloss(dVector y_true,dVector y_pred2, dVector y_pred1, double gamma, dVector weights ){
     // printf("loss_with_reg , %f %f %f %f\n", lambda, y_true.array().sum(),y_pred2.array().sum(), y_pred1.array().sum());
     // printf("%f %f %f\n",(y_pred2.array() - y_true.array()).sum(), (y_pred2.array()- y_pred1.array()).sum(),  ((y_pred2.array()- y_true.array())+ (y_pred2.array()- y_pred1.array())).sum());
         
     if(citerion ==0){
-       return 2*(y_pred2.array()- y_true.array())+ gamma*2*(y_pred2.array()- y_pred1.array());
+       return 2*(y_pred2.array()- y_true.array())*weights.array()+ gamma*2*(y_pred2.array()- y_pred1.array());
     }
         
 
     if(citerion ==1){
-        return ((y_pred2.array().exp() - y_true.array())) +gamma*2*(y_pred2.array()- y_pred1.array()); //gamma*(y_pred2.array().exp() - y_pred1.array());
+        return ((y_pred2.array().exp() - y_true.array()))*weights.array() +gamma*(y_pred2.array().exp() - y_pred1.array()); //gamma*(y_pred2.array().exp() - y_pred1.array());
     }
         
 
     throw exception("asdada");
 }
 
-dVector LossFunction::ddloss(dVector y_true,dVector y_pred2, dVector y_pred1 , double gamma){
+dVector LossFunction::ddloss(dVector y_true,dVector y_pred2, dVector y_pred1 , double gamma, dVector weights){
     if(citerion ==0){
-        return dVector::Constant(y_true.size(),0, 2.0 + 2.0*gamma ) ;
+        return 2.0*weights.array() + dVector::Constant(y_true.size(),0, 2.0*gamma ).array() ;
     }
 
     if(citerion ==1){
-        return (y_pred2.array().exp()) +2.0*gamma; // gamma*(y_pred2.array().exp()); //y_pred.array()/ y_true.array().square() ;
+        return (y_pred2.array().exp()*weights.array()) +y_pred1.array().exp()*gamma; // gamma*(y_pred2.array().exp()); //y_pred.array()/ y_true.array().square() ;
     }
         
     throw exception("asdada");
 }
+
+
+
 
 #endif

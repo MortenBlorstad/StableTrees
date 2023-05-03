@@ -44,12 +44,12 @@ class GTBTREE{
         double predict_uncertainty_obs(dVector  &obs);
         dVector predict(dMatrix  &X);
         dVector predict_uncertainty(dMatrix  &X);
-        virtual tuple<bool,int,double, double,double,double,double> find_split(const dMatrix &X, const dVector &y, const dVector &g, const dVector &h, const iVector &features_indices);
+        virtual tuple<bool,int,double, double,double,double,double> find_split(const dMatrix &X, const dVector &y, const dVector &g, const dVector &h, const std::vector<int> &features_indices);
         //Node* update_tree_info(dMatrix &X, dVector &y, Node* node, int depth);
         Node* update_tree_info(dMatrix &X, dVector &y, dVector &g ,dVector &h, Node* node, int depth);
         //~Tree();
         std::vector<Node*> make_node_list();
-        virtual GTBTREE* copy();
+        //virtual GTBTREE* copy();
         GTBTREE* next_tree = NULL; // only needed for gradient boosting
         int tree_depth;
         double learning_rate; // only needed for gradient boosting (shrinkage)
@@ -75,7 +75,7 @@ GTBTREE::GTBTREE(){
     double min_split_sample = 2.0;
     _criterion = 0;
     adaptive_complexity = false;
-    this->min_samples_leaf = 1;
+    this->min_samples_leaf = 5;
     tree_depth = 0;
     number_of_nodes = 0;
     loss_function = new LossFunction(0);
@@ -85,11 +85,11 @@ GTBTREE::GTBTREE(){
 }
 
 
- GTBTREE* GTBTREE::copy(){
-    GTBTREE* tree = new GTBTREE(*this);
-    tree->root = root->copy();
-    return tree;
- }
+//  GTBTREE* GTBTREE::copy(){
+//     GTBTREE* tree = new GTBTREE(*this);
+//     tree->root = root->copy();
+//     return tree;
+//  }
  
 
 GTBTREE::GTBTREE(int _criterion, int max_depth, double min_split_sample,int min_samples_leaf, bool adaptive_complexity,int max_features,double learning_rate, unsigned int random_state){
@@ -112,7 +112,7 @@ GTBTREE::GTBTREE(int _criterion, int max_depth, double min_split_sample,int min_
 
 } 
 
-tuple<bool,int,double, double,double,double,double>  GTBTREE::find_split(const dMatrix &X, const dVector &y, const dVector &g, const dVector &h, const iVector &features_indices){
+tuple<bool,int,double, double,double,double,double>  GTBTREE::find_split(const dMatrix &X, const dVector &y, const dVector &g, const dVector &h, const std::vector<int> &features_indices){
     return splitter->find_best_split(X, y, g, h,features_indices);
 }
 
@@ -234,20 +234,20 @@ Node* GTBTREE::build_tree(const dMatrix  &X, const dVector &y, const dVector &g,
     iVector mask_left;
     iVector mask_right;
     double expected_max_S;
-    iVector features_indices(X.cols(),1);
-    for (int i=0; i<X.cols(); i++){features_indices(i) = i; } 
-    if(previuos_tree_node ==NULL){
-        //for (int i=0; i<X.cols(); i++){features_indices(i) = i; } 
+    std::vector<int> features_indices(X.cols(),1);
+    for (int i=0; i<X.cols(); i++){features_indices[i] = i; } 
+    // if(previuos_tree_node ==NULL){
+    //     //for (int i=0; i<X.cols(); i++){features_indices(i) = i; } 
     
-        if(max_features<INT_MAX){
-            std::mt19937 gen(random_state);
-            std::shuffle(features_indices.data(), features_indices.data() + features_indices.size(), gen);
-            features_indices = features_indices.block(0,0,max_features,1);
-            this->random_state +=1;
-        }
-    }else if(previuos_tree_node->get_features_indices().size()>0) {
-        features_indices = previuos_tree_node->get_features_indices();
-    }
+    //     if(max_features<INT_MAX){
+    //         std::mt19937 gen(random_state);
+    //         std::shuffle(features_indices.data(), features_indices.data() + features_indices.size(), gen);
+    //         features_indices = features_indices.block(0,0,max_features,1);
+    //         this->random_state +=1;
+    //     }
+    // }else if(previuos_tree_node->get_features_indices().size()>0) {
+    //     features_indices = previuos_tree_node->get_features_indices();
+    // }
 
 
     

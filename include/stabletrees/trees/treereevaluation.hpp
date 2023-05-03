@@ -11,7 +11,7 @@ class TreeReevaluation: public Tree{
     public:
         TreeReevaluation(double alpha,double delta,int _criterion,int max_depth, double min_split_sample,int min_samples_leaf, bool adaptive_complexity,int max_features,double learning_rate,unsigned int random_state);
         TreeReevaluation();
-        virtual void update(dMatrix &X, dVector &y);
+        virtual void update(const dMatrix &X, const dVector &y,const dVector &weights);
         std::vector<double> get_eps();
         std::vector<double> get_mse_ratio();
         std::vector<double> get_obs();
@@ -19,9 +19,9 @@ class TreeReevaluation: public Tree{
         std::vector<double> epss; 
         std::vector<double> obs; 
     private:
-        tuple<Node*, bool> reevaluate_split(Node* node, dMatrix &X, dVector &y,dVector &g, dVector &h, double delta, int depth);
-        Node* attempt_split(Node* node, dMatrix &X, dVector &y,dVector &g, dVector &h, int depth);
-        Node* update_rec(Node* node, dMatrix &X, dVector &y,dVector &g, dVector &h,double delta, int depth);
+        tuple<Node*, bool> reevaluate_split(Node* node, const dMatrix &X, const dVector &y,const dVector &g, const dVector &h, double delta, int depth, const dVector &weights);
+        Node* attempt_split(Node* node, const dMatrix &X, const dVector &y,const dVector &g, const dVector &h, int depth,const  dVector &weights);
+        Node* update_rec(Node* node, const dMatrix &X, const dVector &y,const dVector &g, const dVector &h,double delta, int depth, const dVector &weights);
         double hoeffding_bound(double delta, int n);
         int number_of_examples;
         vector<size_t> sort_index(const vector<double> &v);
@@ -69,9 +69,9 @@ vector<size_t> TreeReevaluation::sort_index(const vector<double> &v) {
   return idx;
 }
 
-void TreeReevaluation::update(dMatrix &X, dVector &y){
+void TreeReevaluation::update(const dMatrix &X, const dVector &y, const dVector &weights){
     if(root == NULL){
-        learn(X,y);
+        learn(X,y,weights);
     }
 
     number_of_examples = y.size();
@@ -80,18 +80,18 @@ void TreeReevaluation::update(dMatrix &X, dVector &y){
     splitter = new Splitter(min_samples_leaf,number_of_examples, adaptive_complexity, max_features,learning_rate);
 
 
-    pred_0 = loss_function->link_function(1.5*y.array().mean());
+    pred_0 = loss_function->link_function(y.array().mean());
     //pred_0 = 0;
     
     dVector pred = dVector::Constant(y.size(),0,  pred_0) ;
-    dVector g = loss_function->dloss(y, pred ); //dVector::Zero(n1,1)
-    dVector h = loss_function->ddloss(y, pred ); //dVector::Zero(n1,1)
+    dVector g = loss_function->dloss(y, pred ).array()*weights.array(); //dVector::Zero(n1,1)
+    dVector h = loss_function->ddloss(y, pred ).array()*weights.array();//dVector::Zero(n1,1)
 
     // dVector g = loss_function->dloss(y,  dVector::Zero(number_of_examples,1));
     // dVector h = loss_function->ddloss(y, dVector::Zero(number_of_examples,1)); 
 
-    root = update_rec(root, X, y, g,h, delta,0);
-    root = update_tree_info(X, y, g,h, root,0);
+    root = update_rec(root, X, y, g,h, delta,0,weights);
+    root = update_tree_info(X, y, g,h, root,0,weights);
 
     vector<size_t> sorted_ind = sort_index(obs);
 
@@ -112,16 +112,16 @@ void TreeReevaluation::update(dMatrix &X, dVector &y){
 } 
 
 
-Node* TreeReevaluation::update_rec(Node* node, dMatrix &X, dVector &y,dVector &g, dVector &h, double delta, int depth){
+Node* TreeReevaluation::update_rec(Node* node, const dMatrix &X,const  dVector &y, const dVector &g,const  dVector &h, double delta, int depth, const dVector &weights){
     if(y.size()<=min_samples_leaf){
         return node;
     }
     if(node->is_leaf()){
-        return node;//attempt_split(node, X,y,h,g, depth);
+        return attempt_split(node, X,y,h,g, depth,weights);//node;//
     }
 
     bool change;
-    tie(node,change) = reevaluate_split(node,X,y,g,h,delta,depth);
+    tie(node,change) = reevaluate_split(node,X,y,g,h,delta,depth,weights);
     //printf("change %d, depth: %d \n", change, depth);
     if(!change){
     iVector left_mask; iVector right_mask;
@@ -132,10 +132,12 @@ Node* TreeReevaluation::update_rec(Node* node, dMatrix &X, dVector &y,dVector &g
     dMatrix X_left = X(left_mask,keep_cols); dVector y_left = y(left_mask,1);
     dVector g_left = g(left_mask,1); dVector h_left = h(left_mask,1);
     dVector g_right = g(right_mask,1); dVector h_right = h(right_mask,1);
+    dVector weights_left = weights(left_mask,1); dVector weights_right = weights(right_mask,1);
+    
 
-    node->left_child = update_rec(node->left_child, X_left, y_left,g_left, h_left, delta,depth+1);
+    node->left_child = update_rec(node->left_child, X_left, y_left,g_left, h_left, delta,depth+1,weights_left);
     dMatrix X_right= X(right_mask,keep_cols); dVector y_right = y(right_mask,1);
-    node->right_child = update_rec(node->right_child, X_right, y_right,g_right,h_right,delta,depth+1);
+    node->right_child = update_rec(node->right_child, X_right, y_right,g_right,h_right,delta,depth+1,weights_right);
     }
     return node;
 }
@@ -145,17 +147,17 @@ double TreeReevaluation::hoeffding_bound(double delta, int n){
     //return 
 }
 
-Node* TreeReevaluation::attempt_split(Node* node, dMatrix &X, dVector &y,dVector &g,dVector &h, int depth){
+Node* TreeReevaluation::attempt_split(Node* node, const dMatrix &X, const dVector &y,const dVector &g, const dVector &h, int depth, const dVector &weights){
     if(max_depth<= depth || y.rows()< min_samples_leaf || y.rows() <2 || y.rows()<min_split_sample){
         node->n_samples = y.rows();
         return node;
     }
-    return build_tree(X,y,g,h,depth,NULL);
+    return build_tree(X,y,g,h,depth,NULL,weights);
 }
 
 
 
-tuple<Node*, bool> TreeReevaluation::reevaluate_split(Node* node, dMatrix &X, dVector &y,dVector &g,dVector &h, double delta, int depth){
+tuple<Node*, bool> TreeReevaluation::reevaluate_split(Node* node, const dMatrix &X, const dVector &y,const dVector &g,const dVector &h, double delta, int depth, const dVector &weights){
     bool any_split;
     double w_var;
     double y_var;
@@ -181,7 +183,7 @@ tuple<Node*, bool> TreeReevaluation::reevaluate_split(Node* node, dMatrix &X, dV
     //printf("%f / %f = %f\n",new_reduction, old_reduction, new_reduction/old_reduction);
     double ratio = (new_reduction/old_reduction);
     if(ratio > (1.0+alpha) + eps && any_split){
-        node = build_tree(X,y,g,h,depth,NULL);
+        node = build_tree(X,y,g,h,depth,node,weights);
         // node->split_feature = split_feature;
         // node->split_value = split_value;
         // node->split_score = new_reduction;
