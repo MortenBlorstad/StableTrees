@@ -23,7 +23,7 @@ plt.rcParams.update(plot_params)
 
 college_box_plot_info = []
 import itertools
-method = "tree"
+method =  "randomforest" # "agtboost" #"tree" #
 df =pd.read_csv(f'results/{method}_ISLR_results.csv')
 #df =pd.read_csv('results/randomforest_ISLR_results.csv')
 
@@ -66,9 +66,9 @@ for ds,ax in zip(datasets,axes[:-1]):
     ax.set_title(ds,fontsize = 10)
     scatters = [ax.scatter(x = row['loss'], y=row['stability'], s = 6, c =row['color']) for index, row  in plot_info.iterrows()]
     texts = [ax.text(x = row['loss'], y=row['stability'], s = r"$\mathbf{"+row['marker']+"}$",fontsize=8,weight='heavy') if (row['loss'],row['stability']) in frontier else ax.text(x = row['loss'], y=row['stability'], s = "$"+row['marker']+"$",fontsize=8) for index, row  in plot_info.iterrows()]
-    if ds =="Carseats" and method == "randomforest":
-        ax.set_xlim((0.965,1.125))
-        ax.set_ylim((0.45,1.05))
+    # if ds =="Carseats" and method == "randomforest":
+    #     ax.set_xlim((0.965,1.125))
+    #     ax.set_ylim((0.45,1.05))
 
     if ds =="Wage" and method == "tree":
         ax.set_xlim((0.995,1.0275))
@@ -79,10 +79,12 @@ for ds,ax in zip(datasets,axes[:-1]):
 
 
     
-colors2 = {"NU":"#D55E00", "SL":"#CC79A7", 
-            "TR":"#009E73", 
-            "ABU":"#F0E442",
-            "BABU": "#E69F00",}
+# colors2 = {"NU":"#D55E00", "SL":"#CC79A7", 
+#             "TR":"#009E73", 
+#             "ABU":"#F0E442",
+#             "BABU": "#E69F00",}
+
+colors2 = { "SL":"#CC79A7"}
 # create a common legend for all the plots
 legend_elements = [Line2D([0], [0], marker='s', color='w', label=k,
                             markerfacecolor=v, markersize=14) for k,v in colors2.items()  ]

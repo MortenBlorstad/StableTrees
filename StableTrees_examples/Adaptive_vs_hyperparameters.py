@@ -18,7 +18,7 @@ plot_params = {"ytick.color" : "black",
           "font.family" : "serif",
           'text.latex.preamble': r"\usepackage{amsmath}",
           "font.serif" : ["Computer Modern Serif"]}
-fig = plt.figure(dpi=500,figsize=(11,11/1.61803398875))
+fig = plt.figure(dpi=500,figsize=(6.67*1.5*2/3, 4*1.5/2))
 
 plt.rcParams.update(plot_params),
 
@@ -34,12 +34,12 @@ params = clf.best_params_
 from matplotlib.lines import Line2D
 legend_elements = [Line2D([0], [0], color='red', ls='-',lw=2, label = "Adaptive Tree Complexity"),
                    Line2D([0], [0], color='orange', ls='--',lw=2, label = "Grid Search CV")]
-plt.scatter(X,y)
+plt.scatter(X,y, s= 2)
 plt.xlabel(r"$\mathbf{x}$",fontsize=10)
 plt.ylabel(r"$y$",fontsize=10)
-plt.plot(np.sort(X,axis=0), t.predict(np.sort(X,axis=0)),c = "r", linewidth=6, label = "Adaptive Tree Complexity")
-plt.plot(np.sort(X,axis=0), clf.predict(np.sort(X,axis=0)),c = "orange",linewidth=5,linestyle='dashed', label = "Grid Search CV")
-plt.legend(handles=legend_elements, loc='upper left')
+plt.plot(np.sort(X,axis=0), t.predict(np.sort(X,axis=0)),c = "r", linewidth=3, label = "Adaptive Tree Complexity")
+plt.plot(np.sort(X,axis=0), clf.predict(np.sort(X,axis=0)),c = "orange",linewidth=2,linestyle='dashed', label = "Grid Search CV")
+plt.legend(handles=legend_elements, loc='upper left',fontsize=8)
 
 
 np.random.seed(0)
@@ -52,12 +52,12 @@ clf = GridSearchCV(DecisionTreeRegressor(random_state=0), parameters).fit(X,y)
 t = BaseLineTree(adaptive_complexity=True).fit(X,y)
 params = clf.best_params_
 
-plt.scatter(X,y)
+plt.scatter(X,y, s= 2)
 plt.xlabel(r"$\mathbf{x}$",fontsize=10)
 plt.ylabel(r"$y$",fontsize=10)
-plt.plot(np.sort(X,axis=0), t.predict(np.sort(X,axis=0)),c = "r", linewidth=6, label = "Adaptive Tree Complexity")
-plt.plot(np.sort(X,axis=0), clf.predict(np.sort(X,axis=0)),c = "orange",linewidth=5,linestyle='dashed', label = "Grid Search CV")
-plt.legend(handles=legend_elements, loc='upper left')
+plt.plot(np.sort(X,axis=0), t.predict(np.sort(X,axis=0)),c = "r", linewidth=3, label = "Adaptive Tree Complexity")
+plt.plot(np.sort(X,axis=0), clf.predict(np.sort(X,axis=0)),c = "orange",linewidth=2,linestyle='dashed', label = "Grid Search CV")
+plt.legend(handles=legend_elements, loc='upper left',fontsize=8)
 plt.tight_layout()
 plt.savefig(f"StableTrees_examples\plots\\adaptive_vs_hyperparameters.png",bbox_inches='tight')
 plt.close()

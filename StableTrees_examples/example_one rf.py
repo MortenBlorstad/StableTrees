@@ -11,6 +11,7 @@ from sklearn.linear_model import TweedieRegressor
 from stabletrees.random_forest import RandomForest,NaiveRandomForest,AbuRandomForest,ReevaluateRandomForest,MyRandomForestRegressor
 from adjustText import adjust_text
 from pareto_efficient import is_pareto_optimal
+from stabletrees.random_forest import StackedRF
 SEED = 0
 EPSILON = 1.1
 
@@ -18,7 +19,7 @@ def S1(pred1, pred2):
     return np.std(np.log((pred2+EPSILON)/(pred1+EPSILON)))#np.mean((pred1- pred2)**2)#
 
 def S2(pred1, pred2):
-    return np.mean(abs(pred1- pred2))
+    return np.mean((pred1- pred2)**2)
 
 parameters = {'max_depth':[None, 5, 10],"min_samples_leaf": [5]} # , 
 clf = GridSearchCV(DecisionTreeRegressor(random_state=0), parameters)
@@ -35,6 +36,7 @@ markers = {"baseline":"B","NU":"NU","SL": "SL", "SL1":"SL_{0.1}", "SL2":"SL_{0.2
             "SL4": "SL_{0.75}", "SL5": "SL_{0.9}",
             "TR":"TR","TR1":"TR_{0,5}",
             "TR2":"TR_{5,5}", "TR3" :"TR_{10,5}",
+            "SU": "SU" ,
             "ABU":"ABU",
             "BABU":"BABU", "BABU1": r"BABU_{1}","BABU2": r"BABU_{3}" ,"BABU3": r"BABU_{5}","BABU4": r"BABU_{7}","BABU5": r"BABU_{10}","BABU6": r"BABU_{20}"   }
 
@@ -44,12 +46,14 @@ colors = {"baseline":"$B$","NU":"#D55E00", "SL":"#CC79A7","SL1":"#CC79A7", "SL2"
             "TR4":"#009E73", "TR5":"#009E73","TR6":"#009E73",
             "TR7":"#009E73", "TR8":"#009E73","TR9":"#009E73",
             "ABU":"#F0E442",
+            "SU": "#7F7F7F", 
             "BABU": "#E69F00", "BABU1": "#E69F00","BABU2": "#E69F00" ,"BABU3": "#E69F00","BABU4": "#E69F00","BABU5": "#E69F00","BABU6": "#E69F00"}
 
 colors2 = {"NU":"#D55E00", "SL":"#CC79A7", 
             "TR":"#009E73", 
             "ABU":"#F0E442",
-            "BABU": "#E69F00",}
+            "BABU": "#E69F00",
+            "SU": "#7F7F7F"}
 
 
 
@@ -71,12 +75,13 @@ models = {
                         "TR1": RF("tr",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False,alpha=0, delta=0.05),
                         "TR2": RF("tr",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False,alpha=0.05, delta=0.05),
                         "TR3": RF("tr",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False,alpha=0.1, delta=0.05),
-                        "SL1": RF("sr",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False,gamma=0.1),
-                        "SL2": RF("sr",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False,gamma=0.25),
-                        "SL3": RF("sr",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False,gamma=0.5),
-                        "SL4": RF("sr",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False,gamma=0.75),
-                        "SL5": RF("sr",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False,gamma=0.90),
+                        "SL1": RF("sl",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False,gamma=0.1),
+                        "SL2": RF("sl",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False,gamma=0.25),
+                        "SL3": RF("sl",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False,gamma=0.5),
+                        "SL4": RF("sl",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False,gamma=0.75),
+                        "SL5": RF("sl",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False,gamma=0.90),
                         "ABU": RF("abu",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False),
+                        "SU": StackedRF(n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False),
                         "BABU1": RF("babu",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,bumping_iterations=1),
                         "BABU2": RF("babu",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,bumping_iterations=3),
                         "BABU3": RF("babu",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,bumping_iterations=5),
@@ -85,8 +90,8 @@ stability_all = {name:[] for name in models.keys()}
 standard_stability_all= {name:[] for name in models.keys()}
 mse_all= {name:[] for name in models.keys()}
 for ds,target, feature in zip(datasets,targets, features):
-    if ds !=  "Wage":#ds != "Boston" and 
-        continue
+    # if ds !=  "Wage":#ds != "Boston" and 
+    #     continue
     iteration = 1
     kf = RepeatedKFold(n_splits= 5,n_repeats=1, random_state=SEED)
     data = pd.read_csv("data/"+ ds+".csv") # load dataset
@@ -125,44 +130,46 @@ for ds,target, feature in zip(datasets,targets, features):
         # initial model 
         criterion = "mse"
         n_estimators = 100
-        if ds != "Wage":
+        # if ds != "Wage":
             
-            models = {  
-                        "baseline": RF("base",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=True),
-                            "standard": RandomForestRegressor(n_estimators= 100,min_samples_leaf=5,random_state=0,max_features=0.33),
-                            "NU": RF("nu",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=True),
-                            "TR1": RF("tr",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,alpha=0, delta=0.05),
-                            "TR2": RF("tr",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,alpha=0.05, delta=0.05),
-                            "TR3": RF("tr",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,alpha=0.1, delta=0.05),
-                            "SL1": RF("sr",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,gamma=0.1),
-                            "SL2": RF("sr",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,gamma=0.25),
-                            "SL3": RF("sr",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,gamma=0.5),
-                            "SL4": RF("sr",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,gamma=0.75),
-                            "SL5": RF("sr",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,gamma=0.90),
-                            "ABU": RF("abu",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=True),
-                            "BABU1": RF("babu",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,bumping_iterations=1),
-                            "BABU2": RF("babu",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,bumping_iterations=3),
-                            "BABU3": RF("babu",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,bumping_iterations=5),
-                    }
-        else:
-            print(ds)
-            models = {  
-                        "baseline": RF("base",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False),
-                            "standard": RandomForestRegressor(n_estimators= 100,min_samples_leaf=5,random_state=0,max_features=0.33),
-                            "NU": RF("nu",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False),
-                            "TR1": RF("tr",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False,alpha=0, delta=0.05),
-                            "TR2": RF("tr",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False,alpha=0.05, delta=0.05),
-                            "TR3": RF("tr",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False,alpha=0.1, delta=0.05),
-                            "SL1": RF("sr",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False,gamma=0.1),
-                            # "SL2": RF("sr",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False,gamma=0.25),
-                            # "SL3": RF("sr",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False,gamma=0.5),
-                            # "SL4": RF("sr",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False,gamma=0.75),
-                            # "SL5": RF("sr",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False,gamma=0.90),
-                            # "ABU": RF("abu",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False),
-                            # "BABU1": RF("babu",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False,bumping_iterations=1),
-                            # "BABU2": RF("babu",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False,bumping_iterations=3),
-                            # "BABU3": RF("babu",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False,bumping_iterations=5),
-                    }
+        models = {  
+                    "baseline": RF("base",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False),
+                        # "standard": RandomForestRegressor(n_estimators= 100,min_samples_leaf=5,random_state=0,max_features=0.33),
+                        # "NU": RF("nu",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False),
+                        # "TR1": RF("tr",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False,alpha=0, delta=0.05),
+                        # "TR2": RF("tr",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False,alpha=0.05, delta=0.05),
+                        # "TR3": RF("tr",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False,alpha=0.1, delta=0.05),
+                        # "SL1": RF("sl",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False,gamma=0.1),
+                        # "SL2": RF("sl",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False,gamma=0.25),
+                        # "SL3": RF("sl",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False,gamma=0.5),
+                        # "SL4": RF("sl",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False,gamma=0.75),
+                        # "SL5": RF("sl",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False,gamma=0.90),
+                        "ABU": RF("abu",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False),
+                        #"SU": StackedRF(n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False,learning_rate=0.0001,gamma=0.1),
+                        #"BABU1": RF("babu",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False,bumping_iterations=1),
+                        # "BABU2": RF("babu",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False,bumping_iterations=3),
+                        # "BABU3": RF("babu",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False,bumping_iterations=5),
+                }
+        # else:
+        #     print(ds)
+        #     models = {  
+        #                 "baseline": RF("base",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=True),
+        #                     "standard": RandomForestRegressor(n_estimators= 100,min_samples_leaf=5,random_state=0,max_features=0.33),
+        #                     # "NU": RF("nu",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False),
+        #                     # "TR1": RF("tr",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False,alpha=0, delta=0.05),
+        #                     # "TR2": RF("tr",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False,alpha=0.05, delta=0.05),
+        #                     # "TR3": RF("tr",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False,alpha=0.1, delta=0.05),
+        #                     # "SL1": RF("sr",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False,gamma=0.1),
+        #                     # "SL2": RF("sr",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False,gamma=0.25),
+        #                     # "SL3": RF("sr",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False,gamma=0.5),
+        #                     # "SL4": RF("sr",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False,gamma=0.75),
+        #                     # "SL5": RF("sr",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False,gamma=0.90),
+        #                     # "ABU": RF("abu",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False),
+        #                     #"SU": StackedRF(n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,learning_rate=0.0001,gamma=0.1),
+        #                     # "BABU1": RF("babu",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False,bumping_iterations=1),
+        #                     # "BABU2": RF("babu",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False,bumping_iterations=3),
+        #                     # "BABU3": RF("babu",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False,bumping_iterations=5),
+        #             }
         # models = {  
         #                 "baseline": RandomForest(n_estimators,criterion="mse", adaptive_complexity=True),
         #                 "standard": RandomForestRegressor(n_estimators= n_estimators,min_samples_leaf=5,random_state=0,max_features=X.shape[1]),

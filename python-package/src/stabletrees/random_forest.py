@@ -6,6 +6,7 @@ from _stabletrees import RandomForestNU as rfnu
 from _stabletrees import RandomForestTR as rftr
 from _stabletrees import RandomForestABU as rfabu
 from _stabletrees import RandomForestBABU as rfbabu
+from _stabletrees import StackedRandomForest as stackedrf
 
 
 import numpy as np
@@ -65,6 +66,48 @@ class RandomForest(BaseRegressionTree):
         return y_pred/self.n_estimators
     
 
+class StackedRF(BaseRegressionTree):
+    def __init__(self,method:str = "base",n_estimators:int = 100,max_features:str = "all", criterion: str = "mse", max_depth: int = None,
+                  min_samples_split: int = 2, min_samples_leaf: int = 5, adaptive_complexity: bool = False, random_state: int = None, gamma:float = 0.5, learning_rate:float = 0.001) -> None:
+        super().__init__(criterion, max_depth, min_samples_split, min_samples_leaf, adaptive_complexity, random_state)
+        self.gamma = gamma
+        self.n_estimators = n_estimators
+        self.max_features = max_features
+        self.method = method
+        self.criterion =criterion
+        self.max_depth = max_depth
+        self.min_samples_leaf = min_samples_leaf
+        self.min_samples_split = min_samples_split
+        if self.max_features not in max_features_to_int.keys():
+            self.max_features = "all"
+
+        if max_depth is None:
+            max_depth = 2147483647
+        self.max_depth = int(max_depth)
+        self.forest = None
+        self.learning_rate= learning_rate
+
+    def fit(self,X,y,sample_weight=None):
+        max_feature = max_features_to_int[self.max_features](X.shape[1])
+        self.forest = stackedrf(criterions[self.criterion],self.n_estimators,self.max_depth,self.min_samples_split,self.min_samples_leaf,self.adaptive_complexity,max_feature,self.gamma,self.learning_rate)
+        if sample_weight is None:
+            sample_weight = np.ones(shape=(len(y),))
+        self.forest.learn(X,y,sample_weight)
+        return self
+    
+    def update(self, X: np.ndarray, y: np.ndarray,sample_weight=None):
+        if self.forest is None:
+            return self.fit(X,y)
+        if sample_weight is None:
+            sample_weight = np.ones(shape=(len(y),))
+        self.forest.update(X,y,sample_weight)
+        return self
+    
+    def predict(self, X: np.ndarray) -> np.ndarray:
+        assert (self.forest is not None)
+        return self.forest.predict(X)
+
+
 class RF(BaseRegressionTree):
     def __init__(self,method:str = "base",n_estimators:int = 100,max_features:str = "all", criterion: str = "mse", max_depth: int = None,
                   min_samples_split: int = 2, min_samples_leaf: int = 5, adaptive_complexity: bool = False, random_state: int = None, gamma:float = 0.5, delta:float = 0.05,alpha:float = 0.0, bumping_iterations =5) -> None:
@@ -88,6 +131,9 @@ class RF(BaseRegressionTree):
             max_depth = 2147483647
         self.max_depth = int(max_depth)
         self.forest = None
+
+
+    
         
 
     def fit(self,X,y,sample_weight=None):

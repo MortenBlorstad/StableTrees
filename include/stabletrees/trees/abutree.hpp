@@ -84,7 +84,7 @@ dMatrix AbuTree::predict_info(dMatrix &X){
 
 
 void AbuTree::update(dMatrix &X, dVector &y, dVector &sample_weights){
-    //printf("%d\n", n1);
+    printf("%d\n", n1);
     dMatrix Xb = sample_X(X,n1);
     dMatrix info = predict_info(Xb);
     dVector weights = info.col(1);//array().min(1000).max(0);

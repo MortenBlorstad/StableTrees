@@ -37,7 +37,8 @@ models = {
                 "NU": NaiveUpdate(criterion = criterion,min_samples_leaf=5, adaptive_complexity=True),
                 }
 
-ns = [500,1000,1500,2000,2500,3000,3500,4000,4500, 5000]#
+#ns = [500,1000,1500,2000,2500,3000,3500,4000,4500, 5000]#
+ns = np.arange(1000,11000,1000)
 
 #ns = [1000]
 stability = {k :[] for k in cases.keys()}
@@ -56,7 +57,7 @@ for n in ns:
         p = info["p"]
         x = X[:,features]
         y = np.random.normal(loc = p(X), scale=1,size=n)
-        kf = RepeatedKFold(n_splits= 5,n_repeats=10, random_state=SEED)
+        kf = RepeatedKFold(n_splits= 10,n_repeats=2, random_state=SEED)
         criterion = "mse"
         models = {  
                         "baseline": BaseLineTree(criterion = criterion,min_samples_leaf=5, adaptive_complexity=True),
@@ -106,17 +107,17 @@ colors = {"Case 1":"orange", "Case 2": "g", "Case 3":"r"}
 ax1.plot(ns, [p for p in performance["case 1"]],c = "#E69F00", label = "case 1")
 ax1.plot(ns,[p for p in performance["case 2"]],c = "#009E73", label = "case 2")
 ax1.plot(ns, [p for p in performance["case 3"]],c = "#CC79A7", label = "case 3")
-ax1.set_ylabel('mean squared error',fontsize=10)
+ax1.set_ylabel('mse',fontsize=10)
 ax1.set_title("a) Loss")
 
 # plt.plot([s for s in stability["case 1"]])
 # plt.plot([s for s in stability["case 2"]])
 # plt.plot([s for s in stability["case 3"]])
 from matplotlib.ticker import (MultipleLocator, AutoMinorLocator)
-ax1.xaxis.set_major_locator(MultipleLocator(1000))
+ax1.xaxis.set_major_locator(MultipleLocator(2000))
 ax1.xaxis.set_minor_locator(AutoMinorLocator(2))
 
-ax2.set_ylabel(r'$S_{mse}$',fontsize=10)
+ax2.set_ylabel("stability",fontsize=10)
 ax2.plot(ns, [s for s in stability["case 1"]],c = "#E69F00")
 ax2.plot(ns, [s for s in stability["case 2"]],c = "#009E73")
 ax2.plot(ns, [s for s in stability["case 3"]],c = "#CC79A7")

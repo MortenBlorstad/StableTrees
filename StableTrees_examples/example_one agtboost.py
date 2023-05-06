@@ -8,11 +8,9 @@ import numpy as np
 import pandas as pd
 import datapreprocess
 from sklearn.linear_model import TweedieRegressor
-from stabletrees import BaseLineTree,AbuTree,NaiveUpdate,TreeReevaluation,StabilityRegularization,BABUTree,SklearnTree
+from stabletrees.AGTBoost import AGTBoost
 from adjustText import adjust_text
 from pareto_efficient import is_pareto_optimal
-from stabletrees.random_forest import RF
-from stabletrees.AGTBoost import AGTBoost
 SEED = 0
 EPSILON = 1.1
 
@@ -67,12 +65,14 @@ plot_params = {"ytick.color" : "black",
           "font.serif" : ["Computer Modern Serif"]}
 criterion = "mse"
 models = {  
-                "basetree": BaseLineTree(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True),
-                "standard": RandomForestRegressor(n_estimators= 100,min_samples_leaf=5,random_state=0,max_features=0.33),
-                "baseforest":  RF("base",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False),  
-                "baseforest_adapt":  RF("base",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=True),
-                "AGTBoost": AGTBoost(loss_function=criterion)      
-        }
+                       "baseline": AGTBoost(loss_function="mse", learning_rate=0.01, gamma=0),
+                        "SL1": AGTBoost(loss_function="mse", learning_rate=0.01, gamma=0.1),
+                        "SL2": AGTBoost(loss_function="mse", learning_rate=0.01, gamma=0.25),
+                        "SL3": AGTBoost(loss_function="mse", learning_rate=0.01, gamma=0.5),
+                        "SL4": AGTBoost(loss_function="mse", learning_rate=0.01, gamma=0.75),
+                        "SL5": AGTBoost(loss_function="mse", learning_rate=0.01, gamma=0.9)
+                    
+                }
 stability_all = {name:[] for name in models.keys()}
 standard_stability_all= {name:[] for name in models.keys()}
 mse_all= {name:[] for name in models.keys()}
@@ -80,7 +80,7 @@ for ds,target, feature in zip(datasets,targets, features):
     # if ds !=  "Wage":#ds != "Boston" and 
     #     continue
     iteration = 1
-    kf = RepeatedKFold(n_splits= 10,n_repeats=1, random_state=SEED)
+    kf = RepeatedKFold(n_splits= 5,n_repeats=1, random_state=SEED)
     data = pd.read_csv("data/"+ ds+".csv") # load dataset
     
     # data preperation
@@ -110,30 +110,25 @@ for ds,target, feature in zip(datasets,targets, features):
     orig_stability = {name:[] for name in models.keys()}
     orig_standard_stability = {name:[] for name in models.keys()}
     orig_mse = {name:[] for name in models.keys()}
-    validation_performance = {name:[] for name in models.keys()}
     for train_index, test_index in kf.split(X):
         X_12, y_12 = X[train_index],y[train_index]
         X_test,y_test = X[test_index],y[test_index]
         X1,X2,y1,y2 =  train_test_split(X_12, y_12, test_size=0.5, random_state=SEED)
         # initial model 
         criterion = "mse"
-
+        n_estimators = 100
 
         models = {  
-                       #"basetree": BaseLineTree(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True),
-                       "standard": RandomForestRegressor(n_estimators= 100,min_samples_leaf=5,random_state=0,max_features=0.33),
-                       "baseforest":  RF("base",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False),  
-                       "baseforest_adapt":  RF("base",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=True),     
-                       #"AGTBoost": AGTBoost(loss_function=criterion)    
+                    "baseline": AGTBoost(loss_function="mse", learning_rate=0.01, gamma=0),
+                    "SL1": AGTBoost(loss_function="mse", learning_rate=0.01, gamma=0.1),
+                    "SL2": AGTBoost(loss_function="mse", learning_rate=0.01, gamma=0.25),
+                    "SL3": AGTBoost(loss_function="mse", learning_rate=0.01, gamma=0.5),
+                    "SL4": AGTBoost(loss_function="mse", learning_rate=0.01, gamma=0.75),
+                    "SL5": AGTBoost(loss_function="mse", learning_rate=0.01, gamma=0.9)
                 }
-        
+
        
-
-
         for name, model in models.items():
-            X1_train,X2_train,y1_train,y2_train =  train_test_split(X1, y1, test_size=0.7, random_state=SEED)
-            model.fit(X1_train,y1_train)
-            validation_performance[name].append(mean_squared_error(y2_train, model.predict(X2_train)))
             model.fit(X1,y1)
             
             pred1 = model.predict(X_test)
@@ -143,7 +138,7 @@ for ds,target, feature in zip(datasets,targets, features):
             pred1_orig= model.predict(X1)
             
             #print("before")
-            if name == "standard" or name == "AGTBoost":
+            if name == "baseline":
                 model.fit(X_12,y_12)
             else:
                 model.update(X_12,y_12)
@@ -164,20 +159,84 @@ for ds,target, feature in zip(datasets,targets, features):
             stability[name].append(S1(pred1,pred2))
             standard_stability[name].append(S2(pred1,pred2))
         
-    print(name,": ", mean_squared_error(y2_train, model.predict(X2_train)))
+
     print(ds)
     for name in models.keys():
         print("="*80)
         print(f"{name}")
-        print(f"validation - mse: { np.mean(validation_performance[name]):.3f}")
-
+        
+        mse_scale = np.mean(mse["baseline"]);
+        
+        mse_scale = np.mean(mse["baseline"]); S_scale = np.mean(standard_stability["baseline"]);
         loss_score = np.mean(mse[name])
         loss_SE = np.std(mse[name])/np.sqrt(len(mse[name]))
-       
+        loss_SE_norm = np.std(mse[name]/mse_scale)/np.sqrt(len(mse[name]))
         stability_score = np.mean(standard_stability[name])
         stability_SE = np.std(standard_stability[name])/np.sqrt(len(mse[name]))
-
+        stability_SE_norm = np.std(standard_stability[name]/S_scale)/np.sqrt(len(mse[name]))
         print(f"test - mse: {loss_score:.3f} ({loss_SE:.2f}), stability: {stability_score:.3f} ({stability_SE:.2f})")
-
+        print(f"test - mse: {loss_score/mse_scale:.2f} ({loss_SE_norm:.2f}), stability: {stability_score/S_scale:.2f} ({stability_SE_norm:.2f})")
         print("="*80)
+        mse_all[name] += [score/mse_scale for score in mse[name]]
+        if name != "baseline" and name!= "standard":
+            x_abs =  np.mean((mse[name]))
+            y_abs = np.mean(standard_stability[name])
+            x_abs_se = loss_SE
+            y_abs_se =stability_SE
+            x_se  = loss_SE_norm
+            y_se  = stability_SE_norm
+            x_r = x_abs/mse_scale
+            y_r = y_abs/S_scale
+            plot_info[ds].append((ds,x_r,y_r,colors[name],markers[name], x_abs,y_abs,x_se, y_se, x_abs_se, y_abs_se ))
     print()
+
+from matplotlib import pyplot as plt
+plt.rcParams.update({'figure.autolayout': True})
+
+from matplotlib.lines import Line2D
+from matplotlib.ticker import FormatStrFormatter
+# create figure and axes
+fig, axes = plt.subplots(nrows=3, ncols=2, figsize=(8.27, 11),dpi=500)#
+axes = axes.ravel()
+plt.rcParams.update(plot_params)
+
+college_box_plot_info = []
+import itertools
+import os
+df_list = list(itertools.chain(*plot_info.values()))
+df = pd.DataFrame(df_list, columns=["dataset",'loss', 'stability', 'color', "marker", 'loss_abs','stability_abs','loss_se','stability_se','loss_abs_se','stability_abs_se' ] )
+if os.path.isfile('results/agtboost_ISLR_results.csv'):
+    old_df =pd.read_csv('results/agtboost_ISLR_results.csv')
+    for i,(d,m) in enumerate(zip(df.dataset, df.marker)):
+        index = old_df.loc[(old_df["dataset"] == d) & (old_df["marker"] ==m)].index
+        values  = df.iloc[i]
+        if len(index)>0:
+            old_df.iloc[index]=values
+        else:
+            print(values)
+            old_df  = old_df.append(values, ignore_index=True)
+
+    old_df.to_csv('results/agtboost_ISLR_results.csv', index=False)
+
+else:
+     df.to_csv('results/agtboost_ISLR_results.csv', index=False)
+
+# college_box_plot_info = []
+# import itertools
+# import os
+# df_list = list(itertools.chain(*plot_info.values()))
+# df = pd.DataFrame(df_list, columns=["dataset",'loss', 'stability', 'color', "marker", 'loss_abs','stability_abs','loss_se','stability_se','loss_abs_se','stability_abs_se' ] )
+# if os.path.isfile('results/tree_ISLR_results.csv'):
+#     old_df =pd.read_csv('results/tree_ISLR_results.csv')
+#     for i,(d,m) in enumerate(zip(df.dataset, df.marker)):
+#         index = old_df.loc[(old_df["dataset"] == d) & (old_df["marker"] ==m)].index
+#         values  = df.iloc[i]
+#         if len(index)>0:
+#             old_df.iloc[index]=values
+#         else:
+#             print(values)
+#             old_df  = old_df.append(values, ignore_index=True)
+
+#     old_df.to_csv('results/tree_ISLR_results.csv', index=False)
+# else:
+#      df.to_csv('results/tree_ISLR_results.csv', index=False)

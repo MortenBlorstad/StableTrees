@@ -4,7 +4,8 @@
 #include <iostream>
 
 using namespace std;
-#include "lossfunctions.hpp"
+//#include "agtboost\agt_loss_functions.hpp"
+
 double learn_initial_prediction(
         dVector &y, 
         dVector &offset,

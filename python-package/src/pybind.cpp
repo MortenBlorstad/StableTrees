@@ -24,13 +24,15 @@ using namespace std;
 #include "trees\naiveupdate.hpp"
 #include "trees\stabilityregularization.hpp"
 #include "trees\treereevaluation.hpp"
-#include "ensemble\GBT.hpp"
-#include "ensemble\randomforest.hpp"
-#include "ensemble\stablelossrandomforest.hpp"
-#include "ensemble\naiveupdaterandomforest.hpp"
-#include "ensemble\treereevaluationrandomforest.hpp"
-#include "ensemble\baburandomforest.hpp"
-#include "ensemble\aburandomforest.hpp"
+#include "randomforest\GBT.hpp"
+#include "randomforest\randomforest.hpp"
+#include "randomforest\stablelossrandomforest.hpp"
+#include "randomforest\naiveupdaterandomforest.hpp"
+#include "randomforest\treereevaluationrandomforest.hpp"
+#include "randomforest\baburandomforest.hpp"
+#include "randomforest\aburandomforest.hpp"
+#include "randomforest\stackedrandomforest.hpp"
+#include "agtboost\agtboost.hpp"
 #include "test_parallel_function.hpp"
 #include <string>
 #include <sstream>
@@ -176,6 +178,14 @@ PYBIND11_MODULE(_stabletrees, m)
         .def("predict_uncertainty", &Tree::predict_uncertainty)
         .def("update", &Tree::update)
         .def("make_node_list", &Tree::make_node_list);
+
+    py::class_<ENSEMBLE>(m, "agtboost")
+        .def(py::init<>())
+        .def("learn", &ENSEMBLE::train)
+        .def("predict", &ENSEMBLE::predict)
+        .def("update", &ENSEMBLE::update)
+        .def("set_param", &ENSEMBLE::set_param)
+        ;
     
     
     
@@ -236,6 +246,12 @@ PYBIND11_MODULE(_stabletrees, m)
     .def("learn", &RandomForest::learn,py::call_guard<py::gil_scoped_release>())
     .def("predict", &RandomForest::predict)
     .def("update", &RandomForest::update);
+
+    py::class_<StackedRandomForest>(m, "StackedRandomForest")
+    .def(py::init<int,int, int , double,int, bool ,int,double,double>())
+    .def("learn", &StackedRandomForest::learn,py::call_guard<py::gil_scoped_release>())
+    .def("predict", &StackedRandomForest::predict)
+    .def("update", &StackedRandomForest::update);
 
     py::class_<RandomForestSL>(m, "RandomForestSL")
     .def(py::init<int,int, int , double,int, bool ,int, double>())
