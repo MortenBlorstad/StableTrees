@@ -1,5 +1,5 @@
 
-from stabletrees import BaseLineTree, AbuTreeI, NaiveUpdate,TreeReevaluation,StabilityRegularization,BABUTree
+from stabletrees import BaseLineTree, AbuTree, NaiveUpdate,TreeReevaluation,StabilityRegularization,BABUTree
 import numpy as np
 from matplotlib import pyplot as plt
 from sklearn.model_selection import train_test_split,RepeatedKFold
@@ -97,7 +97,7 @@ for case, info in cases.items():
                         "TR8":TreeReevaluation(criterion = criterion,min_samples_leaf=5, adaptive_complexity=True,delta=0.1,alpha=0.1),
                         "TR9":TreeReevaluation(criterion = criterion,min_samples_leaf=5, adaptive_complexity=True,delta=0.05,alpha=0.1),
                         }
-        preds  = {k :np.zeros((200,100)) for k in models.keys()}
+
         stability = {k :[] for k in models.keys()}
         performance = {k :[] for k in models.keys()}
         for i,(train_index, test_index) in enumerate(kf.split(x)):
@@ -113,7 +113,6 @@ for case, info in cases.items():
                         else:
                                 model.update(X_12,y_12)
                         pred2 = model.predict(X_test)
-                        preds[name][:,i] = (pred1-pred2)**2
                         stability[name].append( S2(pred1,pred2))
                         performance[name].append(mean_squared_error(y_test, pred2))
         print(case)
@@ -157,9 +156,9 @@ legend_elements = [Line2D([0], [0], color='b', lw=1, label='baseline', linestyle
 plt.axvline(x=1, linestyle = "--")
 plt.axhline(y=1, linestyle = "--")
 plt.xlabel("mse",fontsize=10)
-plt.ylabel(r'$\left(f_1(x_i)-f_2(x_i)\right)^2$',fontsize=10)
-plt.ylim((0.3,1.025))
-plt.xlim((0.995,1.13))
+plt.ylabel("stability",fontsize=10)
+# plt.ylim((0.3,1.025))
+# plt.xlim((0.995,1.13))
 plt.legend(loc='upper right' , handles=legend_elements,fontsize="10")
 plt.savefig(f"StableTrees_examples\plots\\example_mse_simulated_TR.png")
 plt.close()

@@ -117,7 +117,7 @@ Node* TreeReevaluation::update_rec(Node* node, dMatrix &X, dVector &y,dVector &g
         return node;
     }
     if(node->is_leaf()){
-        return node;//attempt_split(node, X,y,h,g, depth);
+        return attempt_split(node, X,y,h,g, depth);//node;
     }
 
     bool change;

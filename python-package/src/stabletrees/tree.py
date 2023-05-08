@@ -348,10 +348,11 @@ class BABUTree(BaseRegressionTree):
     """
     
     def __init__(self, *,criterion = "mse", max_depth = None, min_samples_split = 5,min_samples_leaf:int = 5, adaptive_complexity : bool = False,
-                 max_features:int = None, random_state = None):
+                 max_features:int = None, random_state = 0, bumping_iterations:int = 5):
         self.root = None
-        super().__init__(criterion,max_depth, min_samples_split,min_samples_leaf,adaptive_complexity,random_state,max_features)
-        self.tree = atree(criterions[self.criterion], self.max_depth, self.min_samples_split,self.min_samples_leaf,adaptive_complexity,self.max_features,self.learning_rate,0)
+        super().__init__(criterion,max_depth, min_samples_split,min_samples_leaf,adaptive_complexity,max_features,random_state)
+        self.tree =atree(criterions[self.criterion], self.max_depth, self.min_samples_split,self.min_samples_leaf,adaptive_complexity,self.max_features,self.learning_rate,self.random_state)
+        self.bumping_iterations = bumping_iterations
 
     def _fit(self, X: np.ndarray, y: np.ndarray):
         X,y = self.check_input(X,y)
@@ -372,13 +373,14 @@ class BABUTree(BaseRegressionTree):
         n = X.shape[0]
         # X_ = X
         # y_ = y
-        for b in range(5):
+        for b in range(self.bumping_iterations):
             # ind_b = np.random.randint(0,n,size=n)
             # # X_b = X[ind_b,:]
             # y_b = y[ind_b]
             # X_ = np.vstack((X_,X_b))
             # y_ = np.concatenate((y_,y_b),axis=0)
             self._update(X,y)
+        self.root = self.tree.get_root()
         return self
 
     def update(self, X,y): 
