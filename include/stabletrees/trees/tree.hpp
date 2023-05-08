@@ -43,10 +43,10 @@ class Tree{
         Node* get_root();
         double predict_obs(dVector  &obs);
         double predict_uncertainty_obs(dVector  &obs);
-        dVector predict(dMatrix  &X);
+        dVector predict(const dMatrix  &X);
         dVector predict_uncertainty(dMatrix  &X);
         virtual void update(dMatrix &X, dVector &y);
-        virtual tuple<bool,int,double, double,double,double,double> find_split(const dMatrix &X, const dVector &y, const dVector &g, const dVector &h, const iVector &features_indices);
+        virtual tuple<bool,int,double, double,double,double,double> find_split(const dMatrix &X, const dVector &y, const dVector &g, const dVector &h, const std::vector<int> &features_indices);
         //Node* update_tree_info(dMatrix &X, dVector &y, Node* node, int depth);
         Node* update_tree_info(dMatrix &X, dVector &y, dVector &g ,dVector &h, Node* node, int depth);
         //~Tree();
@@ -66,6 +66,7 @@ class Tree{
         int min_samples_leaf;
         double total_obs;
         unsigned int random_state;
+        unsigned int initial_random_state;
         double pred_0 = 0;
         int n1;
         int max_features;
@@ -84,6 +85,7 @@ Tree::Tree(){
     this-> max_features =  INT_MAX;
     learning_rate = 1;
     random_state = 1;
+    initial_random_state =random_state;
 }
 
 
@@ -111,10 +113,11 @@ Tree::Tree(int _criterion, int max_depth, double min_split_sample,int min_sample
     number_of_nodes = 0;
     loss_function = new LossFunction(_criterion);
     this->random_state = random_state;
+    this->initial_random_state =random_state;
 
 } 
 
-tuple<bool,int,double, double,double,double,double>  Tree::find_split(const dMatrix &X, const dVector &y, const dVector &g, const dVector &h, const iVector &features_indices){
+tuple<bool,int,double, double,double,double,double>  Tree::find_split(const dMatrix &X, const dVector &y, const dVector &g, const dVector &h, const std::vector<int> &features_indices){
     return splitter->find_best_split(X, y, g, h,features_indices);
 }
 
@@ -162,6 +165,7 @@ tuple<iVector, iVector> Tree::get_masks(dVector &feature, double value){
 
 
 void Tree::learn(dMatrix  &X, dVector &y){
+    random_state = initial_random_state;
     total_obs = y.size();
     //printf("min_samples_leaf: %d \n", min_samples_leaf);
     splitter = new Splitter(min_samples_leaf,total_obs, adaptive_complexity,max_features, learning_rate);
@@ -239,7 +243,7 @@ double Tree::predict_obs(dVector  &obs){
     return NULL;
 }
 
-dVector Tree::predict(dMatrix  &X){
+dVector Tree::predict(const dMatrix  &X){
     int n = X.rows();
     dVector y_pred(n);
     dVector obs(X.cols());
@@ -301,21 +305,22 @@ Node* Tree::build_tree(const dMatrix  &X, const dVector &y, const dVector &g, co
     iVector mask_left;
     iVector mask_right;
     double expected_max_S;
-    iVector features_indices(X.cols(),1);
-    for (int i=0; i<X.cols(); i++){features_indices(i) = i; } 
+    std::vector<int> features_indices(X.cols());
+    for (int i=0; i<X.cols(); i++){features_indices[i] = i; } 
     if(previuos_tree_node ==NULL){
-        //for (int i=0; i<X.cols(); i++){features_indices(i) = i; } 
-    
+
         if(max_features<INT_MAX){
             std::mt19937 gen(random_state);
-            std::shuffle(features_indices.data(), features_indices.data() + features_indices.size(), gen);
-            features_indices = features_indices.block(0,0,max_features,1);
-            this->random_state +=1;
+            std::iota(features_indices.begin(), features_indices.end(), 0);
+            std::shuffle(features_indices.begin(), features_indices.end(), gen);
+            features_indices.resize(max_features);
+            
         }
-    }else if(previuos_tree_node->get_features_indices().size()>0) {
+    }else 
+    if(previuos_tree_node->get_features_indices().size()>0) {
         features_indices = previuos_tree_node->get_features_indices();
     }
-
+    this->random_state +=1;
 
     //printf("%d \n", features_indices.allFinite());
     
@@ -542,7 +547,7 @@ std::vector<Node*> Tree::make_node_list(){
 
 
 void Tree::update(dMatrix &X, dVector &y){
-    this->random_state =0;
+    random_state = initial_random_state;
     this->learn(X,y);
 }
 

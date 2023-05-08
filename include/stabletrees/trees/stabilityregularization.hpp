@@ -105,20 +105,22 @@ Node* StabilityRegularization::update_tree(const dMatrix  &X, const dVector &y, 
     iVector mask_left;
     iVector mask_right;
     double expected_max_S;
-    iVector features_indices(X.cols(),1);
-    for (int i=0; i<X.cols(); i++){features_indices(i) = i; } 
-    if(previuos_tree_node ==NULL){
-        //for (int i=0; i<X.cols(); i++){features_indices(i) = i; } 
-    
+    std::vector<int> features_indices(X.cols());
+    for (int i=0; i<X.cols(); i++){features_indices[i] = i; } 
+    // if(previuos_tree_node ==NULL){
+
         if(max_features<INT_MAX){
             std::mt19937 gen(random_state);
-            std::shuffle(features_indices.data(), features_indices.data() + features_indices.size(), gen);
-            features_indices = features_indices.block(0,0,max_features,1);
+            std::iota(features_indices.begin(), features_indices.end(), 0);
+            std::shuffle(features_indices.begin(), features_indices.end(), gen);
+            features_indices.resize(max_features);
             this->random_state +=1;
         }
-    }else if(previuos_tree_node->get_features_indices().size()>0) {
-        features_indices = previuos_tree_node->get_features_indices();
-    }
+    // }else 
+    // if(previuos_tree_node->get_features_indices().size()>0) {
+    //     features_indices = previuos_tree_node->get_features_indices();
+    // }
+
 
 
     //printf("%d \n", features_indices.allFinite());

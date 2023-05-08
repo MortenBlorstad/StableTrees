@@ -154,46 +154,46 @@ for ds,target, feature in zip(datasets,targets, features):
         standard_stability_all[name] += [score/S2_scale for score in standard_stability[name]]
     print()
     color +=1 
-from matplotlib.lines import Line2D
-legend_elements = [Line2D([0], [0], marker='s', color='w', label=k,
-                          markerfacecolor=v, markersize=14) for k,v in colors.items()  ]
-legend_elements = [Line2D([0], [0], color='b', lw=1, label='baseline', linestyle = "--")] +legend_elements
-plt.axvline(x=1, linestyle = "--")
-plt.axhline(y=1, linestyle = "--")
-plt.xlabel("mse",fontsize=14)
-plt.ylabel(r'$\left(f_1(x_i)-f_2(x_i)\right)^2$',fontsize=14)
-plt.ylim((0,1.25))
-#plt.xlim((0,2))
-ax.legend(handles=legend_elements)
-plt.show()
-from matplotlib import pyplot as plt
-plt.rcParams.update({'figure.autolayout': True})
-labels, data = stability_all.keys(), stability_all.values()
+# from matplotlib.lines import Line2D
+# legend_elements = [Line2D([0], [0], marker='s', color='w', label=k,
+#                           markerfacecolor=v, markersize=14) for k,v in colors.items()  ]
+# legend_elements = [Line2D([0], [0], color='b', lw=1, label='baseline', linestyle = "--")] +legend_elements
+# plt.axvline(x=1, linestyle = "--")
+# plt.axhline(y=1, linestyle = "--")
+# plt.xlabel("mse",fontsize=14)
+# plt.ylabel(r'$\left(f_1(x_i)-f_2(x_i)\right)^2$',fontsize=14)
+# plt.ylim((0,1.25))
+# #plt.xlim((0,2))
+# ax.legend(handles=legend_elements)
+# plt.show()
+# from matplotlib import pyplot as plt
+# plt.rcParams.update({'figure.autolayout': True})
+# labels, data = stability_all.keys(), stability_all.values()
 
-plt.boxplot(data,vert=0)
-plt.yticks(range(1, len(labels) + 1), labels,fontsize=16)
-plt.xlabel(r'$\log\left(\frac{f_1(x_i)}{f_2(x_i)}\right)$',fontsize=14)
-plt.ylabel("models")
-plt.savefig(f"StableTrees_examples\plots\\all_stability_ac.png")
-plt.close()
-
-
-labels, data = standard_stability_all.keys(), standard_stability_all.values()
-plt.boxplot(data,vert=0)
-plt.yticks(range(1, len(labels) + 1), labels,fontsize=16)
-plt.xlabel(r'$\left(f_1(x_i)-f_2(x_i)\right)^2$',fontsize=14)
-plt.ylabel("models")
-plt.savefig(f"StableTrees_examples\plots\\all_standard_stability_ac.png")
-plt.close()
+# plt.boxplot(data,vert=0)
+# plt.yticks(range(1, len(labels) + 1), labels,fontsize=16)
+# plt.xlabel(r'$\log\left(\frac{f_1(x_i)}{f_2(x_i)}\right)$',fontsize=14)
+# plt.ylabel("models")
+# plt.savefig(f"StableTrees_examples\plots\\all_stability_ac.png")
+# plt.close()
 
 
-labels, data = mse_all.keys(), mse_all.values()
-plt.boxplot(data,vert=0)
-plt.xlabel('mse',fontsize=14)
-plt.ylabel("models")
-plt.yticks(range(1, len(labels) + 1), labels,fontsize=16)
-plt.savefig(f"StableTrees_examples\plots\\all_mse_ac.png")
-plt.close()
+# labels, data = standard_stability_all.keys(), standard_stability_all.values()
+# plt.boxplot(data,vert=0)
+# plt.yticks(range(1, len(labels) + 1), labels,fontsize=16)
+# plt.xlabel(r'$\left(f_1(x_i)-f_2(x_i)\right)^2$',fontsize=14)
+# plt.ylabel("models")
+# plt.savefig(f"StableTrees_examples\plots\\all_standard_stability_ac.png")
+# plt.close()
+
+
+# labels, data = mse_all.keys(), mse_all.values()
+# plt.boxplot(data,vert=0)
+# plt.xlabel('mse',fontsize=14)
+# plt.ylabel("models")
+# plt.yticks(range(1, len(labels) + 1), labels,fontsize=16)
+# plt.savefig(f"StableTrees_examples\plots\\all_mse_ac.png")
+# plt.close()
 
 # SEED = 0
 # EPSILON = 2

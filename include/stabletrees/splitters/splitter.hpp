@@ -31,7 +31,7 @@ class Splitter{
     public:
         Splitter();
         Splitter(int min_samples_leaf, double _total_obs, bool _adaptive_complexity,int max_features, double learning_rate);
-        virtual tuple<bool,int,double,double,double,double,double>  find_best_split(const dMatrix  &X, const dVector  &y,const dVector &g,const dVector &h,const iVector &features_indices);
+        virtual tuple<bool,int,double,double,double,double,double>  find_best_split(const dMatrix  &X, const dVector  &y,const dVector &g,const dVector &h,const std::vector<int> &features_indices);
         dMatrix cir_sim;
         virtual ~Splitter();
         double get_reduction(const dVector &g,const dVector &h, iVector mask_left);
@@ -83,7 +83,7 @@ double Splitter::get_reduction(const dVector &g,const dVector &h, iVector mask_l
     return reduction;
 }
 
-tuple<bool,int,double,double,double,double,double> Splitter::find_best_split(const dMatrix  &X, const dVector  &y, const dVector &g, const dVector &h,const iVector &features_indices){
+tuple<bool,int,double,double,double,double,double> Splitter::find_best_split(const dMatrix  &X, const dVector  &y, const dVector &g, const dVector &h,const std::vector<int> &features_indices){
     int n = y.size();
     double observed_reduction = -std::numeric_limits<double>::infinity();
     double score;
@@ -117,7 +117,7 @@ tuple<bool,int,double,double,double,double,double> Splitter::find_best_split(con
     //for(int j = 0; j<X.cols();j++){
     for(int j = 0; j<features_indices.size(); j++){
         
-        int col_index = features_indices(j);//j; //
+        int col_index = features_indices[j];//j; //
         //printf("%d, %d\n",j, col_index);
         int nl = 0; int nr = n;
         double Gl = 0, Gl2 = 0, Hl=0, Hl2=0, Gr=G, Gr2 = G2, Hr=H, Hr2 = H2;

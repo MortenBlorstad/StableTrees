@@ -1,5 +1,6 @@
 pyproject.toml
 setup.py
+src/_stabletrees.cp39-win_amd64.pyd
 src/pybind.cpp
 src/stabletrees/__init__.py
 src/stabletrees/gradient_tree_boosting.py

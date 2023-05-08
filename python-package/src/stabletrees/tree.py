@@ -1,5 +1,5 @@
 
-from _stabletrees import Node, Tree, NewTree
+from _stabletrees import Node, Tree
 from _stabletrees import AbuTree as atree
 from _stabletrees import NaiveUpdate as NuTree
 from _stabletrees import StabilityRegularization as SrTree

@@ -80,7 +80,7 @@ void TreeReevaluation::update(dMatrix &X, dVector &y){
     splitter = new Splitter(min_samples_leaf,number_of_examples, adaptive_complexity, max_features,learning_rate);
 
 
-    pred_0 = loss_function->link_function(1.5*y.array().mean());
+    pred_0 = loss_function->link_function(y.array().mean());
     //pred_0 = 0;
     
     dVector pred = dVector::Constant(y.size(),0,  pred_0) ;
@@ -124,18 +124,18 @@ Node* TreeReevaluation::update_rec(Node* node, dMatrix &X, dVector &y,dVector &g
     tie(node,change) = reevaluate_split(node,X,y,g,h,delta,depth);
     //printf("change %d, depth: %d \n", change, depth);
     if(!change){
-    iVector left_mask; iVector right_mask;
-    dVector feature = X.col(node->split_feature);
-    tie(left_mask,right_mask) = get_masks(feature, node->split_value);
-    iVector keep_cols = iVector::LinSpaced(X.cols(), 0, X.cols()-1).array();
-    
-    dMatrix X_left = X(left_mask,keep_cols); dVector y_left = y(left_mask,1);
-    dVector g_left = g(left_mask,1); dVector h_left = h(left_mask,1);
-    dVector g_right = g(right_mask,1); dVector h_right = h(right_mask,1);
+        iVector left_mask; iVector right_mask;
+        dVector feature = X.col(node->split_feature);
+        tie(left_mask,right_mask) = get_masks(feature, node->split_value);
+        iVector keep_cols = iVector::LinSpaced(X.cols(), 0, X.cols()-1).array();
+        
+        dMatrix X_left = X(left_mask,keep_cols); dVector y_left = y(left_mask,1);
+        dVector g_left = g(left_mask,1); dVector h_left = h(left_mask,1);
+        dVector g_right = g(right_mask,1); dVector h_right = h(right_mask,1);
 
-    node->left_child = update_rec(node->left_child, X_left, y_left,g_left, h_left, delta,depth+1);
-    dMatrix X_right= X(right_mask,keep_cols); dVector y_right = y(right_mask,1);
-    node->right_child = update_rec(node->right_child, X_right, y_right,g_right,h_right,delta,depth+1);
+        node->left_child = update_rec(node->left_child, X_left, y_left,g_left, h_left, delta,depth+1);
+        dMatrix X_right= X(right_mask,keep_cols); dVector y_right = y(right_mask,1);
+        node->right_child = update_rec(node->right_child, X_right, y_right,g_right,h_right,delta,depth+1);
     }
     return node;
 }

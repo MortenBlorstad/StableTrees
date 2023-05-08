@@ -79,7 +79,7 @@ Tree* RandomForest::create_tree(int method, int random_state_){
     }
 }
 
-void RandomForest::learn(dMatrix &X, dVector &y){
+void RandomForest::learn(const dMatrix &X, dVector &y){
     random_state = 0;
     bootstrap_indices = sample_indices(0, y.size());
     iVector keep_cols = iVector::LinSpaced(X.cols(), 0, X.cols()-1).array();

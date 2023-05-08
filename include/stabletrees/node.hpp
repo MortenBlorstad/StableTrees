@@ -26,7 +26,7 @@ class Node{
 
         Node(double _split_value,double _impurity, double _split_score, int _split_feature, int _n_samples, double _prediction);
         Node(double _split_value,double _impurity, double _split_score, int _split_feature, int _n_samples, double _prediction, double y_var, double w_var);
-        Node(double _split_value,double _impurity, double _split_score, int _split_feature, int _n_samples, double _prediction, double y_var, double w_var, iVector &features_indices);
+        Node(double _split_value,double _impurity, double _split_score, int _split_feature, int _n_samples, double _prediction, double y_var, double w_var, std::vector<int> features_indices);
         Node(double _prediction, int _n_samples, double y_var, double w_var);
         Node(double _prediction, int _n_samples);
 
@@ -41,12 +41,12 @@ class Node{
         double get_split_value();
         double get_split_score();
         double get_impurity();
-        iVector get_features_indices();
+        std::vector<int> get_features_indices() const;
         Node* copy();
         ~Node();
         std::string toString();
 
-        iVector features_indices;
+        std::vector<int> features_indices;
 
     private:
         Node* copy_rec(Node* node);
@@ -129,7 +129,7 @@ Node::Node(double _split_value, double _impurity, double _split_score, int _spli
     this->w_var = w_var;
 
 }
-Node::Node(double _split_value,double _impurity, double _split_score, int _split_feature, int _n_samples, double _prediction, double y_var, double w_var, iVector &features_indices){
+Node::Node(double _split_value,double _impurity, double _split_score, int _split_feature, int _n_samples, double _prediction, double y_var, double w_var, std::vector<int> features_indices){
     split_value = _split_value;
     impurity = _impurity;
     split_score = _split_score;
@@ -159,7 +159,7 @@ Node::Node(double _prediction, int _n_samples){
     right_child=NULL;
 }
 
-iVector Node::get_features_indices(){
+std::vector<int> Node::get_features_indices() const{
     return features_indices;
 }
 

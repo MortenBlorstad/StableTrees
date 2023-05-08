@@ -59,7 +59,7 @@ X = np.hstack((X1,X2,X3,X4))
 
 colors = {"Case 1":"#E69F00", "Case 2": "#009E73", "Case 3":"#CC79A7"}
 #markers = {"baseline":"o", "NU": "v", "TR":"^", "TR":"s", "SL":"D","ABU":"+", "BABU": "*" }
-markers = {"baseline":"$B$", "TR1":"TR_{0,25}", "TR2":"TR_{0,10}","TR3":"TR_{0,5}",
+markers = {"baseline":"baseline", "TR1":"TR_{0,25}", "TR2":"TR_{0,10}","TR3":"TR_{0,5}",
             "TR4":"TR_{5,25}", "TR5":"TR_{5,10}","TR6":"TR_{5,5}",
             "TR7":"TR_{10,25}", "TR8":"TR_{10,10}","TR9":"TR_{10,5}",}
 

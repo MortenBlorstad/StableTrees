@@ -1,17 +1,24 @@
 
 from stabletrees.tree import BaseRegressionTree,BaseLineTree,NaiveUpdate,AbuTree,TreeReevaluation
 from _stabletrees import RandomForest as rf
+from _stabletrees import RandomForestABU as rfabu
+from _stabletrees import RandomForestSL as rfsl
+from _stabletrees import RandomForestNU as rfnu
+from _stabletrees import RandomForestTR as rftr
+from _stabletrees import RandomForestBABU as rfbabu
 import numpy as np
 
-max_features_to_int = {"sqrt": np.sqrt,
-                       "log2": np.log2,
-                       None : len}
+max_features_to_int = {"all": lambda x :x,
+                       "third": lambda x :max(1, int(x/3)),
+                       None : lambda x :x}
 
 method_to_int = {"base":0,
                  "nu":1,
                  "tr":2,
-                 "sr":3,
-                 "abu":4}
+                 "sl":3,
+                 "abu":4,
+                 "babu":5}
+
 criterions = {"mse":0, "poisson":1}
 
 
@@ -57,9 +64,49 @@ class RandomForest(BaseRegressionTree):
         return y_pred/self.n_estimators
     
 
+# class RF(BaseRegressionTree):
+#     def __init__(self,method:str = "base",n_estimators:int = 100,max_features:str = "sqrt", criterion: str = "mse", max_depth: int = None, min_samples_split: int = 2, min_samples_leaf: int = 5, adaptive_complexity: bool = False, random_state: int = None) -> None:
+#         super().__init__(criterion, max_depth, min_samples_split, min_samples_leaf, adaptive_complexity, random_state)
+#         assert n_estimators>=1
+#         self.n_estimators = n_estimators
+#         self.max_features = max_features
+#         self.method = method
+#         self.criterion =criterion
+#         self.max_depth = max_depth
+#         self.min_samples_leaf = min_samples_leaf
+#         self.min_samples_split = min_samples_split
+#         if self.max_features not in max_features_to_int.keys():
+#             self.max_features = "sqrt"
+
+#         if max_depth is None:
+#             max_depth = 2147483647
+#         self.max_depth = int(max_depth)
+#         self.forest = None
+        
+
+#     def fit(self,X,y):
+#         self.forest = rf(criterions[self.criterion],self.n_estimators,self.max_depth,self.min_samples_split,self.min_samples_leaf,False,X.shape[1]//3,method_to_int[self.method])
+#         self.forest.learn(X,y)
+#         return self
+        
+#     def update(self, X: np.ndarray, y: np.ndarray):
+#         if self.forest is None:
+#             return self.fit(X,y)
+#         self.forest.update(X,y)
+#         return self
+    
+#     def predict(self, X: np.ndarray) -> np.ndarray:
+#         assert (self.forest is not None)
+#         return self.forest.predict(X)
+        
 class RF(BaseRegressionTree):
-    def __init__(self,method:str = "base",n_estimators:int = 100,max_features:str = "sqrt", criterion: str = "mse", max_depth: int = None, min_samples_split: int = 2, min_samples_leaf: int = 5, adaptive_complexity: bool = False, random_state: int = None) -> None:
+    def __init__(self,method:str = "base",n_estimators:int = 100,max_features:str = "all", criterion: str = "mse", max_depth: int = None,
+                  min_samples_split: int = 2, min_samples_leaf: int = 5, adaptive_complexity: bool = False, random_state: int = None, gamma:float = 0.5, delta:float = 0.05,alpha:float = 0.0, bumping_iterations =5) -> None:
         super().__init__(criterion, max_depth, min_samples_split, min_samples_leaf, adaptive_complexity, random_state)
+        self.gamma = gamma
+        self.delta = delta
+        self.alpha = alpha
+        self.bumping_iterations = bumping_iterations
         assert n_estimators>=1
         self.n_estimators = n_estimators
         self.max_features = max_features
@@ -69,29 +116,49 @@ class RF(BaseRegressionTree):
         self.min_samples_leaf = min_samples_leaf
         self.min_samples_split = min_samples_split
         if self.max_features not in max_features_to_int.keys():
-            self.max_features = "sqrt"
+            self.max_features = "all"
+        self.adaptive_complexity = adaptive_complexity
 
         if max_depth is None:
             max_depth = 2147483647
         self.max_depth = int(max_depth)
         self.forest = None
+
+
+    
         
 
-    def fit(self,X,y):
-        self.forest = rf(criterions[self.criterion],self.n_estimators,self.max_depth,self.min_samples_split,self.min_samples_leaf,False,X.shape[1]//3,method_to_int[self.method])
-        self.forest.learn(X,y)
-        return self
+    def fit(self,X,y,sample_weight=None):
+        max_feature = max_features_to_int[self.max_features](X.shape[1])
+        #print(method_to_int[self.method])
+        if method_to_int[self.method] ==0:
+            self.forest = rf(criterions[self.criterion],self.n_estimators,self.max_depth,self.min_samples_split,self.min_samples_leaf,self.adaptive_complexity,max_feature)
+        if method_to_int[self.method] ==1:
+            self.forest = rfnu(criterions[self.criterion],self.n_estimators,self.max_depth,self.min_samples_split,self.min_samples_leaf,self.adaptive_complexity,max_feature)
+        if method_to_int[self.method] ==2:
+            self.forest = rftr(criterions[self.criterion],self.n_estimators,self.max_depth,self.min_samples_split,self.min_samples_leaf,self.adaptive_complexity,max_feature,self.delta,self.alpha)
+        if method_to_int[self.method] ==3:
+            self.forest = rfsl(criterions[self.criterion],self.n_estimators,self.max_depth,self.min_samples_split,self.min_samples_leaf,self.adaptive_complexity,max_feature,self.gamma)
+        if method_to_int[self.method] ==4:
+            self.forest = rfabu(criterions[self.criterion],self.n_estimators,self.max_depth,self.min_samples_split,self.min_samples_leaf,self.adaptive_complexity,max_feature)
+        if method_to_int[self.method] ==5:
+            self.forest = rfbabu(criterions[self.criterion],self.n_estimators,self.max_depth,self.min_samples_split,self.min_samples_leaf,self.adaptive_complexity,max_feature,self.bumping_iterations)
+        if sample_weight is None:
+            sample_weight = np.ones(shape=(len(y),))
+        self.forest.learn(X,y,sample_weight)
         
-    def update(self, X: np.ndarray, y: np.ndarray):
+    def update(self, X: np.ndarray, y: np.ndarray,sample_weight=None):
         if self.forest is None:
             return self.fit(X,y)
-        self.forest.update(X,y)
+        if sample_weight is None:
+            sample_weight = np.ones(shape=(len(y),))
+        self.forest.update(X,y,sample_weight)
         return self
     
     def predict(self, X: np.ndarray) -> np.ndarray:
         assert (self.forest is not None)
         return self.forest.predict(X)
-        
+
 
 
 class NaiveRandomForest(RandomForest):
@@ -150,7 +217,7 @@ class AbuRandomForest(RandomForest):
             #features_b = np.random.choice(np.arange(0,num_max_features,1),replace=False, size =num_max_features).astype(int)
             X_b = X[ind_b]
             y_b = y[ind_b]
-            t = AbuTreeI(criterion = self.criterion,max_depth= self.max_depth,
+            t = AbuTree(criterion = self.criterion,max_depth= self.max_depth,
                               min_samples_split= self.min_samples_split,min_samples_leaf = self.min_samples_leaf,
                                 adaptive_complexity=self.adaptive_complexity).fit(X_b,y_b)
             self.forest.append(t)
@@ -178,7 +245,7 @@ class AbuRandomForest(RandomForest):
 
 
 class ReevaluateRandomForest(RandomForest):
-    def __init__(self,n_estimators:int,max_features:str = "sqrt", criterion: str = "mse", max_depth: int = None, min_samples_split: int = 2, min_samples_leaf: int = 5, adaptive_complexity: bool = False, random_state: int = None) -> None:
+    def __init__(self,n_estimators:int,max_features:str = "all", criterion: str = "mse", max_depth: int = None, min_samples_split: int = 2, min_samples_leaf: int = 5, adaptive_complexity: bool = False, random_state: int = None) -> None:
 
         super().__init__(n_estimators,max_features,criterion, max_depth, min_samples_split, min_samples_leaf, adaptive_complexity, random_state)
         

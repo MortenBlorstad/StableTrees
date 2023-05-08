@@ -1,4 +1,4 @@
-from stabletrees.random_forest import RF
+from stabletrees.random_forest import RF, RandomForest
 from sklearn.datasets import make_regression
 from sklearn.metrics import mean_squared_error
 from sklearn.model_selection import train_test_split,GridSearchCV,RepeatedKFold
@@ -8,9 +8,9 @@ import numpy as np
 import pandas as pd
 import datapreprocess
 from sklearn.linear_model import TweedieRegressor
-from stabletrees import BaseLineTree,AbuTree,NaiveUpdate,TreeReevaluation,StabilityRegularization,BABUTree,SklearnTree
 from adjustText import adjust_text
 from pareto_efficient import is_pareto_optimal
+
 SEED = 0
 EPSILON = 1.1
 
@@ -18,7 +18,7 @@ def S1(pred1, pred2):
     return np.std(np.log((pred2+EPSILON)/(pred1+EPSILON)))#np.mean((pred1- pred2)**2)#
 
 def S2(pred1, pred2):
-    return np.mean(abs(pred1- pred2))
+    return np.mean((pred1- pred2)**2)
 
 parameters = {'max_depth':[None, 5, 10],"min_samples_leaf": [5]} # , 
 clf = GridSearchCV(DecisionTreeRegressor(random_state=0), parameters)
@@ -46,10 +46,12 @@ colors = {"baseline":"#3776ab","NU":"#D55E00", "SL":"#CC79A7","SL1":"#CC79A7", "
             "ABU":"#F0E442",
             "BABU": "#E69F00", "BABU1": "#E69F00","BABU2": "#E69F00" ,"BABU3": "#E69F00","BABU4": "#E69F00","BABU5": "#E69F00","BABU6": "#E69F00"}
 
-colors2 = {"baseline":"#3776ab", "NU":"#D55E00", "NU":"#D55E00", "SL":"#CC79A7", 
+
+colors2 = {"baseline":"#3776ab","NU":"#D55E00", "SL":"#CC79A7", 
             "TR":"#009E73", 
             "ABU":"#F0E442",
-            "BABU": "#E69F00",}
+            "BABU": "#E69F00",
+            "SU": "#7F7F7F"}
 
 
 
@@ -65,32 +67,31 @@ plot_params = {"ytick.color" : "black",
           "font.serif" : ["Computer Modern Serif"]}
 criterion = "mse"
 models = {  
-                       "baseline": BaseLineTree(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True),
-                        "NU": NaiveUpdate(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True),
-                        "TR1": TreeReevaluation(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,delta=0.05,alpha=0),
-                        "TR2": TreeReevaluation(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,delta=0.05,alpha=0.05),
-                        "TR3": TreeReevaluation(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,delta=0.05,alpha=0.1),
-                        "SL1": StabilityRegularization(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,gamma=0.1),
-                        "SL2": StabilityRegularization(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,gamma=0.25),
-                        "SL3": StabilityRegularization(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,gamma=0.5),
-                        "SL4": StabilityRegularization(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,gamma=0.75),
-                        "SL5": StabilityRegularization(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,gamma=0.9),
-                        "ABU": AbuTree(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True),
-                        "BABU1": BABUTree(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,bumping_iterations=1),
-                        "BABU2": BABUTree(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,bumping_iterations=3),
-                        "BABU3": BABUTree(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,bumping_iterations=5),
-                        "BABU4": BABUTree(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,bumping_iterations=7),
-                        "BABU5": BABUTree(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,bumping_iterations=10),
-                        "BABU6": BABUTree(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,bumping_iterations=20),
+                       "baseline": RF("base",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=True),
+                        "standard": RandomForestRegressor(n_estimators= 100,min_samples_leaf=5,random_state=0,max_features=0.33),
+                        "RandomForest": RandomForest(100,random_state=0),
+                        "NU": RF("nu",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False),
+                        "TR1": RF("tr",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False,alpha=0, delta=0.05),
+                        "TR2": RF("tr",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False,alpha=0.05, delta=0.05),
+                        "TR3": RF("tr",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False,alpha=0.1, delta=0.05),
+                         "SL1": RF("sl",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False,gamma=0.1),
+                        "SL2": RF("sl",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False,gamma=0.25),
+                        "SL3": RF("sl",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False,gamma=0.5),
+                        "SL4": RF("sl",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False,gamma=0.75),
+                        "SL5": RF("sl",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False,gamma=0.90),
+                        "ABU": RF("abu",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=True),
+                        "BABU1": RF("babu",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,bumping_iterations=1),
+                        "BABU2": RF("babu",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,bumping_iterations=3),
+                        "BABU3": RF("babu",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,bumping_iterations=5),
                 }
 stability_all = {name:[] for name in models.keys()}
 standard_stability_all= {name:[] for name in models.keys()}
 mse_all= {name:[] for name in models.keys()}
 for ds,target, feature in zip(datasets,targets, features):
-    # if ds ==  "Wage":#ds != "Boston" and 
+    # if ds !=  "Wage":#ds != "Boston" and 
     #     continue
     iteration = 1
-    kf = RepeatedKFold(n_splits= 50,n_repeats=1, random_state=SEED)
+    kf = RepeatedKFold(n_splits= 5,n_repeats=1, random_state=SEED)
     data = pd.read_csv("data/"+ ds+".csv") # load dataset
     
     # data preperation
@@ -126,41 +127,29 @@ for ds,target, feature in zip(datasets,targets, features):
         X1,X2,y1,y2 =  train_test_split(X_12, y_12, test_size=0.5, random_state=SEED)
         # initial model 
         criterion = "mse"
-
-        
+        n_estimators = 100
+        # if ds != "Wage":
+            
         models = {  
-                       "baseline": BaseLineTree(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True),
-                        "NU": NaiveUpdate(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True),
-                        "TR1": TreeReevaluation(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,delta=0.05,alpha=0),
-                        # "TR2": TreeReevaluation(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,delta=0.05,alpha=0.05),
-                        # "TR3": TreeReevaluation(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,delta=0.05,alpha=0.1),
-                        "SL1": StabilityRegularization(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,gamma=0.1),
-                        # "SL2": StabilityRegularization(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,gamma=0.25),
-                        # "SL3": StabilityRegularization(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,gamma=0.5),
-                        # "SL4": StabilityRegularization(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,gamma=0.75),
-                        # "SL5": StabilityRegularization(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,gamma=0.9),
-                        "ABU": AbuTree(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True),
-                        # "BABU1": BABUTree(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,bumping_iterations=1),
-                        # "BABU2": BABUTree(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,bumping_iterations=3),
-                        "BABU3": BABUTree(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,bumping_iterations=5),
-                        # "BABU4": BABUTree(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,bumping_iterations=7),
-                        # "BABU5": BABUTree(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,bumping_iterations=10),
-                        # "BABU6": BABUTree(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,bumping_iterations=20),
+                    "baseline": RF("base",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False),
+                        #"standard": RandomForestRegressor(n_estimators= 100,min_samples_leaf=5,random_state=0,max_features=1/3),
+                        "NU": RF("nu",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False),
+                        "TR1": RF("tr",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False,alpha=0, delta=0.05),
+                        "TR2": RF("tr",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False,alpha=0.05, delta=0.05),
+                        "TR3": RF("tr",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False,alpha=0.1, delta=0.05),
+                        # "SL1": RF("sl",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False,gamma=0.1),
+                        # "SL2": RF("sl",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False,gamma=0.25),
+                        # "SL3": RF("sl",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False,gamma=0.5),
+                        # "SL4": RF("sl",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False,gamma=0.75),
+                        # "SL5": RF("sl",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False,gamma=0.90),
+                        #"ABU": RF("abu",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False),
+                        #"SU": StackedRF(n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False,learning_rate=0.0001,gamma=0.1),
+                        #"BABU1": RF("babu",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False,bumping_iterations=1),
+                        # "BABU2": RF("babu",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False,bumping_iterations=3),
+                        # "BABU3": RF("babu",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False,bumping_iterations=5),
                 }
-        
-   
+       
         for name, model in models.items():
-            # print(name)
-            # print(X1.shape, y1.shape)
-            # has_nan = np.isnan(y1).any()
-            # print("Array contains NaN:", has_nan)
-            # has_inf = np.isinf(y1).any()
-            # print("Array contains infinite values:", has_inf)
-
-            # has_nan = np.isnan(X1).any()
-            # print("Array contains NaN:", has_nan)
-            # has_inf = np.isinf(X1).any()
-            # print("Array contains infinite values:", has_inf)
             model.fit(X1,y1)
             
             pred1 = model.predict(X_test)
@@ -206,7 +195,7 @@ for ds,target, feature in zip(datasets,targets, features):
         stability_score = np.mean(standard_stability[name])
         stability_SE = np.std(standard_stability[name])/np.sqrt(len(mse[name]))
         stability_SE_norm = np.std(standard_stability[name]/S_scale)/np.sqrt(len(mse[name]))
-        print(f"test - mse: {loss_score:.3f} ({loss_SE:.3f}), stability: {stability_score:.3f} ({stability_SE:.3f})")
+        print(f"test - mse: {loss_score:.3f} ({loss_SE:.2f}), stability: {stability_score:.3f} ({stability_SE:.2f})")
         print(f"test - mse: {loss_score/mse_scale:.2f} ({loss_SE_norm:.2f}), stability: {stability_score/S_scale:.2f} ({stability_SE_norm:.2f})")
         print("="*80)
         mse_all[name] += [score/mse_scale for score in mse[name]]
@@ -232,23 +221,24 @@ fig, axes = plt.subplots(nrows=3, ncols=2, figsize=(8.27, 11),dpi=500)#
 axes = axes.ravel()
 plt.rcParams.update(plot_params)
 
-# # college_box_plot_info = []
-# import itertools
-# import os
-# df_list = list(itertools.chain(*plot_info.values()))
-# df = pd.DataFrame(df_list, columns=["dataset",'loss', 'stability', 'color', "marker", 'loss_abs','stability_abs','loss_se','stability_se','loss_abs_se','stability_abs_se' ] )
-# if os.path.isfile('StableTrees_examples/results/tree_ISLR_results.csv'):
-#     old_df =pd.read_csv('StableTrees_examples/results/tree_ISLR_results.csv')
-#     for i,(d,m) in enumerate(zip(df.dataset, df.marker)):
-#         index = old_df.loc[(old_df["dataset"] == d) & (old_df["marker"] ==m)].index
-#         values  = df.iloc[i]
-#         if len(index)>0:
-#             old_df.iloc[index]=values
-#         else:
-#             print(values)
-#             old_df  = old_df.append(values, ignore_index=True)
+college_box_plot_info = []
+import itertools
+df_list = list(itertools.chain(*plot_info.values()))
+df = pd.DataFrame(df_list, columns=["dataset",'loss', 'stability', 'color', "marker", 'loss_abs','stability_abs','loss_se','stability_se','loss_abs_se','stability_abs_se' ] )
 
-#     old_df.to_csv('StableTrees_examples/results/tree_ISLR_results.csv', index=False)
-# else:
-#     df.to_csv('StableTrees_examples/results/tree_ISLR_results.csv', index=False)
+import os
+if os.path.isfile('StableTrees_examples/results/randomforest_ISLR_results.csv'):
+    old_df =pd.read_csv('StableTrees_examples/results/randomforest_ISLR_results.csv')
+    for i,(d,m) in enumerate(zip(df.dataset, df.marker)):
+        index = old_df.loc[(old_df["dataset"] == d) & (old_df["marker"] ==m)].index
+        values  = df.iloc[i]
+        if len(index)>0:
+            old_df.iloc[index]=values
+        else:
+            print(values)
+            old_df  = old_df.append(values, ignore_index=True)
+    old_df.to_csv('StableTrees_examples/results/randomforest_ISLR_results.csv', index=False)
+else:
+    df.to_csv('StableTrees_examples/results/randomforest_ISLR_results.csv', index=False)
+
 

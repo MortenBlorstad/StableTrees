@@ -29,24 +29,61 @@ AbuTree::AbuTree(int _criterion,int max_depth, double min_split_sample,int min_s
 }
 
 
+// dVector AbuTree::predict_info_obs(dVector  &obs){
+//     Node* node = this->root;
+//     dVector info = dVector::Zero(2,1);
+//     while(node !=NULL){
+//         if(node->is_leaf()){
+//             info(0,1) = node->predict();
+//             if(std::isnan(node->y_var)||std::isnan(node->w_var) || std::isnan((node->y_var/node->w_var)/node->n_samples) ){
+//                     std::cout << "y_var or w_var contains NaN:" << node->y_var << " " <<node->w_var << " " << node->n_samples<< std::endl;
+//                 }
+//             if(node->y_var< 0 || node->w_var <0 || (node->y_var/node->w_var)/node->n_samples<0){
+//                     std::cout << "y_var or w_var <0: " << node->y_var << " " <<node->w_var << " " << node->n_samples<< std::endl;
+//                 }
+//             if(node->w_var <=0){
+//                 node->w_var =0.00001;
+//             }
+//             if(node->y_var <=0){
+//                 node->y_var =0.00001;
+//             }
+//             if(_criterion ==1){ //poisson only uses prediction variance
+//                 info(1,1) = (node->y_var/node->w_var)/node->n_samples; //Based on experimental tries
+//                 //info(1,1) = 1/(node->w_var/node->n_samples); //based on theory
+//             }
+//             else{ //mse uses both response and prediction variance
+                
+//                 info(1,1) = (node->y_var/node->w_var)/node->n_samples;
+//             }
+//             return info;
+//         }else{
+//             if(obs(node->split_feature) <= node->split_value){
+//                 node = node->left_child;
+//             }else{
+//                 node = node->right_child;
+//             }
+//         }
+//     }
+// }
 dVector AbuTree::predict_info_obs(dVector  &obs){
     Node* node = this->root;
-    dVector info = dVector::Zero(2,1);
+    dVector info = dVector::Zero(3,1);
     while(node !=NULL){
         if(node->is_leaf()){
             info(0,1) = node->predict();
-            if(std::isnan(node->y_var)||std::isnan(node->w_var) || std::isnan((node->y_var/node->w_var)/node->n_samples) ){
-                    std::cout << "y_var or w_var contains NaN:" << node->y_var << " " <<node->w_var << " " << node->n_samples<< std::endl;
-                }
-            if(node->y_var< 0 || node->w_var <0 || (node->y_var/node->w_var)/node->n_samples<0){
-                    std::cout << "y_var or w_var <0: " << node->y_var << " " <<node->w_var << " " << node->n_samples<< std::endl;
-                }
+            
             if(node->w_var <=0){
                 node->w_var =0.00001;
             }
             if(node->y_var <=0){
                 node->y_var =0.00001;
             }
+            if(std::isnan(node->y_var)||std::isnan(node->w_var) || std::isnan((node->y_var/node->w_var)/node->n_samples) ){
+                    std::cout << "y_var or w_var contains NaN:" << node->y_var << " " <<node->w_var << " " << node->n_samples<< std::endl;
+                }
+            if(node->y_var< 0 || node->w_var <0 || (node->y_var/node->w_var)/node->n_samples<0){
+                    std::cout << "y_var or w_var <0: " << node->y_var << " " <<node->w_var << " " << node->n_samples<< std::endl;
+                }
             if(_criterion ==1){ //poisson only uses prediction variance
                 info(1,1) = (node->y_var/node->w_var)/node->n_samples; //Based on experimental tries
                 //info(1,1) = 1/(node->w_var/node->n_samples); //based on theory
@@ -55,6 +92,7 @@ dVector AbuTree::predict_info_obs(dVector  &obs){
                 
                 info(1,1) = (node->y_var/node->w_var)/node->n_samples;
             }
+            info(2,1) = node->w_var;
             return info;
         }else{
             if(obs(node->split_feature) <= node->split_value){
@@ -65,9 +103,10 @@ dVector AbuTree::predict_info_obs(dVector  &obs){
         }
     }
 }
+
 dMatrix AbuTree::predict_info(dMatrix &X){
     int n = X.rows();
-    dMatrix leaf_info(n,2);
+    dMatrix leaf_info(n,3);
     dVector obs(X.cols());
     for(int i =0; i<n; i++){
         dVector obs = X.row(i);
@@ -79,14 +118,38 @@ dMatrix AbuTree::predict_info(dMatrix &X){
     }
     return leaf_info;
 }
+// dMatrix AbuTree::predict_info(dMatrix &X){
+//     int n = X.rows();
+//     dMatrix leaf_info(n,2);
+//     dVector obs(X.cols());
+//     for(int i =0; i<n; i++){
+//         dVector obs = X.row(i);
+//         dVector info =predict_info_obs(obs);
+//         for (size_t j = 0; j < info.size(); j++)
+//         {
+//             leaf_info(i,j) = info(j);
+//         }
+//     }
+//     return leaf_info;
+// }
 
 
 void AbuTree::update(dMatrix &X, dVector &y){
     //printf("%d\n", n1);
+    random_state = initial_random_state;
+    bootstrap_seed = 0;
     dMatrix Xb = sample_X(X,n1);
     dMatrix info = predict_info(Xb);
     dVector weights = info.col(1);//array().min(1000).max(0);
     dVector yb = info.col(0);
+    // std::mt19937 gen(bootstrap_seed);
+    // dVector w_wars = info.col(2);
+    // for (size_t i = 0; i < yb.size(); i++)
+    // {
+    //     std::normal_distribution<double> distribution(0.0, sqrt(w_wars(i)));
+    //     double noise = distribution(gen);
+    //     yb(i)+= noise;
+    // }
     // for (size_t i = 0; i < yb.size(); i++)
     // {
     //     printf("yb = %f \n", yb(i));
@@ -216,20 +279,22 @@ Node* AbuTree::update_tree(const dMatrix  &X, const dVector &y, const dVector &g
     iVector mask_left;
     iVector mask_right;
     double expected_max_S;
-    iVector features_indices(X.cols(),1);
-    for (int i=0; i<X.cols(); i++){features_indices(i) = i; } 
-    if(previuos_tree_node ==NULL){
-        //for (int i=0; i<X.cols(); i++){features_indices(i) = i; } 
-    
+    std::vector<int> features_indices(X.cols());
+    for (int i=0; i<X.cols(); i++){features_indices[i] = i; } 
+    // if(previuos_tree_node ==NULL){
+
         if(max_features<INT_MAX){
             std::mt19937 gen(random_state);
-            std::shuffle(features_indices.data(), features_indices.data() + features_indices.size(), gen);
-            features_indices = features_indices.block(0,0,max_features,1);
-            this->random_state +=1;
+            std::iota(features_indices.begin(), features_indices.end(), 0);
+            std::shuffle(features_indices.begin(), features_indices.end(), gen);
+            features_indices.resize(max_features);
+            
         }
-    }else if(previuos_tree_node->get_features_indices().size()>0) {
-        features_indices = previuos_tree_node->get_features_indices();
-    }
+    this->random_state +=1;
+    // }else if(previuos_tree_node->get_features_indices().size()>0) {
+    //     features_indices = previuos_tree_node->get_features_indices();
+    // }
+
 
 
 

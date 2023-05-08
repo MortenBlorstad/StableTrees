@@ -22,10 +22,20 @@ using namespace std;
 #include "trees\stabilityregularization.hpp"
 #include "trees\treereevaluation.hpp"
 #include "ensemble\GBT.hpp"
-#include "ensemble\randomforest.hpp"
+//#include "ensemble\randomforest.hpp"
 
 
+#include "randomforest\randomforest.hpp"
 
+#include "randomforest\aburandomforest.hpp"
+
+#include "randomforest\baburandomforest.hpp"
+
+#include "randomforest\naiveupdaterandomforest.hpp"
+
+#include "randomforest\stablelossrandomforest.hpp"
+
+#include "randomforest\treereevaluationrandomforest.hpp"
 
 
 #define STRINGIFY(x) #x
@@ -126,11 +136,11 @@ PYBIND11_MODULE(_stabletrees, m)
         .def("update", &GBT::update);
     
 
-    py::class_<RandomForest>(m, "RandomForest")
-    .def(py::init<int,int, int , double,int, bool ,int,int>())
-    .def("learn", &RandomForest::learn)
-    .def("predict", &RandomForest::predict)
-    .def("update", &RandomForest::update);
+    // py::class_<RandomForest>(m, "RandomForest")
+    // .def(py::init<int,int, int , double,int, bool ,int,int>())
+    // .def("learn", &RandomForest::learn)
+    // .def("predict", &RandomForest::predict)
+    // .def("update", &RandomForest::update);
 
 
     py::class_<MSE>(m, "MSE")
@@ -195,13 +205,43 @@ PYBIND11_MODULE(_stabletrees, m)
             .def("find_best_split", &Splitter::find_best_split)
             .def("get_reduction", &Splitter::get_reduction);
 
-    py::class_<NewTree>(m, "NewTree")
-        .def(py::init<int, int , double,int, bool, int ,double, unsigned int>())
-            .def("build_tree", &NewTree::build_tree)
-            .def("learn", &NewTree::learn)
-            .def("get_root", &NewTree::get_root)
-            .def("predict", &NewTree::predict)
-            .def("update", &NewTree::update);
+
+    py::class_<RandomForest>(m, "RandomForest")
+        .def(py::init<int,int, int , double,int, bool ,int>())
+        .def("learn", &RandomForest::learn,py::call_guard<py::gil_scoped_release>())
+        .def("predict", &RandomForest::predict)
+        .def("update", &RandomForest::update);
+
+    py::class_<RandomForestNU>(m, "RandomForestNU")
+    .def(py::init<int,int, int , double,int, bool ,int>())
+    .def("learn", &RandomForestNU::learn,py::call_guard<py::gil_scoped_release>())
+    .def("predict", &RandomForestNU::predict)
+    .def("update", &RandomForestNU::update);
+    
+    py::class_<RandomForestTR>(m, "RandomForestTR")
+    .def(py::init<int,int, int , double,int, bool ,int,double,double>())
+    .def("learn", &RandomForestTR::learn,py::call_guard<py::gil_scoped_release>())
+    .def("predict", &RandomForestTR::predict)
+    .def("update", &RandomForestTR::update);
+
+
+     py::class_<RandomForestSL>(m, "RandomForestSL")
+        .def(py::init<int,int, int , double,int, bool ,int, double>())
+        .def("learn", &RandomForestSL::learn,py::call_guard<py::gil_scoped_release>())
+        .def("predict", &RandomForestSL::predict)
+        .def("update", &RandomForestSL::update);
+
+    py::class_<RandomForestABU>(m, "RandomForestABU")
+        .def(py::init<int,int, int , double,int, bool ,int>())
+        .def("learn", &RandomForestABU::learn,py::call_guard<py::gil_scoped_release>())
+        .def("predict", &RandomForestABU::predict)
+        .def("update", &RandomForestABU::update);
+
+     py::class_<RandomForestBABU>(m, "RandomForestBABU")
+    .def(py::init<int,int, int , double,int, bool ,int,int>())
+    .def("learn", &RandomForestBABU::learn,py::call_guard<py::gil_scoped_release>())
+    .def("predict", &RandomForestBABU::predict)
+    .def("update", &RandomForestBABU::update);
 
 
     
