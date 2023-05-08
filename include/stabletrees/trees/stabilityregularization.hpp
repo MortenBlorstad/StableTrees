@@ -1,9 +1,6 @@
 #pragma once
 #include "tree.hpp"
 
-#include <mutex>
-#include <vector>
-#include <thread>
 class StabilityRegularization: public Tree{
     public:
         StabilityRegularization(double gamma, int _criterion,int max_depth, double min_split_sample,int min_samples_leaf,bool adaptive_complexity,int max_features,double learning_rate,unsigned int random_state);
@@ -17,7 +14,7 @@ class StabilityRegularization: public Tree{
 
 StabilityRegularization::StabilityRegularization():Tree(){
     Tree();
-    gamma = 0.5;
+    this->gamma = 0.5;
 }
 
 StabilityRegularization::StabilityRegularization(double gamma, int _criterion,int max_depth, double min_split_sample,int min_samples_leaf, bool adaptive_complexity,int max_features,double learning_rate, unsigned int random_state):Tree(_criterion, max_depth,  min_split_sample,min_samples_leaf, adaptive_complexity,max_features,learning_rate,random_state){
@@ -135,9 +132,15 @@ Node* StabilityRegularization::update_tree(const dMatrix  &X, const dVector &y, 
             std::shuffle(features_indices.begin(), features_indices.end(), gen);
             features_indices.resize(max_features);
             this->random_state +=1;
+            // for (int i=0; i<X.cols(); i++){
+            //     printf("%d %d\n", features_indices[i], features_indices.size());
+            // } 
+            // printf("\n");
         }
     }else 
     if(previuos_tree_node->get_features_indices().size()>0) {
+        features_indices.resize(max_features);
+        //printf("else if %d\n", features_indices.size());
         features_indices = previuos_tree_node->get_features_indices();
     }
 
@@ -261,6 +264,11 @@ Node* StabilityRegularization::update_tree(const dMatrix  &X, const dVector &y, 
 
     return node;
 }
+
+
+
+
+
 
 
 

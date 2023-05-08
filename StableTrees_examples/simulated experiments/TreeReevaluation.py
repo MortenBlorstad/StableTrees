@@ -75,10 +75,11 @@ params = {"ytick.color" : "black",
           "font.family" : "serif",
           'text.latex.preamble': r"\usepackage{amsmath}",
           "font.serif" : ["Computer Modern Serif"]}
-
-fig, ax  = plt.subplots(dpi=500)
+#fig, axes = plt.subplots(nrows=3, ncols=2, figsize=(8.27, 11),dpi=500)#
+fig, ax  = plt.subplots(dpi=500, figsize=(8.27/3, 11/2))
 plt.rcParams.update(params)
 for case, info in cases.items():
+        print(case)
         np.random.seed(SEED)
         features = info["features"]
         p = info["p"]
@@ -89,19 +90,20 @@ for case, info in cases.items():
         models = {  
                         "baseline": BaseLineTree(criterion = criterion,min_samples_leaf=5, adaptive_complexity=True),
                         "TR1":TreeReevaluation(criterion = criterion,min_samples_leaf=5, adaptive_complexity=True,delta=0.25,alpha=0.0),
-                        "TR2":TreeReevaluation(criterion = criterion,min_samples_leaf=5, adaptive_complexity=True,delta=0.1,alpha=0.0),
-                        "TR3":TreeReevaluation(criterion = criterion,min_samples_leaf=5, adaptive_complexity=True,delta=0.05,alpha=0.0),
-                        "TR4":TreeReevaluation(criterion = criterion,min_samples_leaf=5, adaptive_complexity=True,delta=0.25,alpha=0.05),
-                        "TR5":TreeReevaluation(criterion = criterion,min_samples_leaf=5, adaptive_complexity=True,delta=0.1,alpha=0.05),
-                        "TR6":TreeReevaluation(criterion = criterion,min_samples_leaf=5, adaptive_complexity=True,delta=0.05,alpha=0.05),
-                        "TR7":TreeReevaluation(criterion = criterion,min_samples_leaf=5, adaptive_complexity=True,delta=0.25,alpha=0.1),
-                        "TR8":TreeReevaluation(criterion = criterion,min_samples_leaf=5, adaptive_complexity=True,delta=0.1,alpha=0.1),
-                        "TR9":TreeReevaluation(criterion = criterion,min_samples_leaf=5, adaptive_complexity=True,delta=0.05,alpha=0.1),
+                        # "TR2":TreeReevaluation(criterion = criterion,min_samples_leaf=5, adaptive_complexity=True,delta=0.1,alpha=0.0),
+                        # "TR3":TreeReevaluation(criterion = criterion,min_samples_leaf=5, adaptive_complexity=True,delta=0.05,alpha=0.0),
+                        # "TR4":TreeReevaluation(criterion = criterion,min_samples_leaf=5, adaptive_complexity=True,delta=0.25,alpha=0.05),
+                        # "TR5":TreeReevaluation(criterion = criterion,min_samples_leaf=5, adaptive_complexity=True,delta=0.1,alpha=0.05),
+                        # "TR6":TreeReevaluation(criterion = criterion,min_samples_leaf=5, adaptive_complexity=True,delta=0.05,alpha=0.05),
+                        # "TR7":TreeReevaluation(criterion = criterion,min_samples_leaf=5, adaptive_complexity=True,delta=0.25,alpha=0.1),
+                        # "TR8":TreeReevaluation(criterion = criterion,min_samples_leaf=5, adaptive_complexity=True,delta=0.1,alpha=0.1),
+                        # "TR9":TreeReevaluation(criterion = criterion,min_samples_leaf=5, adaptive_complexity=True,delta=0.05,alpha=0.1),
                         }
         preds  = {k :np.zeros((200,100)) for k in models.keys()}
         stability = {k :[] for k in models.keys()}
         performance = {k :[] for k in models.keys()}
         for i,(train_index, test_index) in enumerate(kf.split(x)):
+                print(i)
 
                 X_12, y_12 = x[train_index],y[train_index]
                 X_test,y_test = x[test_index],y[test_index]
@@ -119,17 +121,17 @@ for case, info in cases.items():
                         performance[name].append(mean_squared_error(y_test, pred2))
         print(case)
         for name in models.keys():
-                print("="*80)
-                print(f"{name}")
+            print("="*80)
+            print(f"{name}")
 
-                mse_scale = np.mean(performance["baseline"]); S_scale = np.mean(stability["baseline"]);
+            mse_scale = np.mean(performance["baseline"]); S_scale = np.mean(stability["baseline"]);
 
-                print(f"test - mse: {np.mean(performance[name]):.3f} ({np.mean(performance[name])/mse_scale:.2f}), stability: {np.mean(stability[name]):.3f} ({np.mean(stability[name])/S_scale:.2f})")
-                print("="*80)
-                if name != "baseline":
-                        x = np.mean((performance[name]))/mse_scale
-                        y = np.mean(stability[name])/S_scale
-                        plot_info.append((x,y,colors[case],markers[name]))
+            print(f"test - mse: {np.mean(performance[name]):.3f} ({np.mean(performance[name])/mse_scale:.2f}), stability: {np.mean(stability[name]):.3f} ({np.mean(stability[name])/S_scale:.2f})")
+            print("="*80)
+            if name != "baseline":
+                    x = np.mean((performance[name]))/mse_scale
+                    y = np.mean(stability[name])/S_scale
+                    plot_info.append((x,y,colors[case],markers[name]))
 
         print(" ")
 from matplotlib.lines import Line2D
@@ -158,11 +160,11 @@ legend_elements = [Line2D([0], [0], color='b', lw=1, label='baseline', linestyle
 plt.axvline(x=1, linestyle = "--")
 plt.axhline(y=1, linestyle = "--")
 plt.xlabel("mse",fontsize=10)
-plt.ylabel(r'$\left(f_1(x_i)-f_2(x_i)\right)^2$',fontsize=10)
+plt.ylabel("stability",fontsize=10)
 plt.ylim((0.25,1.025))
 plt.xlim((0.995,1.06))
 plt.legend(loc='upper right' , handles=legend_elements,fontsize="10")
-plt.savefig(f"StableTrees_examples\plots\\example_mse_simulated_TR.png")
+plt.savefig(f"StableTrees_examples\plots\\example_mse_simulated_TR_07_05.png")
 plt.close()
 
     

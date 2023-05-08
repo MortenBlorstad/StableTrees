@@ -350,13 +350,13 @@ void ENSEMBLE::update(
     GBTREE* current_tree = this->first_tree;
     pred = pred + learning_rate * (current_tree->predict_data(X)); // POSSIBLY SCALED
     expected_loss = tree_expected_test_reduction(current_tree, learning_rate);
-    // verbose_output(
-    //     verbose,
-    //     1,
-    //     current_tree->getNumLeaves(),
-    //     stableloss(y, pred, w,prev_pred, this->gamma),
-    //     this->estimate_generalization_loss(1)
-    // );
+    verbose_output(
+        verbose,
+        1,
+        current_tree->getNumLeaves(),
+        stableloss(y, pred, w,prev_pred, this->gamma),
+        this->estimate_generalization_loss(1)
+    );
     
     // Consecutive trees
     for(int i=2; i<(MAXITER+1); i++){
@@ -382,13 +382,13 @@ void ENSEMBLE::update(
         ensemble_optimism = this->estimate_optimism(i-1) + 
             learning_rate * new_tree->getTreeOptimism();
         // Optionally output information to user
-        // verbose_output(
-        //     verbose,
-        //     i,
-        //     new_tree->getNumLeaves(),
-        //     ensemble_training_loss,
-        //     ensemble_training_loss + ensemble_optimism + expected_loss
-        // );
+        verbose_output(
+            verbose,
+            i,
+            new_tree->getNumLeaves(),
+            ensemble_training_loss,
+            ensemble_training_loss + ensemble_optimism + expected_loss
+        );
         // Stopping criteria
         if(!force_continued_learning){
             // Check criterion

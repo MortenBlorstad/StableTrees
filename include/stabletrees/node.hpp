@@ -36,7 +36,7 @@ class Node{
         Node* get_left_node();
         Node* get_right_node();
         void set_left_node(Node* node);
-        void set_right_node(Node* node);
+        void set_right_node(Node* node); 
         bool is_leaf();
         double predict();
         int nsamples();

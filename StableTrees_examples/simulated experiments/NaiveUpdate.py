@@ -39,7 +39,7 @@ models = {
 
 #ns = [500,1000,1500,2000,2500,3000,3500,4000,4500, 5000]#
 ns = np.arange(1000,11000,1000)
-
+print(ns)
 #ns = [1000]
 stability = {k :[] for k in cases.keys()}
 performance = {k :[] for k in cases.keys()}
@@ -57,7 +57,7 @@ for n in ns:
         p = info["p"]
         x = X[:,features]
         y = np.random.normal(loc = p(X), scale=1,size=n)
-        kf = RepeatedKFold(n_splits= 10,n_repeats=2, random_state=SEED)
+        kf = RepeatedKFold(n_splits= 5, n_repeats=10, random_state=SEED)
         criterion = "mse"
         models = {  
                         "baseline": BaseLineTree(criterion = criterion,min_samples_leaf=5, adaptive_complexity=True),

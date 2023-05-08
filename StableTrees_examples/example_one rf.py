@@ -134,19 +134,19 @@ for ds,target, feature in zip(datasets,targets, features):
             
         models = {  
                     "baseline": RF("base",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False),
-                        # "standard": RandomForestRegressor(n_estimators= 100,min_samples_leaf=5,random_state=0,max_features=0.33),
-                        # "NU": RF("nu",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False),
-                        # "TR1": RF("tr",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False,alpha=0, delta=0.05),
+                        "standard": RandomForestRegressor(n_estimators= 100,min_samples_leaf=5,random_state=0,max_features=0.33),
+                        "NU": RF("nu",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False),
+                        "TR1": RF("tr",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False,alpha=0, delta=0.05),
                         # "TR2": RF("tr",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False,alpha=0.05, delta=0.05),
                         # "TR3": RF("tr",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False,alpha=0.1, delta=0.05),
-                        # "SL1": RF("sl",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False,gamma=0.1),
+                        "SL1": RF("sl",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False,gamma=0.1),
                         # "SL2": RF("sl",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False,gamma=0.25),
                         # "SL3": RF("sl",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False,gamma=0.5),
-                        # "SL4": RF("sl",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False,gamma=0.75),
-                        # "SL5": RF("sl",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False,gamma=0.90),
+                         "SL4": RF("sl",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False,gamma=0.75),
+                        #"SL5": RF("sl",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False,gamma=0.90),
                         "ABU": RF("abu",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False),
                         #"SU": StackedRF(n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False,learning_rate=0.0001,gamma=0.1),
-                        #"BABU1": RF("babu",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False,bumping_iterations=1),
+                        "BABU1": RF("babu",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False,bumping_iterations=1),
                         # "BABU2": RF("babu",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False,bumping_iterations=3),
                         # "BABU3": RF("babu",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False,bumping_iterations=5),
                 }
@@ -260,28 +260,28 @@ for ds,target, feature in zip(datasets,targets, features):
             plot_info[ds].append((ds,x_r,y_r,colors[name],markers[name], x_abs,y_abs,x_se, y_se, x_abs_se, y_abs_se ))
     print()
 
-from matplotlib import pyplot as plt
-plt.rcParams.update({'figure.autolayout': True})
+# from matplotlib import pyplot as plt
+# plt.rcParams.update({'figure.autolayout': True})
 
-from matplotlib.lines import Line2D
-from matplotlib.ticker import FormatStrFormatter
-# create figure and axes
-fig, axes = plt.subplots(nrows=3, ncols=2, figsize=(8.27, 11),dpi=500)#
-axes = axes.ravel()
-plt.rcParams.update(plot_params)
+# from matplotlib.lines import Line2D
+# from matplotlib.ticker import FormatStrFormatter
+# # create figure and axes
+# fig, axes = plt.subplots(nrows=3, ncols=2, figsize=(8.27, 11),dpi=500)#
+# axes = axes.ravel()
+# plt.rcParams.update(plot_params)
 
-college_box_plot_info = []
-import itertools
-df_list = list(itertools.chain(*plot_info.values()))
-df = pd.DataFrame(df_list, columns=["dataset",'loss', 'stability', 'color', "marker", 'loss_abs','stability_abs','loss_se','stability_se','loss_abs_se','stability_abs_se' ] )
-old_df =pd.read_csv('results/randomforest_ISLR_results.csv')
-for i,(d,m) in enumerate(zip(df.dataset, df.marker)):
-    index = old_df.loc[(old_df["dataset"] == d) & (old_df["marker"] ==m)].index
-    values  = df.iloc[i]
-    if len(index)>0:
-        old_df.iloc[index]=values
-    else:
-        print(values)
-        old_df  = old_df.append(values, ignore_index=True)
+# college_box_plot_info = []
+# import itertools
+# df_list = list(itertools.chain(*plot_info.values()))
+# df = pd.DataFrame(df_list, columns=["dataset",'loss', 'stability', 'color', "marker", 'loss_abs','stability_abs','loss_se','stability_se','loss_abs_se','stability_abs_se' ] )
+# old_df =pd.read_csv('results/randomforest_ISLR_results.csv')
+# for i,(d,m) in enumerate(zip(df.dataset, df.marker)):
+#     index = old_df.loc[(old_df["dataset"] == d) & (old_df["marker"] ==m)].index
+#     values  = df.iloc[i]
+#     if len(index)>0:
+#         old_df.iloc[index]=values
+#     else:
+#         print(values)
+#         old_df  = old_df.append(values, ignore_index=True)
 
-old_df.to_csv('results/randomforest_ISLR_results.csv', index=False)
+# old_df.to_csv('results/randomforest_ISLR_results.csv', index=False)

@@ -1,4 +1,3 @@
-#pragma once
 #ifndef __TREE_HPP_INCLUDED__
 
 #define __TREE_HPP_INCLUDED__
@@ -365,6 +364,7 @@ Node* Tree::build_tree(const dMatrix  &X, const dVector &y, const dVector &g, co
         }
     }else 
     if(previuos_tree_node->get_features_indices().size()>0) {
+        features_indices.resize(max_features);
         features_indices = previuos_tree_node->get_features_indices();
     }
 
@@ -423,18 +423,19 @@ Node* Tree::build_tree(const dMatrix  &X, const dVector &y, const dVector &g, co
         throw exception("something wrong!") ;
 
     }
-
+    double loss_parent = (y.array() - pred).square().sum();
     if(depth>=this->max_depth){
         //printf("max_depth: %d >= %d \n", depth,this->max_depth);
-        return new Node(pred, n, y_var,w_var);
+        return new Node(split_value, loss_parent, score, split_feature, y.rows() , pred, y_var, w_var,features_indices);
+        //return new Node(pred, n, y_var,w_var,features_indices);
     }
     if(y.rows()< this->min_split_sample){
         //printf("min_split_sample \n");
-        return new Node(pred, n, y_var,w_var);
+        return new Node(split_value, loss_parent, score, split_feature, y.rows() , pred, y_var, w_var,features_indices);
     }
     if(!any_split){
         //printf("any_split \n");
-        return new Node(pred ,n, y_var, w_var);
+        return new Node(split_value, loss_parent, score, split_feature, y.rows() , pred, y_var, w_var,features_indices);
     }
 
     if(score == std::numeric_limits<double>::infinity()){
@@ -470,7 +471,7 @@ Node* Tree::build_tree(const dMatrix  &X, const dVector &y, const dVector &g, co
     dVector weights_left  = weights(mask_left,1); dVector weights_right = weights(mask_right,1);
 
 
-    double loss_parent = (y.array() - pred).square().sum();
+    
     //printf("loss_parent %f \n" ,loss_parent);
     // dVector pred_left = dVector::Constant(y_left.size(),0,loss_function->link_function(y_left.array().mean()));
     // dVector pred_right = dVector::Constant(y_right.size(),0,loss_function->link_function(y_right.array().mean()));

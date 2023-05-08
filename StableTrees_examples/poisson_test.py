@@ -70,8 +70,8 @@ plot_params = {"ytick.color" : "black",
           "font.family" : "serif",
           'text.latex.preamble': r"\usepackage{amsmath}",
           "font.serif" : ["Computer Modern Serif"]}
-fig = plt.figure(dpi=500,figsize=(11,11/1.61803398875))
-
+#fig = plt.figure(dpi=500,figsize=(11,11/1.61803398875))
+fig = plt.figure(dpi=500,figsize=(6.67*1.5*2/3, 4*1.5/2))
 plt.rcParams.update(plot_params),
 
 np.random.seed(0)
@@ -88,18 +88,18 @@ X1,X2,y1,y2 = train_test_split(X,y,test_size=0.5,random_state=0)
 
 criterion = "mse"
 t = BaseLineTree(criterion="poisson", adaptive_complexity=True,min_samples_leaf=5).fit(X,y)
-parameters = {'max_depth':[None, 5, 10],"min_samples_leaf": [1,5], "ccp_alpha" : [0,0.01]}
+parameters = {'max_depth':[None, 5, 10],"min_samples_leaf": [1,5], "ccp_alpha" : [0,0.01, 0.1]}
 clf = GridSearchCV(DecisionTreeRegressor(random_state=0), parameters).fit(X,y)
 params = clf.best_params_
 from matplotlib.lines import Line2D
 legend_elements = [Line2D([0], [0], color='red', ls='-',lw=2, label = "Adaptive Tree Complexity"),
                    Line2D([0], [0], color='orange', ls='--',lw=2, label = "Grid Search CV")]
-plt.scatter(X,y)
+plt.scatter(X,y, s= 2)
 plt.xlabel(r"$\mathbf{x}$",fontsize=10)
 plt.ylabel(r"$y$",fontsize=10)
-plt.plot(np.sort(X,axis=0), t.predict(np.sort(X,axis=0)),c = "r", linewidth=6, label = "Adaptive Tree Complexity")
-plt.plot(np.sort(X,axis=0), clf.predict(np.sort(X,axis=0)),c = "orange",linewidth=3,linestyle='dashed', label = "Grid Search CV")
-plt.legend(handles=legend_elements, loc='upper left')
+plt.plot(np.sort(X,axis=0), t.predict(np.sort(X,axis=0)),c = "r", linewidth=3, label = "Adaptive Tree Complexity")
+plt.plot(np.sort(X,axis=0), clf.predict(np.sort(X,axis=0)),c = "orange",linewidth=2,linestyle='dashed', label = "Grid Search CV")
+plt.legend(handles=legend_elements, loc='upper left',fontsize=8)
 
 plt.subplot(1,2,2)
 n = 1000
@@ -110,19 +110,19 @@ X = np.random.uniform(low=0,high=4,size=(n,1))
 y = np.random.poisson(lam=X[:,0]**2+ np.sin(X[:,0]),size=n)
 weigths = np.random.uniform(low=0,high=1,size=(n,))
 t = BaseLineTree(criterion="poisson", adaptive_complexity=True,min_samples_leaf=5).fit(X,y,weigths)
-parameters = {'max_depth':[None, 5, 10],"min_samples_leaf": [1,5], "ccp_alpha" : [0,0.01]} # , 
+parameters = {'max_depth':[None, 5, 10],"min_samples_leaf": [1,5], "ccp_alpha" : [0,0.01, 0.1]} # , 
 clf = GridSearchCV(DecisionTreeRegressor(random_state=0), parameters).fit(X,y,sample_weight= weigths)
 params = clf.best_params_
 print(params)
 from matplotlib.lines import Line2D
 legend_elements = [Line2D([0], [0], color='red', ls='-',lw=2, label = "Adaptive Tree Complexity"),
                    Line2D([0], [0], color='orange', ls='--',lw=2, label = "Grid Search CV")]
-plt.scatter(X,y)
+plt.scatter(X,y, s= 2)
 plt.xlabel(r"$\mathbf{x}$",fontsize=10)
 plt.ylabel(r"$y$",fontsize=10)
-plt.plot(np.sort(X,axis=0), t.predict(np.sort(X,axis=0)),c = "r", linewidth=6, label = "Adaptive Tree Complexity")
-plt.plot(np.sort(X,axis=0), clf.predict(np.sort(X,axis=0)),c = "orange",linewidth=3,linestyle='dashed', label = "Grid Search CV")
-plt.legend(handles=legend_elements, loc='upper left')
+plt.plot(np.sort(X,axis=0), t.predict(np.sort(X,axis=0)),c = "r", linewidth=3, label = "Adaptive Tree Complexity")
+plt.plot(np.sort(X,axis=0), clf.predict(np.sort(X,axis=0)),c = "orange",linewidth=2,linestyle='dashed', label = "Grid Search CV")
+plt.legend(handles=legend_elements, loc='upper left',fontsize=8)
 plt.tight_layout()
 plt.savefig(f"StableTrees_examples\plots\\adaptive_vs_hyperparameters_poisson.png",bbox_inches='tight')
 plt.close()

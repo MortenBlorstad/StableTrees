@@ -74,7 +74,7 @@ namespace stable_loss_functions {
         }else if(loss_type=="poisson"){
             // POISSON
             for(int i=0; i<n; i++){
-                res += exp(pred[i]) - y[i]*w[i]*pred[i] + gamma*exp(pred[i]) - prev_pred[i]*w[i]*pred[i]; // skip normalizing factor log(y!)
+                res += exp(pred[i]) - y[i]*w[i]*pred[i] + gamma*exp(pred[i]) - exp(prev_pred[i]) *w[i]*pred[i]; // skip normalizing factor log(y!)
             }
         }else if(loss_type=="gamma::neginv"){
            throw exception("not implemented yet");
@@ -137,7 +137,7 @@ namespace stable_loss_functions {
         }else if(loss_type == "poisson"){
             // POISSON REG
             for(int i=0; i<n; i++){
-                g[i] = exp(pred[i]) - y[i] + gamma*(exp(pred[i]) - prev_pred[i]);
+                g[i] = exp(pred[i]) - y[i] + gamma*(exp(pred[i]) - exp(prev_pred[i]));
             }
         }else if(loss_type == "gamma::neginv"){
             // GAMMA::NEGINV

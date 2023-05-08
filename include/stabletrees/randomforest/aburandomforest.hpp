@@ -71,13 +71,13 @@ void RandomForestABU::update(const dMatrix X,const dVector y, const dVector weig
     iVector keep_cols = iVector::LinSpaced(X.cols(), 0, X.cols()-1).array();
     iMatrix bootstrap_indices = sample_indices(0, y.size());
     #pragma omp parallel for
-        for (int i = 0; i < n_estimator; i++) {
-            iVector ind = bootstrap_indices.col(i);
-            dMatrix X_b = X(ind,keep_cols);
-            dVector y_b = y(ind);
-            dVector weights_b = weights(ind);
-            forest[i].update(X_b,y_b, weights_b);
-        }
+    for (int i = 0; i < n_estimator; i++) {
+        iVector ind = bootstrap_indices.col(i);
+        dMatrix X_b = X(ind,keep_cols);
+        dVector y_b = y(ind);
+        dVector weights_b = weights(ind);
+        forest[i].update(X_b,y_b, weights_b);
+    }
 }
 
 dVector RandomForestABU::predict(const dMatrix X){

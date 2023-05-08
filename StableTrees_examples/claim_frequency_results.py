@@ -16,6 +16,7 @@ from pareto_efficient import is_pareto_optimal
 from stabletrees.random_forest import RF
 import tarfile
 from sklearn.linear_model import PoissonRegressor
+from stabletrees.AGTBoost import AGTBoost
 
 def S1(pred1, pred2):
     return np.std(np.log((pred2+EPSILON)/(pred1+EPSILON)))#np.mean((pred1- pred2)**2)#
@@ -88,7 +89,8 @@ markers = {"basetree":"tree","NU":"NU","SL": "SL", "SL1":"SL_{0.1}", "SL2":"SL_{
             "BABU":"BABU", "BABU1": r"BABU_{1}","BABU2": r"BABU_{3}" ,"BABU3": r"BABU_{5}","BABU4": r"BABU_{7}","BABU5": r"BABU_{10}","BABU6": r"BABU_{20}",
                "baseforest":"rf",
                 "NUrf": "NUrf", "TRrf":"TRrf", "ABUrf":"ABUrf", "BABUrf1":"rf_{BABU_{1}}","BABUrf3":"rf_{BABU_{5}}",
-                 "SLrf1" :"rf_{SL_{0.1}}","SLrf2" :"rf_{SL_{0.25}}"  ,"SLrf3" :"rf_{SL_{0.5}}" ,"SLrf4" :"rf_{SL_{0.75}}" ,"SLrf5" :"rf_{SL_{0.9}}"  }
+                 "SLrf1" :"rf_{SL_{0.1}}","SLrf2" :"rf_{SL_{0.25}}"  ,"SLrf3" :"rf_{SL_{0.5}}" ,"SLrf4" :"rf_{SL_{0.75}}" ,"SLrf5" :"rf_{SL_{0.9}}" ,
+            "baseGTB":"GTB" }
 
 colors = {"basetree":"#1f77b4","NU":"#D55E00", "SL":"#CC79A7","SL1":"#CC79A7", "SL2":"#CC79A7","SL3":"#CC79A7",
             "SL4": "#CC79A7", "SL5": "#CC79A7",
@@ -102,7 +104,8 @@ colors = {"basetree":"#1f77b4","NU":"#D55E00", "SL":"#CC79A7","SL1":"#CC79A7", "
             "TRrf" : "#009E73",
             "SLrf1" :"#CC79A7","SLrf2" :"#CC79A7","SLrf3" :"#CC79A7","SLrf4" :"#CC79A7","SLrf5" :"#CC79A7",
             "ABUrf":"#F0E442",
-            "BABUrf1":"#E69F00", "BABUrf3":"#E69F00"}
+            "BABUrf1":"#E69F00", "BABUrf3":"#E69F00",
+            "baseGTB":"#1f77b4"}
 
 colors2 = {"tree":"#1f77b4", "NU":"#D55E00", "SL":"#CC79A7", 
             "TR":"#009E73", 
@@ -161,6 +164,8 @@ models = {
             "SL": StabilityRegularization(criterion = criterion, max_depth=5, min_samples_leaf=5),
             "ABU": AbuTree(criterion = criterion, max_depth=5, min_samples_leaf=5),
             "BABU": BABUTree(criterion = criterion, max_depth=5, min_samples_leaf=5),
+            "baseGTB" : AGTBoost(loss_function=criterion,gamma=0),
+            "SLbaseGTB" : AGTBoost(loss_function=criterion,gamma=0.1)
             }
 stability_all = {name:[] for name in models.keys()}
 standard_stability_all= {name:[] for name in models.keys()}
@@ -193,7 +198,7 @@ for train_index, test_index in kf.split(df.to_numpy()):
     # initial model 
     criterion = "poisson"
     models = {  
-            # "basetree": BaseLineTree(criterion = criterion, max_depth=5, min_samples_leaf=5),
+            #"basetree": BaseLineTree(criterion = criterion, max_depth=5, min_samples_leaf=5),
             # "NU": NaiveUpdate(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True),
             # "TR1": TreeReevaluation(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,delta=0.05,alpha=0),
             # "TR2": TreeReevaluation(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,delta=0.05,alpha=0.05),
@@ -224,11 +229,17 @@ for train_index, test_index in kf.split(df.to_numpy()):
             #"BABUrf3": RF("babu",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,bumping_iterations=5),
             #"sklearn": GridSearchCV(DecisionTreeRegressor(criterion="poisson",random_state=0), parameters),
             "poisReg": PoissonRegressor(solver="newton-cholesky"),
-            "glm":  smf.glm,
+            #"glm":  smf.glm,
             # "TR": TreeReevaluation(criterion = criterion, max_depth=5, min_samples_leaf=5),
             # "SL": StabilityRegularization(criterion = criterion, max_depth=5, min_samples_leaf=5),
             # "ABU": AbuTree(criterion = criterion, max_depth=5, min_samples_leaf=5),
             # "BABU": BABUTree(criterion = criterion, max_depth=5, min_samples_leaf=5),
+            #"BABU": BABUTree(criterion = criterion, max_depth=5, min_samples_leaf=5),
+            "baseGTB" : AGTBoost(loss_function=criterion,gamma=0),
+            #"SLbaseGTB" : AGTBoost(loss_function=criterion,gamma=0.1)
+
+
+
             }
     
     for name, model in models.items():
@@ -239,10 +250,12 @@ for train_index, test_index in kf.split(df.to_numpy()):
         if name == "glm":
             m = smf.glm("Frequency~DriverAge_binned+Density_binned+CarAge_binned+brandF+Power_glm+Gas", df_1, family=sm.families.Poisson(), freq_weights=df_1['Exposure']).fit()
             pred1 = m.predict(df_test) 
+        elif name == "baseGTB":
+            model.fit(preprocessor.transform(df_1),df_1.ClaimNb,verbose = 25, offset=np.log(df_1["Exposure"]))
+            pred1 = model.predict(preprocessor.transform(df_test),offset=np.log(df_test.Exposure) )
+            print(pred1)
         else:
-            model.fit(preprocessor.transform(df_1),df_1.Frequency, sample_weight=df_1["Exposure"])
-                
-            
+            model.fit(preprocessor.transform(df_1),df_1.Frequency, sample_weight=df_1.Exposure)
             pred1 = model.predict(preprocessor.transform(df_test) )
 
         #print("before")
@@ -255,6 +268,9 @@ for train_index, test_index in kf.split(df.to_numpy()):
         elif name == "GGTB":
             model.fit(preprocessor.transform(df_12),df_12.Frequency, sample_weight=df_12["Exposure"])
             #print(params)
+        elif name == "baseGTB":
+            model.fit(preprocessor.transform(df_12),df_12.ClaimNb,verbose = 25, offset =np.log(df_12.Exposure))
+            #print(params)
         elif name == "glm":
             m = smf.glm("Frequency~DriverAge_binned+Density_binned+CarAge_binned+brandF+Power_glm+Gas", df_1, family=sm.families.Poisson(), freq_weights=df_1['Exposure']).fit()
             #print(params)
@@ -263,6 +279,10 @@ for train_index, test_index in kf.split(df.to_numpy()):
 
         if name == "glm":
             pred2 = m.predict(df_test) 
+        elif name == "baseGTB":
+            pred2 = model.predict(preprocessor.transform(df_test),offset=np.log(df_test["Exposure"]) )
+            #pred2 = m.predict(tree_preprocessor.transform(df),offset = np.log(df.Exposure) )
+            print(pred2)
         else:
             pred2 = model.predict(preprocessor.transform(df_test) )
 
