@@ -90,7 +90,7 @@ for ds,target, feature in zip(datasets,targets, features):
     # if ds ==  "Wage":#ds != "Boston" and 
     #     continue
     iteration = 1
-    kf = RepeatedKFold(n_splits= 10,n_repeats=5, random_state=SEED)
+    kf = RepeatedKFold(n_splits= 5,n_repeats=10, random_state=SEED)
     data = pd.read_csv("data/"+ ds+".csv") # load dataset
     
 
@@ -127,18 +127,18 @@ for ds,target, feature in zip(datasets,targets, features):
                         # "TR1": TreeReevaluation(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,delta=0.05,alpha=0),
                         # "TR2": TreeReevaluation(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,delta=0.05,alpha=0.05),
                         # "TR3": TreeReevaluation(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,delta=0.05,alpha=0.1),
-                        # "SL1": StabilityRegularization(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,gamma=0.1),
-                        # "SL2": StabilityRegularization(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,gamma=0.25),
-                        # "SL3": StabilityRegularization(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,gamma=0.5),
-                        # "SL4": StabilityRegularization(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,gamma=0.75),
-                        # "SL5": StabilityRegularization(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,gamma=0.9),
-                        "ABU": AbuTree(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True),
-                        "BABU1": BABUTree(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,bumping_iterations=1),
-                        "BABU2": BABUTree(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,bumping_iterations=3),
-                        "BABU3": BABUTree(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,bumping_iterations=5),
-                        "BABU4": BABUTree(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,bumping_iterations=7),
-                        "BABU5": BABUTree(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,bumping_iterations=10),
-                        "BABU6": BABUTree(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,bumping_iterations=20),
+                        "SL1": StabilityRegularization(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,gamma=0.1),
+                        "SL2": StabilityRegularization(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,gamma=0.25),
+                        "SL3": StabilityRegularization(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,gamma=0.5),
+                        "SL4": StabilityRegularization(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,gamma=0.75),
+                        "SL5": StabilityRegularization(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,gamma=0.9),
+                        # "ABU": AbuTree(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True),
+                        # "BABU1": BABUTree(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,bumping_iterations=1),
+                        # "BABU2": BABUTree(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,bumping_iterations=3),
+                        # "BABU3": BABUTree(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,bumping_iterations=5),
+                        # "BABU4": BABUTree(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,bumping_iterations=7),
+                        # "BABU5": BABUTree(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,bumping_iterations=10),
+                        # "BABU6": BABUTree(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,bumping_iterations=20),
                 }
         
    

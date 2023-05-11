@@ -29,6 +29,7 @@ class RandomForestNU{
         double initial_pred;
         std::vector<NaiveUpdate> forest;
         unsigned int random_state;
+        iMatrix bootstrap_indices;
 
 };
 
@@ -45,13 +46,14 @@ RandomForestNU::RandomForestNU(int _criterion,int n_estimator,int max_depth, dou
     this->max_features = max_features;
     this->n_estimator = n_estimator;
     thread_local unsigned int random_state = 0;
+    
 
 }
 
 void RandomForestNU::learn(const dMatrix X, const dVector y, const dVector weights){
     forest.resize(n_estimator);
     iVector keep_cols = iVector::LinSpaced(X.cols(), 0, X.cols()-1).array();
-    iMatrix bootstrap_indices = sample_indices(0, y.size());
+    bootstrap_indices = sample_indices(0, y.size());
     #pragma omp parallel for
     for (int i = 0; i < n_estimator; i++) {
         forest[i] = NaiveUpdate( _criterion, max_depth,  min_split_sample, min_samples_leaf,  adaptive_complexity, max_features, 1, i);
@@ -67,10 +69,28 @@ void RandomForestNU::learn(const dMatrix X, const dVector y, const dVector weigh
     }
 }
 
+// void RandomForestNU::update(const dMatrix X,const dVector y, const dVector weights){
+//     iVector keep_cols = iVector::LinSpaced(X.cols(), 0, X.cols()-1).array();
+//     iMatrix bootstrap_indices = sample_indices(0, y.size());
+//     #pragma omp parallel for
+//         for (int i = 0; i < n_estimator; i++) {
+//             iVector ind = bootstrap_indices.col(i);
+//             dMatrix X_b = X(ind,keep_cols);
+//             dVector y_b = y(ind);
+//             dVector weights_b = weights(ind);
+//             forest[i].update(X_b,y_b, weights_b);
+//         }
+// }
+
 void RandomForestNU::update(const dMatrix X,const dVector y, const dVector weights){
     iVector keep_cols = iVector::LinSpaced(X.cols(), 0, X.cols()-1).array();
-    iMatrix bootstrap_indices = sample_indices(0, y.size());
-    #pragma omp parallel for
+    //iMatrix bootstrap_indices = sample_indices(0, y.size());
+    iMatrix bootstrap_indices_new = sample_indices(X.rows()-bootstrap_indices.rows()-1, X.rows());
+    iMatrix combined(X.rows(), n_estimator);
+    combined << bootstrap_indices, bootstrap_indices_new;
+    bootstrap_indices = combined;
+    int num_procs = omp_get_num_procs();
+    #pragma omp parallel for num_threads(num_procs)
         for (int i = 0; i < n_estimator; i++) {
             iVector ind = bootstrap_indices.col(i);
             dMatrix X_b = X(ind,keep_cols);

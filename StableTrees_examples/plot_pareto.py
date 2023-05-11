@@ -24,7 +24,7 @@ plt.rcParams.update(plot_params)
 college_box_plot_info = []
 import itertools
 method =  "randomforest" #"agtboost" # "tree" #
-df =pd.read_csv(f'results/{method}_ISLR_results10.csv')
+df =pd.read_csv(f'results/{method}_ISLR_results10_mem.csv')
 #df =pd.read_csv('results/randomforest_ISLR_results.csv')
 
 datasets =["Boston", "Carseats","College", "Hitters", "Wage"]
@@ -123,5 +123,5 @@ axes[-1].axis("off")
 # adjust spacing between subplots
 fig.tight_layout()
 #plt.show()
-plt.savefig(f"StableTrees_examples\plots\\real_data_mse_pareto_{method}10.png")
+plt.savefig(f"StableTrees_examples\plots\\real_data_mse_pareto_{method}10_mem.png")
 plt.close()

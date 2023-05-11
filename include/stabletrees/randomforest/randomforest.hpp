@@ -30,6 +30,7 @@ class RandomForest{
         double initial_pred;
         std::vector<Tree> forest;
         unsigned int random_state;
+        iMatrix bootstrap_indices;
 };
 
 RandomForest::RandomForest(int _criterion,int n_estimator,int max_depth, double min_split_sample,int min_samples_leaf, bool adaptive_complexity, int max_features){
@@ -51,7 +52,7 @@ RandomForest::RandomForest(int _criterion,int n_estimator,int max_depth, double 
 void RandomForest::learn(const dMatrix X, const dVector y, const dVector weights){
     forest.resize(n_estimator);
     iVector keep_cols = iVector::LinSpaced(X.cols(), 0, X.cols()-1).array();
-    iMatrix bootstrap_indices = sample_indices(0, y.size());
+    bootstrap_indices = sample_indices(0, y.size());
     int num_procs = omp_get_num_procs();
     #pragma omp parallel for num_threads(num_procs)
     for (int i = 0; i < n_estimator; i++) {
@@ -71,8 +72,11 @@ void RandomForest::learn(const dMatrix X, const dVector y, const dVector weights
 
 void RandomForest::update(const dMatrix X,const dVector y, const dVector weights){
     iVector keep_cols = iVector::LinSpaced(X.cols(), 0, X.cols()-1).array();
-    iMatrix bootstrap_indices = sample_indices(0, y.size());
-    
+    //iMatrix bootstrap_indices = sample_indices(0, y.size());
+    iMatrix bootstrap_indices_new = sample_indices(X.rows()-bootstrap_indices.rows()-1, X.rows());
+    iMatrix combined(X.rows(), n_estimator);
+    combined << bootstrap_indices, bootstrap_indices_new;
+    bootstrap_indices = combined;
     int num_procs = omp_get_num_procs();
     #pragma omp parallel for num_threads(num_procs)
         for (int i = 0; i < n_estimator; i++) {
@@ -109,7 +113,7 @@ iMatrix RandomForest::sample_indices(int start, int end){
     int num_procs = omp_get_num_procs();
     #pragma omp parallel for num_threads(num_procs)
     for (int b = 0; b < n_estimator; b++) {
-        thread_local std::mt19937 gen(b);
+        std::mt19937 gen(b);
         for (int i = 0; i < end-start; i++) {
             int index = distr(gen);
             bootstrap_indices_(i,b) = index;

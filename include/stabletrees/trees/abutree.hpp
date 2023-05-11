@@ -101,7 +101,7 @@ void AbuTree::update(const dMatrix X,const dVector y, const dVector sample_weigh
     //printf("%d\n", n1);
     dMatrix Xb = sample_X(X,n1);
     dMatrix info = predict_info(Xb);
-    dVector weights = info.col(1).array().min(1000).max(0);
+    dVector weights = info.col(1).array().min(1).max(0);
     dVector yb = info.col(0);
     // std::mt19937 gen(bootstrap_seed);
     // dVector w_wars = info.col(2);
@@ -257,21 +257,23 @@ Node* AbuTree::update_tree(const dMatrix  &X, const dVector &y, const dVector &g
             std::iota(features_indices.begin(), features_indices.end(), 0);
             std::shuffle(features_indices.begin(), features_indices.end(), gen);
             features_indices.resize(max_features);
-            //features_indices.erase(features_indices.begin() + max_features, features_indices.end());
+            features_indices.erase(features_indices.begin() + max_features, features_indices.end());
             //printf("%d %d \n", max_features,features_indices.size() );
             
             // for (int i=0; i<X.cols(); i++){
             //     printf("%d\n", features_indices[i]);
             // } 
             // printf("\n");
+            
         }
+    this->random_state +=1;
 
     }else if(previuos_tree_node->get_features_indices().size()>0) {
         
         //printf("else if %d\n", features_indices.size());
         features_indices = previuos_tree_node->get_features_indices();
     }
-    this->random_state +=1;
+    
 
     
 

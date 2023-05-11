@@ -343,10 +343,7 @@ Node* Tree::build_tree(const dMatrix  &X, const dVector &y, const dVector &g, co
     double w_var = 1;
     double y_var = 1;
 
-    if(all_same(y)){
-        //printf("all_same(y) \n");
-        return new Node(pred, n,y_var,w_var);
-    }
+    
     
     int split_feature;
     iVector mask_left;
@@ -363,6 +360,8 @@ Node* Tree::build_tree(const dMatrix  &X, const dVector &y, const dVector &g, co
             std::iota(features_indices.begin(), features_indices.end(), 0);
             std::shuffle(features_indices.begin(), features_indices.end(), gen);
             features_indices.resize(max_features); 
+            features_indices.erase(features_indices.begin() + max_features, features_indices.end());
+            
         }
     }else 
     if(previuos_tree_node->get_features_indices().size()>0) {
@@ -370,7 +369,11 @@ Node* Tree::build_tree(const dMatrix  &X, const dVector &y, const dVector &g, co
         features_indices = previuos_tree_node->get_features_indices();
     }
     this->random_state +=1;
-
+    double loss_parent = (y.array() - pred).square().sum();
+    if(all_same(y)){
+        //printf("all_same(y) \n");
+        return new Node(split_value, loss_parent, score, split_feature, y.rows() , pred, y_var, w_var,features_indices);
+    }
     // if(previuos_tree_node ==NULL){
     //     //for (int i=0; i<X.cols(); i++){features_indices(i) = i; } 
     
@@ -425,33 +428,32 @@ Node* Tree::build_tree(const dMatrix  &X, const dVector &y, const dVector &g, co
         throw exception("something wrong!") ;
 
     }
-    double loss_parent = (y.array() - pred).square().sum();
-    // if(depth>=this->max_depth){
-    //     //printf("max_depth: %d >= %d \n", depth,this->max_depth);
-    //     return new Node(split_value, loss_parent, score, split_feature, y.rows() , pred, y_var, w_var,features_indices);
-    //     //return new Node(pred, n, y_var,w_var,features_indices);
-    // }
-    // if(y.rows()< this->min_split_sample){
-    //     //printf("min_split_sample \n");
-    //     return new Node(split_value, loss_parent, score, split_feature, y.rows() , pred, y_var, w_var,features_indices);
-    // }
-    // if(!any_split){
-    //     //printf("any_split \n");
-    //     return new Node(split_value, loss_parent, score, split_feature, y.rows() , pred, y_var, w_var,features_indices);
-    // }
-
     if(depth>=this->max_depth){
         //printf("max_depth: %d >= %d \n", depth,this->max_depth);
-        return new Node(pred, n, y_var,w_var);
+        return new Node(split_value, loss_parent, score, split_feature, y.rows() , pred, y_var, w_var,features_indices);
+        //return new Node(pred, n, y_var,w_var,features_indices);
     }
     if(y.rows()< this->min_split_sample){
         //printf("min_split_sample \n");
-        return new Node(pred, n, y_var,w_var);
+        return new Node(split_value, loss_parent, score, split_feature, y.rows() , pred, y_var, w_var,features_indices);
     }
     if(!any_split){
         //printf("any_split \n");
-        return new Node(pred ,n, y_var, w_var);
+        return new Node(split_value, loss_parent, score, split_feature, y.rows() , pred, y_var, w_var,features_indices);
     }
+
+    // if(depth>=this->max_depth){
+    //     //printf("max_depth: %d >= %d \n", depth,this->max_depth);
+    //     return new Node(pred, n, y_var,w_var);
+    // }
+    // if(y.rows()< this->min_split_sample){
+    //     //printf("min_split_sample \n");
+    //     return new Node(pred, n, y_var,w_var);
+    // }
+    // if(!any_split){
+    //     //printf("any_split \n");
+    //     return new Node(pred ,n, y_var, w_var);
+    // }
 
     if(score == std::numeric_limits<double>::infinity()){
         printf("X.size %d y.size %d, reduction %f, expected_max_S %f, min_samples_leaf = %d \n", X.rows(), y.rows(),score,expected_max_S, min_samples_leaf);

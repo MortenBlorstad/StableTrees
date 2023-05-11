@@ -30,6 +30,7 @@ class RandomForestBABU{
         std::vector<AbuTree> forest;
         unsigned int random_state;
         int bumping_iterations;
+        iMatrix bootstrap_indices;
 
 };
 
@@ -47,13 +48,14 @@ RandomForestBABU::RandomForestBABU(int _criterion,int n_estimator,int max_depth,
     this->n_estimator = n_estimator;
     thread_local unsigned int random_state = 0;
     this->bumping_iterations = bumping_iterations;
+    
 
 }
 
 void RandomForestBABU::learn(const dMatrix X, const dVector y, const dVector weights){
     forest.resize(n_estimator);
     iVector keep_cols = iVector::LinSpaced(X.cols(), 0, X.cols()-1).array();
-    iMatrix bootstrap_indices = sample_indices(0, y.size());
+    bootstrap_indices = sample_indices(0, y.size());
     int num_procs = omp_get_num_procs();
     #pragma omp parallel for num_threads(num_procs)
     for (int i = 0; i < n_estimator; i++) {
@@ -84,7 +86,11 @@ void RandomForestBABU::learn(const dMatrix X, const dVector y, const dVector wei
 
 void RandomForestBABU::update(const dMatrix X,const dVector y, const dVector weights){
     iVector keep_cols = iVector::LinSpaced(X.cols(), 0, X.cols()-1).array();
-    iMatrix bootstrap_indices = sample_indices(0, y.size());
+    //iMatrix bootstrap_indices = sample_indices(0, y.size());
+    iMatrix bootstrap_indices_new = sample_indices(X.rows()-bootstrap_indices.rows()-1, X.rows());
+    iMatrix combined(X.rows(), n_estimator);
+    combined << bootstrap_indices, bootstrap_indices_new;
+    bootstrap_indices = combined;
     int num_procs = omp_get_num_procs();
     #pragma omp parallel for num_threads(num_procs)
         for (int i = 0; i < n_estimator; i++) {

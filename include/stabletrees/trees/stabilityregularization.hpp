@@ -132,11 +132,14 @@ Node* StabilityRegularization::update_tree(const dMatrix  &X, const dVector &y, 
             std::iota(features_indices.begin(), features_indices.end(), 0);
             std::shuffle(features_indices.begin(), features_indices.end(), gen);
             features_indices.resize(max_features);
+            features_indices.erase(features_indices.begin() + max_features, features_indices.end());
+            
             
             // for (int i=0; i<X.cols(); i++){
             //     printf("%d %d\n", features_indices[i], features_indices.size());
             // } 
             // printf("\n");
+            
         }
     }else 
     if(previuos_tree_node->get_features_indices().size()>0) {

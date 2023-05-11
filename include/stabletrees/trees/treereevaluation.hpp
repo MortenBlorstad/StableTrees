@@ -27,6 +27,7 @@ class TreeReevaluation: public Tree{
         vector<size_t> sort_index(const vector<double> &v);
         double delta;
         double alpha;
+        
 
 };
 
@@ -152,7 +153,7 @@ Node* TreeReevaluation::attempt_split(Node* node, const dMatrix &X, const dVecto
         node->n_samples = y.rows();
         return node;
     }
-    return  build_tree(X,y,g,h,depth,node,weights);//node; //
+    return node; // build_tree(X,y,g,h,depth,node,weights); //
 }
 
 
@@ -174,7 +175,7 @@ tuple<Node*, bool> TreeReevaluation::reevaluate_split(Node* node, const dMatrix 
     //printf("%f %f %f \n ", parent_loss, (- old_reduction - parent_loss) );
     bool changed = false;
     
-
+    
     tie(any_split, split_feature, split_value, new_reduction, y_var ,w_var,expected_max_S) = find_split(X,y,g,h,node->features_indices);
     new_reduction = new_reduction;
     //printf("old_reduction %f new_reduction %f\n", old_reduction,new_reduction);
