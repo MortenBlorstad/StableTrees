@@ -44,7 +44,7 @@ brand_to_letter = {'Japanese (except Nissan) or Korean': "F",
                       'Renault, Nissan or Citroen': "A",
                      'Volkswagen, Audi, Skoda or Seat':"B",
                       'other':"G" }
-df.Brand = df.Brand.apply(lambda x: brand_to_letter[x])
+
 
 # glm binning based on book
 df["Density_binned"] = pd.cut(df.Density, include_lowest=True, bins=[0,40,200,500,4500,np.inf])
@@ -53,7 +53,7 @@ df["CarAge_binned"]  = pd.cut(df.CarAge, include_lowest=True , bins=[0,15,np.inf
 df["brandF"] = np.where(df.Brand=="Japanese (except Nissan) or Korean","F","other")
 df["Power_glm"] = ["DEF" if p in ["d","e","f"] else "other" if p in ["d","e","f"] else "GH" for p in df.Power ]
 df.insert(len(df.columns)-1, 'Frequency', df.pop('Frequency'))
-
+df.Brand = df.Brand.apply(lambda x: brand_to_letter[x])
 
 tree_preprocessor = ColumnTransformer(
     [
@@ -91,6 +91,29 @@ markers = {"basetree":"tree","NU":"NU","SL": "SL", "SL1":"SL_{0.1}", "SL2":"SL_{
                 "NUrf": "NUrf", "TRrf":"TRrf", "ABUrf":"ABUrf", "BABUrf1":"rf_{BABU_{1}}","BABUrf3":"rf_{BABU_{5}}",
                  "SLrf1" :"rf_{SL_{0.1}}","SLrf2" :"rf_{SL_{0.25}}"  ,"SLrf3" :"rf_{SL_{0.5}}" ,"SLrf4" :"rf_{SL_{0.75}}" ,"SLrf5" :"rf_{SL_{0.9}}" ,
             "baseGTB":"GTB" }
+
+markers_to_method = {"basetree":"tree","NU":"tree","SL": "tree", "SL1":"tree", "SL2":"tree","SL3":"tree",
+            "SL4": "tree", "SL5": "tree",
+            "TR":"tree","TR1":"tree",
+            "TR2":"tree", "TR3" :"tree",
+            "ABU":"tree",
+            "BABU":"tree", "BABU1": "tree","BABU2": "tree" ,"BABU3": "tree","BABU4": "tree","BABU5": "tree","BABU6": "tree",
+               "baseforest":"rf",
+                "NUrf": "rf", "TRrf":"rf", "ABUrf":"rf", "BABUrf1":"rf","BABUrf3":"rf",
+                 "SLrf1" :"rf","SLrf2" :"rf"  ,"SLrf3" :"rf" ,"SLrf4" :"rf" ,"SLrf5" :"rf" ,
+            "baseGTB":"GTB" }
+
+markers_to_m = {"basetree":"baseline","NU":"NU","SL1":"SL_{0.1}", "SL2":"SL_{0.25}","SL3":"SL_{0.5}",
+             "SL4": "SL_{0.75}", "SL5": "SL_{0.9}",
+             "TR":"TR","TR1":"TR_{0,5}",
+            "TR2":"TR_{5,5}", "TR3" :"TR_{10,5}",
+            "ABU":"ABU",
+            "BABU":"BABU", "BABU1": r"BABU_{1}","BABU2": r"BABU_{3}" ,"BABU3": r"BABU_{5}","BABU4": r"BABU_{7}","BABU5": r"BABU_{10}","BABU6": r"BABU_{20}",
+               "baseforest":"baseline",
+                "NUrf": "NU", "TRrf":"TR_{0,5}", "ABUrf":"ABU", "BABUrf1":r"BABU_{1}","BABUrf3":r"BABU_{5}",
+                 "SLrf1" :"SL_{0.1}","SLrf2" :"SL_{0.25}" ,"SLrf3" :"SL_{0.5}" ,"SLrf4" :"SL_{0.75}" ,"SLrf5" :"SL_{0.9}" ,
+            "baseGTB":"GTB" }
+
 
 colors = {"basetree":"#1f77b4","NU":"#D55E00", "SL":"#CC79A7","SL1":"#CC79A7", "SL2":"#CC79A7","SL3":"#CC79A7",
             "SL4": "#CC79A7", "SL5": "#CC79A7",
@@ -160,12 +183,12 @@ models = {
             "sklearn": GridSearchCV(DecisionTreeRegressor(criterion="poisson",random_state=0), parameters),
             "poisReg": PoissonRegressor(solver="newton-cholesky"),
             "glm":  smf.glm,
-            "TR": TreeReevaluation(criterion = criterion, max_depth=5, min_samples_leaf=5),
-            "SL": StabilityRegularization(criterion = criterion, max_depth=5, min_samples_leaf=5),
-            "ABU": AbuTree(criterion = criterion, max_depth=5, min_samples_leaf=5),
-            "BABU": BABUTree(criterion = criterion, max_depth=5, min_samples_leaf=5),
+            # "TR": TreeReevaluation(criterion = criterion, max_depth=5, min_samples_leaf=5),
+            # "SL": StabilityRegularization(criterion = criterion, max_depth=5, min_samples_leaf=5),
+            # "ABU": AbuTree(criterion = criterion, max_depth=5, min_samples_leaf=5),
+            # "BABU": BABUTree(criterion = criterion, max_depth=5, min_samples_leaf=5),
             "baseGTB" : AGTBoost(loss_function=criterion,gamma=0),
-            "SLbaseGTB" : AGTBoost(loss_function=criterion,gamma=0.1)
+            # "SLbaseGTB" : AGTBoost(loss_function=criterion,gamma=0.1)
             }
 stability_all = {name:[] for name in models.keys()}
 standard_stability_all= {name:[] for name in models.keys()}
@@ -188,11 +211,48 @@ kf = RepeatedKFold(n_splits= 6,n_repeats=1, random_state=SEED)
 itesd= 1
 for train_index, test_index in kf.split(df.to_numpy()):
     df_12 = df.iloc[train_index]
-    print(itesd)
-    itesd+=1
+    
+    # print(df_12.columns)
+    
+    # df12 = pd.DataFrame(tree_preprocessor.transform(df_12),columns=["Brand", "Power", "Gas", "Region","CarAge","DriverAge","Density"])
+    # print(df_12.Frequency.isnull().any())
+    # print(df_12.Exposure.isnull().any())
+    # print(df_12.ClaimNb.isnull().any())
+    # df12["Frequency"] = df_12["Frequency"].to_numpy()
+    # df12["Exposure"] = df_12["Exposure"].to_numpy()
+    # df12["ClaimNb"] = df_12["ClaimNb"].to_numpy()
+    # df12.to_csv(f'freq_data_6fold_cv/D2/D2_{itesd}.csv', index=False)
+    # if df12.isnull().any().any():
+    #     print("df12 The DataFrame contains NaN values.")
+    # else:
+    #     print("df12 The DataFrame does not contain NaN values.")
+    # print(itesd)
+    
     df_test = df.iloc[test_index]
+    
+    # dftest = pd.DataFrame(tree_preprocessor.transform(df_test),columns=["Brand", "Power", "Gas", "Region","CarAge","DriverAge","Density"])
+    # dftest["Frequency"] = df_test["Frequency"].to_numpy()
+    # dftest["Exposure"] = df_test["Exposure"].to_numpy()
+    # dftest["ClaimNb"] = df_test["ClaimNb"].to_numpy()
+    # dftest.to_csv(f'freq_data_6fold_cv/D_test/D_test_{itesd}.csv', index=False)
+    # if dftest.isnull().any().any():
+    #     print("dftest The DataFrame contains NaN values.")
+    # else:
+    #     print("dftest The DataFrame does not contain NaN values.")
 
     df_1,df_2 =  train_test_split(df_12, test_size=0.5, random_state=SEED)
+    
+    # df1 = pd.DataFrame(tree_preprocessor.transform(df_1),columns=["Brand", "Power", "Gas", "Region","CarAge","DriverAge","Density"])
+    # df1["Frequency"] = df_1["Frequency"].to_numpy()
+    # df1["Exposure"] = df_1["Exposure"].to_numpy()
+    # df1["ClaimNb"] = df_1["ClaimNb"].to_numpy()
+    # if df1.isnull().any().any():
+    #     print("df1 The DataFrame contains NaN values.")
+    # else:
+    #     print("df1 The DataFrame does not contain NaN values.")
+    # df1.to_csv(f'freq_data_6fold_cv/D1/D1_{itesd}.csv', index=False)
+    print(itesd)
+    itesd+=1
     # clf.fit(X1,y1)
     # params = clf.best_params_
     # initial model 
@@ -208,7 +268,7 @@ for train_index, test_index in kf.split(df.to_numpy()):
             # "SL3": StabilityRegularization(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,gamma=0.5),
             # "SL4": StabilityRegularization(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,gamma=0.75),
             # "SL5": StabilityRegularization(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,gamma=0.9),
-            # "ABU": AbuTree(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True),
+            #"ABU": AbuTree(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True),
             # "BABU1": BABUTree(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,bumping_iterations=1),
             # "BABU2": BABUTree(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,bumping_iterations=3),
             # "BABU3": BABUTree(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,bumping_iterations=5),
@@ -235,7 +295,7 @@ for train_index, test_index in kf.split(df.to_numpy()):
             # "ABU": AbuTree(criterion = criterion, max_depth=5, min_samples_leaf=5),
             # "BABU": BABUTree(criterion = criterion, max_depth=5, min_samples_leaf=5),
             #"BABU": BABUTree(criterion = criterion, max_depth=5, min_samples_leaf=5),
-            "baseGTB" : AGTBoost(loss_function=criterion,gamma=0),
+            #"baseGTB" : AGTBoost(loss_function=criterion,gamma=0),
             #"SLbaseGTB" : AGTBoost(loss_function=criterion,gamma=0.1)
 
 
@@ -315,11 +375,11 @@ for name in models.keys():
         y_se  = stability_SE_norm
         x_r = x_abs/mse_scale
         y_r = y_abs/S_scale
-        plot_info.append((x_r,y_r,colors[name],markers[name], x_abs,y_abs,x_se, y_se, x_abs_se, y_abs_se ))
+        plot_info.append((x_r,y_r,colors[name],markers[name], x_abs,y_abs,x_se, y_se, x_abs_se, y_abs_se, markers_to_method[name], markers_to_m[name] ))
 print()
 print(plot_info)
 import os
-df = pd.DataFrame(plot_info, columns=['loss', 'stability', 'color', "marker", 'loss_abs','stability_abs','loss_se','stability_se','loss_abs_se','stability_abs_se' ] )
+df = pd.DataFrame(plot_info, columns=['loss', 'stability', 'color', "marker", 'loss_abs','stability_abs','loss_se','stability_se','loss_abs_se','stability_abs_se',"method", "m"  ] )
 if os.path.isfile('results/claim_freq_results.csv'):
     old_df =pd.read_csv('results/claim_freq_results.csv')
     for i,m in enumerate(df.marker):

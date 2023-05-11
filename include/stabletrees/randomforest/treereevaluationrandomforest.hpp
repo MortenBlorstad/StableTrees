@@ -1,8 +1,6 @@
-#include "tree.hpp"
-#include "naiveupdate.hpp"
+
 #include "treereevaluation.hpp"
-#include "stabilityregularization.hpp"
-#include "abutree.hpp"
+
 #include "utils.hpp"
 #include "lossfunctions.hpp"
 #include <omp.h>
@@ -56,11 +54,12 @@ void RandomForestTR::learn(const dMatrix X, const dVector y, const dVector weigh
     forest.resize(n_estimator);
     iVector keep_cols = iVector::LinSpaced(X.cols(), 0, X.cols()-1).array();
     iMatrix bootstrap_indices = sample_indices(0, y.size());
-    #pragma omp parallel for
+    int num_procs = omp_get_num_procs();
+    #pragma omp parallel for num_threads(num_procs)
     for (int i = 0; i < n_estimator; i++) {
-        forest[i] = TreeReevaluation(alpha,delta,this->_criterion,this->max_depth, this->min_split_sample, this->min_samples_leaf, this->adaptive_complexity, this->max_features, 1, 0);
+        forest[i] = TreeReevaluation(alpha,delta,this->_criterion,this->max_depth, this->min_split_sample, this->min_samples_leaf, this->adaptive_complexity, this->max_features, 1, i);
     }
-    #pragma omp parallel for
+    #pragma omp parallel for num_threads(num_procs)
     for (int i = 0; i < n_estimator; ++i) {
         iVector ind = bootstrap_indices.col(i);
         dMatrix X_b = X(ind,keep_cols);
@@ -74,7 +73,8 @@ void RandomForestTR::learn(const dMatrix X, const dVector y, const dVector weigh
 void RandomForestTR::update(const dMatrix X,const dVector y, const dVector weights){
     iVector keep_cols = iVector::LinSpaced(X.cols(), 0, X.cols()-1).array();
     iMatrix bootstrap_indices = sample_indices(0, y.size());
-    #pragma omp parallel for
+    int num_procs = omp_get_num_procs();
+    #pragma omp parallel for num_threads(num_procs)
         for (int i = 0; i < n_estimator; i++) {
             iVector ind = bootstrap_indices.col(i);
             dMatrix X_b = X(ind,keep_cols);
@@ -88,7 +88,8 @@ dVector RandomForestTR::predict(const dMatrix X){
     dVector prediction(X.rows()); 
     prediction.setConstant(0);
     //printf("%d \n",forest.size());
-    #pragma omp parallel for 
+    int num_procs = omp_get_num_procs();
+    #pragma omp parallel for num_threads(num_procs)
     for (int i = 0; i < n_estimator; i++) {
         dVector pred = forest[i].predict(X);
         #pragma omp critical
@@ -105,9 +106,8 @@ iMatrix RandomForestTR::sample_indices(int start, int end){
     //printf("start end %d %d \n", start, end);
     std::uniform_int_distribution<int>  distr(start, end-1);
     iMatrix bootstrap_indices_(end-start,this->n_estimator);
-    int max_threads = omp_get_num_procs();
-    //printf("max_threads %d\n", max_threads);
-    //#pragma omp parallel for num_threads(max_threads) 
+    int num_procs = omp_get_num_procs();
+    #pragma omp parallel for num_threads(num_procs)
     for (int b = 0; b < n_estimator; b++) {
         std::mt19937 gen(b);
         for (int i = 0; i < end-start; i++) {

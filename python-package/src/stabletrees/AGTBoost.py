@@ -23,7 +23,7 @@ class AGTBoost():
             sample_weight = np.ones(shape=(len(y),))
         if offset is None:
             offset = np.zeros(shape=(len(y),))
-        self.model.learn(y,X,verbose,True,False, sample_weight, offset)
+        self.model.learn(y,X,verbose,False,False, sample_weight, offset)
         return 
     
 

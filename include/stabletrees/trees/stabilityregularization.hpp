@@ -6,7 +6,7 @@ class StabilityRegularization: public Tree{
         StabilityRegularization(double gamma, int _criterion,int max_depth, double min_split_sample,int min_samples_leaf,bool adaptive_complexity,int max_features,double learning_rate,unsigned int random_state);
         StabilityRegularization();
         virtual void update(const dMatrix X, const dVector y, const dVector weights);
-        Node* update_tree(const dMatrix  &X, const dVector &y, const dVector &g, const dVector &h, int depth, Node* previuos_tree_node, const dVector &ypred1, const dVector &weights);
+        Node* update_tree(const dMatrix  &X, const dVector &y, const dVector &g, const dVector &h, int depth, const Node* previuos_tree_node, const dVector &ypred1, const dVector &weights);
     private:
         double gamma;
         
@@ -20,11 +20,12 @@ StabilityRegularization::StabilityRegularization():Tree(){
 StabilityRegularization::StabilityRegularization(double gamma, int _criterion,int max_depth, double min_split_sample,int min_samples_leaf, bool adaptive_complexity,int max_features,double learning_rate, unsigned int random_state):Tree(_criterion, max_depth,  min_split_sample,min_samples_leaf, adaptive_complexity,max_features,learning_rate,random_state){
     Tree(_criterion, max_depth, min_split_sample,min_samples_leaf, adaptive_complexity,max_features,learning_rate,random_state);
     this->gamma = gamma;
+    this->init_random_state = random_state;
 }
 
 void StabilityRegularization::update(const dMatrix X, const dVector y, const dVector weights){
     //printf("sl \n");
-    this->random_state =0;
+    this->random_state = this->init_random_state;
     if(this->root == NULL){
         this->learn(X,y,weights);
     }else{
@@ -59,7 +60,7 @@ void StabilityRegularization::update(const dMatrix X, const dVector y, const dVe
 
 
 
-Node* StabilityRegularization::update_tree(const dMatrix  &X, const dVector &y, const dVector &g, const dVector &h, int depth, Node* previuos_tree_node, const dVector &ypred1, const dVector &weights){
+Node* StabilityRegularization::update_tree(const dMatrix  &X, const dVector &y, const dVector &g, const dVector &h, int depth, const Node* previuos_tree_node, const dVector &ypred1, const dVector &weights){
     number_of_nodes +=1;
     tree_depth = max(depth,tree_depth);
     if(X.rows()<2 || y.rows()<2){
@@ -131,7 +132,7 @@ Node* StabilityRegularization::update_tree(const dMatrix  &X, const dVector &y, 
             std::iota(features_indices.begin(), features_indices.end(), 0);
             std::shuffle(features_indices.begin(), features_indices.end(), gen);
             features_indices.resize(max_features);
-            this->random_state +=1;
+            
             // for (int i=0; i<X.cols(); i++){
             //     printf("%d %d\n", features_indices[i], features_indices.size());
             // } 
@@ -139,11 +140,11 @@ Node* StabilityRegularization::update_tree(const dMatrix  &X, const dVector &y, 
         }
     }else 
     if(previuos_tree_node->get_features_indices().size()>0) {
-        features_indices.resize(max_features);
+        //features_indices.resize(max_features);
         //printf("else if %d\n", features_indices.size());
         features_indices = previuos_tree_node->get_features_indices();
     }
-
+    this->random_state +=1;
 
     //printf("%d \n", features_indices.allFinite());
     

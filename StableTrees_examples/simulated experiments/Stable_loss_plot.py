@@ -129,22 +129,30 @@ for case, info in cases.items():
         print(" ")
 from matplotlib.lines import Line2D
 
-plt.axvline(x=1, linestyle = "--")
-plt.axhline(y=1, linestyle = "--")
+X = np.zeros((len(plot_info)+1, 2))
+X[1:,0] = [x for (x,y,c,s) in plot_info]
+X[1:,1] = [y for (x,y,c,s) in plot_info]
+X[0,0] = 1
+X[0,1] = 1
+ax.axvline(x=1, linestyle = "--", c = "#3776ab",lw = 0.5)
+ax.axhline(y=1, linestyle = "--", c = "#3776ab",lw = 0.5)
 texts = [plt.text(x = x, y=y, s = "$"+s+"$",fontsize=8, ha='center', va='center') for (x,y,c,s) in plot_info]
+plt.text(x = 1, y=1.01, s = "$baseline$",fontsize=8, ha='center', va='center')
 scatters = [ax.scatter(x = x, y=y, s = 4, c =c) for (x,y,c,_) in plot_info]
-adjust_text(texts,add_objects=scatters, arrowprops=dict(arrowstyle="-", color='k', lw=0.1),ax= ax)
+scatters.append(ax.scatter(x = [1], y=[1], s = 4, c ="#3776ab"))
+adjust_text(texts,x =X[:,0], y = X[:,1],add_objects=scatters, arrowprops=dict(arrowstyle="-", color='k', lw=0.1),ax= ax, force_text = (0.3,0.3))#
+#adjust_text(texts,add_objects=scatters, arrowprops=dict(arrowstyle="-", color='k', lw=0.1),ax= ax)
 legend_elements = [Line2D([0], [0], marker='s', color='w', label=k,
                           markerfacecolor=v, markersize=14) for k,v in colors.items()  ]
-legend_elements = [Line2D([0], [0], color='b', lw=1, label='baseline', linestyle = "--")] +legend_elements
+legend_elements = [Line2D([0], [0], marker='s', color='w',markerfacecolor="#3776ab",markersize=14, label='baseline', linestyle = "--")]  +legend_elements
 #plt.plot([x for x,y in frontier],[y for x,y in frontier], c = "k", lw=0.1)
 
 plt.xlabel("mse",fontsize=10)
-plt.ylabel(r'$\left(f_1(x_i)-f_2(x_i)\right)^2$',fontsize=10)
+plt.ylabel("stability",fontsize=10)
 plt.ylim((0.10,1.05))
-plt.xlim((0.97,1.01))
+plt.xlim((0.965,1.02))
 plt.legend(loc='upper right' , handles=legend_elements,fontsize="10")
-plt.savefig(f"StableTrees_examples\plots\\example_mse_simulated_SL.png")
+plt.savefig(f"StableTrees_examples\plots\\example_mse_simulated_SL_09_05.png")
 plt.close()
 
     

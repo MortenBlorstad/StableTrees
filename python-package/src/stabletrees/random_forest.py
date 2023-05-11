@@ -309,37 +309,38 @@ class MyRandomForestRegressor(RandomForestRegressor, RegressorMixin):
         
         
         self.max_samples = max_samples
-        super().__init__( n_estimators=n_estimators,random_state= random_state,n_jobs = -1)
+        super().__init__( n_estimators=n_estimators,random_state= random_state)
         self.estimator = MyDecisionTreeRegressor
         self.estimators_ = [self.estimator(method,criterion,max_depth= max_depth,min_samples_split = min_samples_split, min_samples_leaf=min_samples_leaf, adaptive_complexity=adaptive_complexity,
                                                   max_features= max_features,random_state=i,gamma = gamma,alpha=alpha,delta=delta) for i in range(n_estimators)]
 
     def fit_estimator(self, X, y, estimator):
             return estimator.fit(X, y)
+    
     def fit(self, X, y):
         # Split the training data into random subsets for each estimator
         n_samples = X.shape[0]
         max_samples = self.max_samples if self.max_samples is not None else n_samples
         sample_indices = [np.random.choice(n_samples, max_samples, replace=True) for _ in range(self.n_estimators)]
         
-        self.estimators_ = Parallel(n_jobs=self.n_jobs)(
-            delayed(self.fit_estimator)(X[sample_indices[i]], y[sample_indices[i]], estimator)
-            for i, estimator in enumerate(self.estimators_))
+        # self.estimators_ = Parallel(n_jobs=self.n_jobs)(
+        #     delayed(self.fit_estimator)(X[sample_indices[i]], y[sample_indices[i]], estimator)
+        #     for i, estimator in enumerate(self.estimators_))
 
-        # # Fit each estimator to its random subset of the training data
-        # for i, estimator in enumerate(self.estimators_):
-        #     estimator.fit(X[sample_indices[i]], y[sample_indices[i]])
+        # Fit each estimator to its random subset of the training data
+        for i, estimator in enumerate(self.estimators_):
+            estimator.fit(X[sample_indices[i]], y[sample_indices[i]])
 
     def update(self, X, y):
         # Split the training data into random subsets for each estimator
         n_samples = X.shape[0]
         max_samples = self.max_samples if self.max_samples is not None else n_samples
         sample_indices = [np.random.choice(n_samples, max_samples, replace=True) for _ in range(self.n_estimators)]
-        Parallel(n_jobs=-1)(delayed(estimator.fit)(X[sample_indices[i]], y[sample_indices[i]]) for i, estimator in enumerate(self.estimators_))
+        #Parallel(n_jobs=-1)(delayed(estimator.fit)(X[sample_indices[i]], y[sample_indices[i]]) for i, estimator in enumerate(self.estimators_))
 
         # # Fit each estimator to its random subset of the training data
-        # for i, estimator in enumerate(self.estimators_):
-        #     estimator.update(X[sample_indices[i]], y[sample_indices[i]])
+        for i, estimator in enumerate(self.estimators_):
+            estimator.update(X[sample_indices[i]], y[sample_indices[i]])
 
     def predict(self, X):
         # Predict the target values for the test data using each estimator in the ensemble

@@ -59,7 +59,7 @@ void RandomForest::learn(const dMatrix X, const dVector y, const dVector weights
     }
 
     #pragma omp parallel for num_threads(num_procs)
-    for (int i = 0; i < n_estimator; ++i) {
+    for (int i = 0; i < n_estimator; i++) {
         iVector ind = bootstrap_indices.col(i);
         dMatrix X_b = X(ind,keep_cols);
         dVector y_b = y(ind);
@@ -109,7 +109,7 @@ iMatrix RandomForest::sample_indices(int start, int end){
     int num_procs = omp_get_num_procs();
     #pragma omp parallel for num_threads(num_procs)
     for (int b = 0; b < n_estimator; b++) {
-        std::mt19937 gen(b);
+        thread_local std::mt19937 gen(b);
         for (int i = 0; i < end-start; i++) {
             int index = distr(gen);
             bootstrap_indices_(i,b) = index;

@@ -1,4 +1,6 @@
-#pragma once
+#ifndef __ABUTREE_HPP_INCLUDED__
+
+#define __ABUTREE_HPP_INCLUDED__
 #include "tree.hpp"
 #include "utils.hpp"
 #include "lossfunctions.hpp"
@@ -18,11 +20,12 @@ class AbuTree: public Tree{
         virtual void update(const dMatrix X,const dVector y, const dVector sample_weights);
         dMatrix predict_info(dMatrix &X);
         tuple<bool,int,double, double,double,double,double,double>  AbuTree::find_update_split(const dMatrix &X,const dVector &y, const dVector &g,const dVector &h,const dVector &weights);
-        Node* update_tree(const dMatrix  &X, const dVector &y, const dVector &g, const dVector &h, int depth, Node* previuos_tree_node,const dVector &indicator, const dVector &gamma);
+        Node* update_tree(const dMatrix  &X, const dVector &y, const dVector &g, const dVector &h, int depth, const Node* previuos_tree_node,const dVector &indicator, const dVector &gamma);
     private:
         dVector predict_info_obs(dVector  &obs);
         dMatrix sample_X(const dMatrix &X, int n1);
         int bootstrap_seed ;
+        int init_random_state ;
 };
 
 AbuTree::AbuTree():Tree(){
@@ -33,6 +36,7 @@ AbuTree::AbuTree():Tree(){
 AbuTree::AbuTree(int _criterion,int max_depth, double min_split_sample,int min_samples_leaf, bool adaptive_complexity, int max_features, double learning_rate, unsigned int random_state):Tree(_criterion, max_depth,  min_split_sample,min_samples_leaf,adaptive_complexity,max_features,learning_rate,random_state){
     Tree(_criterion, max_depth, min_split_sample,min_samples_leaf, adaptive_complexity,max_features,learning_rate,random_state);
     bootstrap_seed=0;
+    init_random_state = random_state;
 }
 
 
@@ -91,14 +95,16 @@ dMatrix AbuTree::predict_info(dMatrix &X){
 
 
 void AbuTree::update(const dMatrix X,const dVector y, const dVector sample_weights){
+    random_state = init_random_state;
+    // bootstrap_seed = init_random_state;
     std::lock_guard<std::mutex> lock(mutex);
     //printf("%d\n", n1);
     dMatrix Xb = sample_X(X,n1);
     dMatrix info = predict_info(Xb);
-    dVector weights = info.col(1);//array().min(1000).max(0);
+    dVector weights = info.col(1).array().min(1000).max(0);
     dVector yb = info.col(0);
-    std::mt19937 gen(bootstrap_seed);
-    dVector w_wars = info.col(2);
+    // std::mt19937 gen(bootstrap_seed);
+    // dVector w_wars = info.col(2);
     // for (size_t i = 0; i < yb.size(); i++)
     // {
     //     std::normal_distribution<double> distribution(0.0, sqrt(w_wars(i)));
@@ -185,7 +191,7 @@ dMatrix AbuTree::sample_X(const dMatrix &X, int n1){
     return X_sample;
 }
 
-Node* AbuTree::update_tree(const dMatrix  &X, const dVector &y, const dVector &g, const dVector &h, int depth, Node* previuos_tree_node,const dVector &indicator, const dVector &gamma){
+Node* AbuTree::update_tree(const dMatrix  &X, const dVector &y, const dVector &g, const dVector &h, int depth, const Node* previuos_tree_node,const dVector &indicator, const dVector &gamma){
     number_of_nodes +=1;
     tree_depth = max(depth,tree_depth);
     if(X.rows()<2 || y.rows()<2){
@@ -205,7 +211,7 @@ Node* AbuTree::update_tree(const dMatrix  &X, const dVector &y, const dVector &g
     double gamma_sum = (gamma.array()).sum();
     double y_sum = (y.array()*indicator.array()).sum();
     double yprev_sum = (gamma.array()*y.array()*(1-indicator.array())).sum();
-    double pred = loss_function->link_function((y_sum+yprev_sum)/(n2+gamma_sum)+eps) - pred_0;
+    double pred =  loss_function->link_function((y_sum+yprev_sum)/(n2+gamma_sum)+eps) - pred_0;//-G/H; 
 
     //double pred = -G/H;
     //printf("-g/h = %f, y.mean() = %f, -G/H = %f \n", pred, y.array().mean(),pred_0-G/H);
@@ -244,7 +250,7 @@ Node* AbuTree::update_tree(const dMatrix  &X, const dVector &y, const dVector &g
     std::vector<int> features_indices(X.cols());
     for (int i=0; i<X.cols(); i++){features_indices[i] = i; } 
     
-     if(previuos_tree_node ==NULL){
+    if(previuos_tree_node ==NULL){
         
         if(max_features<INT_MAX){
             std::mt19937 gen(random_state);
@@ -253,7 +259,7 @@ Node* AbuTree::update_tree(const dMatrix  &X, const dVector &y, const dVector &g
             features_indices.resize(max_features);
             //features_indices.erase(features_indices.begin() + max_features, features_indices.end());
             //printf("%d %d \n", max_features,features_indices.size() );
-            this->random_state +=1;
+            
             // for (int i=0; i<X.cols(); i++){
             //     printf("%d\n", features_indices[i]);
             // } 
@@ -265,6 +271,7 @@ Node* AbuTree::update_tree(const dMatrix  &X, const dVector &y, const dVector &g
         //printf("else if %d\n", features_indices.size());
         features_indices = previuos_tree_node->get_features_indices();
     }
+    this->random_state +=1;
 
     
 
@@ -378,4 +385,4 @@ Node* AbuTree::update_tree(const dMatrix  &X, const dVector &y, const dVector &g
     return node;
 }
 
-
+#endif

@@ -112,7 +112,7 @@ void TreeReevaluation::update(const dMatrix &X, const dVector &y, const dVector 
 } 
 
 
-Node* TreeReevaluation::update_rec(Node* node, const dMatrix &X,const  dVector &y, const dVector &g,const  dVector &h, double delta, int depth, const dVector &weights){
+Node* TreeReevaluation::update_rec(Node* node, const dMatrix &X,const  dVector &y, const dVector &g, const  dVector &h, double delta, int depth, const dVector &weights){
     if(y.size()<=min_samples_leaf){
         return node;
     }
@@ -152,7 +152,7 @@ Node* TreeReevaluation::attempt_split(Node* node, const dMatrix &X, const dVecto
         node->n_samples = y.rows();
         return node;
     }
-    return build_tree(X,y,g,h,depth,NULL,weights);
+    return  build_tree(X,y,g,h,depth,node,weights);//node; //
 }
 
 
@@ -195,9 +195,9 @@ tuple<Node*, bool> TreeReevaluation::reevaluate_split(Node* node, const dMatrix 
         changed = true;
         
     }
-    mse_ratio.push_back(ratio);
-    epss.push_back(1+eps);
-    obs.push_back((double)node->n_samples);
+    // mse_ratio.push_back(ratio);
+    // epss.push_back(1+eps);
+    // obs.push_back((double)node->n_samples);
     
     return  tuple<Node*, bool>(node, changed);
 }

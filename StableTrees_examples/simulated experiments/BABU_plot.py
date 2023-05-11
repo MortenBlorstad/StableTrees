@@ -126,22 +126,30 @@ for (case, info), y_var in zip(cases.items(),[1,3,3]):
 from matplotlib.lines import Line2D
 fig, ax  = plt.subplots(dpi=500)
 plt.rcParams.update(params)
-plt.axvline(x=1, linestyle = "--")
-plt.axhline(y=1, linestyle = "--")
+
+X = np.zeros((len(plot_info)+1, 2))
+X[1:,0] = [x for (x,y,c,s) in plot_info]
+X[1:,1] = [y for (x,y,c,s) in plot_info]
+X[0,0] = 1
+X[0,1] = 1
+ax.axvline(x=1, linestyle = "--", c = "#3776ab",lw = 0.5)
+ax.axhline(y=1, linestyle = "--", c = "#3776ab",lw = 0.5)
+plt.text(x = 1, y=1.01, s = "$baseline$",fontsize=8, ha='center', va='center')
 texts = [plt.text(x = x, y=y, s = "$"+s+"$",fontsize=8, ha='center', va='center') for (x,y,c,s) in plot_info]
 scatters = [ax.scatter(x = x, y=y, s = 4, c =c) for (x,y,c,_) in plot_info]
+scatters.append(ax.scatter(x = [1], y=[1], s = 4, c ="#3776ab"))
 adjust_text(texts,add_objects=scatters, arrowprops=dict(arrowstyle="-", color='k', lw=0.1),ax= ax)
 legend_elements = [Line2D([0], [0], marker='s', color='w', label=k,
                           markerfacecolor=v, markersize=14) for k,v in colors.items()  ]
-legend_elements = [Line2D([0], [0], color='b', lw=1, label='baseline', linestyle = "--")] +legend_elements
+legend_elements = [Line2D([0], [0], marker='s', color='w',markerfacecolor="#3776ab",markersize=14, label='baseline', linestyle = "--")] +legend_elements
 #plt.plot([x for x,y in frontier],[y for x,y in frontier], c = "k", lw=0.1)
 
 plt.xlabel("mse",fontsize=10)
 plt.ylabel("stability",fontsize=10)
-plt.ylim((0.05,1.05))
+plt.ylim((0.05,1.1))
 plt.xlim((0.98,1.025))
 plt.legend(loc='upper right' , handles=legend_elements,fontsize="10")
-plt.savefig(f"StableTrees_examples\plots\\example_mse_simulated_BABU.png")
+plt.savefig(f"StableTrees_examples\plots\\example_mse_simulated_BABU_09_05.png")
 plt.close()
 
     

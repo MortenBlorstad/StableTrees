@@ -9,7 +9,7 @@
 
 using Eigen::Dynamic;
 
-
+#include <mutex>
 using dVector = Eigen::Matrix<double,Dynamic,1>;
 using dMatrix = Eigen::Matrix<double,Dynamic,Dynamic>;
 using dArray = Eigen::Array<double,Eigen::Dynamic,1>;
@@ -17,7 +17,7 @@ using namespace std;
 
 
 
-static unsigned int seed=1234;
+static thread_local unsigned int seed=1234;
 
 void set_seed(unsigned int s)
 {
@@ -34,9 +34,10 @@ int get_seed()
 */
 double rnchisq(double df, double lambda)
 {
+    
     //thread_local 
-    std::mt19937 gen(seed);
-    seed = 36969*(seed & 0177777) + (seed>>16);
+    thread_local std::mt19937 gen(seed);
+    //seed = 36969*(seed & 0177777) + (seed>>16);
     if (df < 0.0 || lambda <0.0){
 	    return std::nanf("");
     }
@@ -66,10 +67,11 @@ double rnchisq(double df, double lambda)
  */
 dVector cir_sim_vec(int m)
 {
+    
     //thread_local 
     std::gamma_distribution<> rgamma(0.5, 2.0 );
-    std::mt19937 gen(seed);
-    seed = 36969*(seed & 0177777) + (seed>>16);
+    thread_local std::mt19937 gen(seed);
+    //seed = 36969*(seed & 0177777) + (seed>>16);
     double EPS = 1e-12;
     
     // Find original time of sim: assumption equidistant steps on u\in(0,1)

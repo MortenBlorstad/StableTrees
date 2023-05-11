@@ -55,7 +55,7 @@ void RandomForestBABU::learn(const dMatrix X, const dVector y, const dVector wei
     iVector keep_cols = iVector::LinSpaced(X.cols(), 0, X.cols()-1).array();
     iMatrix bootstrap_indices = sample_indices(0, y.size());
     int num_procs = omp_get_num_procs();
-    #pragma omp parallel for //num_threads(num_procs)
+    #pragma omp parallel for num_threads(num_procs)
     for (int i = 0; i < n_estimator; i++) {
         forest[i] = AbuTree( _criterion, max_depth,  min_split_sample, min_samples_leaf,  adaptive_complexity, max_features, 1, i);
     }
@@ -68,9 +68,9 @@ void RandomForestBABU::learn(const dMatrix X, const dVector y, const dVector wei
         //printf("l %d %d  %f %d %d %d %f %i \n", _criterion, max_depth, min_split_sample , min_samples_leaf,  adaptive_complexity,  max_features,1.0,  i);
         forest[i].learn(X_b,y_b, weights_b);  
     }
-    #pragma omp parallel for //num_threads(num_procs)
+    
+    #pragma omp parallel for num_threads(num_procs)
     for (int b = 0; b < bumping_iterations; b++){
-        #pragma omp parallel for
         for (int i = 0; i < n_estimator; i++)
         {
             iVector ind = bootstrap_indices.col(i);
@@ -120,7 +120,7 @@ iMatrix RandomForestBABU::sample_indices(int start, int end){
     iMatrix bootstrap_indices_(end-start,this->n_estimator);
     //printf("max_threads %d\n", max_threads);
     int num_procs = omp_get_num_procs();
-    //#pragma omp parallel for num_threads(num_procs)
+    #pragma omp parallel for num_threads(num_procs)
     for (int b = 0; b < n_estimator; b++) {
         std::mt19937 gen(b);
         for (int i = 0; i < end-start; i++) {

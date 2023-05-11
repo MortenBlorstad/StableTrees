@@ -59,7 +59,7 @@ X = np.hstack((X1,X2,X3,X4))
 
 colors = {"Case 1":"#E69F00", "Case 2": "#009E73", "Case 3":"#CC79A7"}
 #markers = {"baseline":"o", "NU": "v", "TR":"^", "TR":"s", "SL":"D","ABU":"+", "BABU": "*" }
-markers = {"baseline":"$B$", "TR1":"TR_{0,25}", "TR2":"TR_{0,10}","TR3":"TR_{0,5}",
+markers = {"baseline":"baseline", "TR1":"TR_{0,25}", "TR2":"TR_{0,10}","TR3":"TR_{0,5}",
             "TR4":"TR_{5,25}", "TR5":"TR_{5,10}","TR6":"TR_{5,5}",
             "TR7":"TR_{10,25}", "TR8":"TR_{10,10}","TR9":"TR_{10,5}",}
 
@@ -76,10 +76,9 @@ params = {"ytick.color" : "black",
           'text.latex.preamble': r"\usepackage{amsmath}",
           "font.serif" : ["Computer Modern Serif"]}
 #fig, axes = plt.subplots(nrows=3, ncols=2, figsize=(8.27, 11),dpi=500)#
-fig, ax  = plt.subplots(dpi=500, figsize=(8.27/3, 11/2))
+fig, ax  = plt.subplots(dpi=500) #, figsize=(3.5, 3)
 plt.rcParams.update(params)
 for case, info in cases.items():
-        print(case)
         np.random.seed(SEED)
         features = info["features"]
         p = info["p"]
@@ -90,21 +89,19 @@ for case, info in cases.items():
         models = {  
                         "baseline": BaseLineTree(criterion = criterion,min_samples_leaf=5, adaptive_complexity=True),
                         "TR1":TreeReevaluation(criterion = criterion,min_samples_leaf=5, adaptive_complexity=True,delta=0.25,alpha=0.0),
-                        # "TR2":TreeReevaluation(criterion = criterion,min_samples_leaf=5, adaptive_complexity=True,delta=0.1,alpha=0.0),
-                        # "TR3":TreeReevaluation(criterion = criterion,min_samples_leaf=5, adaptive_complexity=True,delta=0.05,alpha=0.0),
-                        # "TR4":TreeReevaluation(criterion = criterion,min_samples_leaf=5, adaptive_complexity=True,delta=0.25,alpha=0.05),
-                        # "TR5":TreeReevaluation(criterion = criterion,min_samples_leaf=5, adaptive_complexity=True,delta=0.1,alpha=0.05),
-                        # "TR6":TreeReevaluation(criterion = criterion,min_samples_leaf=5, adaptive_complexity=True,delta=0.05,alpha=0.05),
-                        # "TR7":TreeReevaluation(criterion = criterion,min_samples_leaf=5, adaptive_complexity=True,delta=0.25,alpha=0.1),
-                        # "TR8":TreeReevaluation(criterion = criterion,min_samples_leaf=5, adaptive_complexity=True,delta=0.1,alpha=0.1),
-                        # "TR9":TreeReevaluation(criterion = criterion,min_samples_leaf=5, adaptive_complexity=True,delta=0.05,alpha=0.1),
+                        "TR2":TreeReevaluation(criterion = criterion,min_samples_leaf=5, adaptive_complexity=True,delta=0.1,alpha=0.0),
+                        "TR3":TreeReevaluation(criterion = criterion,min_samples_leaf=5, adaptive_complexity=True,delta=0.05,alpha=0.0),
+                        "TR4":TreeReevaluation(criterion = criterion,min_samples_leaf=5, adaptive_complexity=True,delta=0.25,alpha=0.05),
+                        "TR5":TreeReevaluation(criterion = criterion,min_samples_leaf=5, adaptive_complexity=True,delta=0.1,alpha=0.05),
+                        "TR6":TreeReevaluation(criterion = criterion,min_samples_leaf=5, adaptive_complexity=True,delta=0.05,alpha=0.05),
+                        "TR7":TreeReevaluation(criterion = criterion,min_samples_leaf=5, adaptive_complexity=True,delta=0.25,alpha=0.1),
+                        "TR8":TreeReevaluation(criterion = criterion,min_samples_leaf=5, adaptive_complexity=True,delta=0.1,alpha=0.1),
+                        "TR9":TreeReevaluation(criterion = criterion,min_samples_leaf=5, adaptive_complexity=True,delta=0.05,alpha=0.1),
                         }
         preds  = {k :np.zeros((200,100)) for k in models.keys()}
         stability = {k :[] for k in models.keys()}
         performance = {k :[] for k in models.keys()}
         for i,(train_index, test_index) in enumerate(kf.split(x)):
-                print(i)
-
                 X_12, y_12 = x[train_index],y[train_index]
                 X_test,y_test = x[test_index],y[test_index]
                 X1,X2,y1,y2 =  train_test_split(X_12, y_12, test_size=0.5, random_state=SEED)
@@ -129,9 +126,10 @@ for case, info in cases.items():
             print(f"test - mse: {np.mean(performance[name]):.3f} ({np.mean(performance[name])/mse_scale:.2f}), stability: {np.mean(stability[name]):.3f} ({np.mean(stability[name])/S_scale:.2f})")
             print("="*80)
             if name != "baseline":
-                    x = np.mean((performance[name]))/mse_scale
-                    y = np.mean(stability[name])/S_scale
-                    plot_info.append((x,y,colors[case],markers[name]))
+                x = np.mean((performance[name]))/mse_scale
+                y = np.mean(stability[name])/S_scale
+
+                plot_info.append((x,y,colors[case],markers[name]))
 
         print(" ")
 from matplotlib.lines import Line2D
@@ -139,6 +137,12 @@ from matplotlib.lines import Line2D
 # X = np.zeros((len(plot_info), 2))
 # X[:,0] = [x for (x,y,c,s) in plot_info]
 # X[:,1] = [y for (x,y,c,s) in plot_info]
+
+X = np.zeros((len(plot_info)+1, 2))
+X[1:,0] = [x for (x,y,c,s) in plot_info]
+X[1:,1] = [y for (x,y,c,s) in plot_info]
+X[0,0] = 1
+X[0,1] = 1
 # for i in range(X.shape[0]):
 #     if is_pareto_optimal(i, X):
 #         frontier.append((X[i,0],X[i,1]))
@@ -151,18 +155,21 @@ from matplotlib.lines import Line2D
 #       print(frontier )
 
 texts = [plt.text(x = x, y=y, s = "$"+s+"$",fontsize=8, ha='center', va='center') for (x,y,c,s) in plot_info]
+plt.text(x = 1, y=1.01, s = "$baseline$",fontsize=8, ha='center', va='center')
 scatters = [ax.scatter(x = x, y=y, s = 4, c =c) for (x,y,c,_) in plot_info]
-adjust_text(texts,add_objects=scatters, arrowprops=dict(arrowstyle="-", color='k', lw=0.1),ax= ax)
+scatters.append(ax.scatter(x = [1], y=[1], s = 4, c ="#3776ab"))
+adjust_text(texts,x =X[:,0], y = X[:,1],add_objects=scatters, arrowprops=dict(arrowstyle="-", color='k', lw=0.1),ax= ax, force_text = (0.3,0.3))#
+# adjust_text(texts,add_objects=scatters, arrowprops=dict(arrowstyle="-", color='k', lw=0.1),ax= ax)
 legend_elements = [Line2D([0], [0], marker='s', color='w', label=k,
                           markerfacecolor=v, markersize=14) for k,v in colors.items()  ]
-legend_elements = [Line2D([0], [0], color='b', lw=1, label='baseline', linestyle = "--")] +legend_elements
+legend_elements = [Line2D([0], [0], marker='s', color='w',markerfacecolor="#3776ab",markersize=14, label='baseline', linestyle = "--")] +legend_elements
 #plt.plot([x for x,y in frontier],[y for x,y in frontier], c = "k", lw=0.1)
-plt.axvline(x=1, linestyle = "--")
-plt.axhline(y=1, linestyle = "--")
+ax.axvline(x=1, linestyle = "--", c = "#3776ab",lw = 0.5)
+ax.axhline(y=1, linestyle = "--", c = "#3776ab",lw = 0.5)
 plt.xlabel("mse",fontsize=10)
 plt.ylabel("stability",fontsize=10)
-plt.ylim((0.25,1.025))
-plt.xlim((0.995,1.06))
+plt.ylim((0.25,1.1))
+plt.xlim((0.99,1.06))
 plt.legend(loc='upper right' , handles=legend_elements,fontsize="10")
 plt.savefig(f"StableTrees_examples\plots\\example_mse_simulated_TR_07_05.png")
 plt.close()
