@@ -285,9 +285,9 @@ for train_index, test_index in kf.split(df.to_numpy()):
             #"SLrf4": RF("sl",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,gamma=0.75),
             #"SLrf5": RF("sl",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,gamma=0.9),
             #"ABUrf": RF("abu",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=True),
-            #"BABUrf1": RF("babu",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,bumping_iterations=1),
-            #"BABUrf3": RF("babu",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,bumping_iterations=5),
-            #"sklearn": GridSearchCV(DecisionTreeRegressor(criterion="poisson",random_state=0), parameters),
+            "BABUrf1": RF("babu",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,bumping_iterations=1),
+            "BABUrf3": RF("babu",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,bumping_iterations=5),
+            "sklearn": GridSearchCV(DecisionTreeRegressor(criterion="poisson",random_state=0), parameters),
             "poisReg": PoissonRegressor(solver="newton-cholesky"),
             #"glm":  smf.glm,
             # "TR": TreeReevaluation(criterion = criterion, max_depth=5, min_samples_leaf=5),
@@ -378,10 +378,28 @@ for name in models.keys():
         plot_info.append((x_r,y_r,colors[name],markers[name], x_abs,y_abs,x_se, y_se, x_abs_se, y_abs_se, markers_to_method[name], markers_to_m[name] ))
 print()
 print(plot_info)
+# import os
+# df = pd.DataFrame(plot_info, columns=['loss', 'stability', 'color', "marker", 'loss_abs','stability_abs','loss_se','stability_se','loss_abs_se','stability_abs_se',"method", "m"  ] )
+# if os.path.isfile('results/claim_freq_results.csv'):
+#     old_df =pd.read_csv('results/claim_freq_results.csv')
+#     for i,m in enumerate(df.marker):
+#         index = old_df.loc[(old_df["marker"] ==m)].index
+#         values  = df.iloc[i]
+#         if len(index)>0:
+#             old_df.iloc[index]=values
+#         else:
+#             print(values)
+#             old_df  = old_df.append(values, ignore_index=True)
+
+#     old_df.to_csv('results/claim_freq_results.csv', index=False)
+# else:
+#      df.to_csv('results/claim_freq_results.csv', index=False)
+
+
 import os
 df = pd.DataFrame(plot_info, columns=['loss', 'stability', 'color', "marker", 'loss_abs','stability_abs','loss_se','stability_se','loss_abs_se','stability_abs_se',"method", "m"  ] )
-if os.path.isfile('results/claim_freq_results.csv'):
-    old_df =pd.read_csv('results/claim_freq_results.csv')
+if os.path.isfile('results/claim_freq_results_rf_mem.csv'):
+    old_df =pd.read_csv('results/claim_freq_results_rf_mem.csv')
     for i,m in enumerate(df.marker):
         index = old_df.loc[(old_df["marker"] ==m)].index
         values  = df.iloc[i]
@@ -391,6 +409,6 @@ if os.path.isfile('results/claim_freq_results.csv'):
             print(values)
             old_df  = old_df.append(values, ignore_index=True)
 
-    old_df.to_csv('results/claim_freq_results.csv', index=False)
+    old_df.to_csv('results/claim_freq_results_rf_mem.csv', index=False)
 else:
-     df.to_csv('results/claim_freq_results.csv', index=False)
+     df.to_csv('results/claim_freq_results_rf_mem.csv', index=False)
