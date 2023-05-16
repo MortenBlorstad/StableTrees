@@ -23,7 +23,7 @@ plt.rcParams.update(plot_params)
 
 import itertools
 method = "tree"
-df =pd.read_csv(f'results/claim_freq_results.csv')
+df =pd.read_csv(f'results/claim_freq_results_tree_1505.csv')
 
 plot_info = df
 frontier = []
@@ -55,7 +55,7 @@ texts.append(ax.text(x = 0.25554634862817177, y=2.636053784373512e-05, s = r"$\m
 adjust_text(texts,x =X[:,0], y = X[:,1],add_objects=scatters, arrowprops=dict(arrowstyle="-", color='k', lw=0.1),ax= ax, force_text = (0.3,0.3))#
 ax.set_xlabel("Poisson deviance",fontsize=10)
 ax.set_ylabel('stability',fontsize=10)
-
+ax.set_xlim(0.24875,0.2575 )
     
 colors2 = {"Baseline": "#1f77b4", "NU":"#D55E00", "SL":"#CC79A7", 
             "TR":"#009E73", 
@@ -81,5 +81,5 @@ ax.legend( handles=legend_elements,loc="center right",   # Position of legend
 plt.tight_layout()
 plt.subplots_adjust(right=0.84)
 #plt.show()
-plt.savefig(f"StableTrees_examples\plots\\claim_freq_pareto 08.05 with gtb.png")
+plt.savefig(f"StableTrees_examples\plots\\claim_freq_pareto 1505.png")
 plt.close()

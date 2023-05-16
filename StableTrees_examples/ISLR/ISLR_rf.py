@@ -148,8 +148,8 @@ for ds,target, feature in zip(datasets,targets, features):
                     # "SL5": RF("sl",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False,gamma=0.90),
                     "ABU": RF("abu",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False),
                     "BABU1": RF("babu",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False,bumping_iterations=1),
-                        "BABU2": RF("babu",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False,bumping_iterations=3),
-                        "BABU3": RF("babu",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False,bumping_iterations=5),
+                       "BABU2": RF("babu",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False,bumping_iterations=3),
+                       "BABU3": RF("babu",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False,bumping_iterations=5),
                 }
        
         for name, model in models.items():
@@ -245,24 +245,9 @@ df = pd.DataFrame(df_list, columns=["dataset",'loss', 'stability', 'color', "mar
 #     df.to_csv('StableTrees_examples/results/randomforest_ISLR_results.csv', index=False)
 
 
-# import os
-# if os.path.isfile('results/randomforest_ISLR_results10.csv'):
-#     old_df =pd.read_csv('results/randomforest_ISLR_results10.csv')
-#     for i,(d,m) in enumerate(zip(df.dataset, df.marker)):
-#         index = old_df.loc[(old_df["dataset"] == d) & (old_df["marker"] ==m)].index
-#         values  = df.iloc[i]
-#         if len(index)>0:
-#             old_df.iloc[index]=values
-#         else:
-#             print(values)
-#             old_df  = old_df.append(values, ignore_index=True)
-#     old_df.to_csv('results/randomforest_ISLR_results10.csv', index=False)
-# else:
-#     df.to_csv('results/randomforest_ISLR_results10.csv', index=False)
-
 import os
-if os.path.isfile('results/randomforest_ISLR_results10_mem.csv'):
-    old_df =pd.read_csv('results/randomforest_ISLR_results10_mem.csv')
+if os.path.isfile('results/randomforest_ISLR_results10_1205_1.csv'):
+    old_df =pd.read_csv('results/randomforest_ISLR_results10_1205_1.csv')
     for i,(d,m) in enumerate(zip(df.dataset, df.marker)):
         index = old_df.loc[(old_df["dataset"] == d) & (old_df["marker"] ==m)].index
         values  = df.iloc[i]
@@ -271,8 +256,23 @@ if os.path.isfile('results/randomforest_ISLR_results10_mem.csv'):
         else:
             print(values)
             old_df  = old_df.append(values, ignore_index=True)
-    old_df.to_csv('results/randomforest_ISLR_results10_mem.csv', index=False)
+    old_df.to_csv('results/randomforest_ISLR_results10_1205_1.csv', index=False)
 else:
-    df.to_csv('results/randomforest_ISLR_results10_mem.csv', index=False)
+    df.to_csv('results/randomforest_ISLR_results10_1205_1.csv', index=False)
+
+# import os
+# if os.path.isfile('results/randomforest_ISLR_results10_mem.csv'):
+#     old_df =pd.read_csv('results/randomforest_ISLR_results10_mem.csv')
+#     for i,(d,m) in enumerate(zip(df.dataset, df.marker)):
+#         index = old_df.loc[(old_df["dataset"] == d) & (old_df["marker"] ==m)].index
+#         values  = df.iloc[i]
+#         if len(index)>0:
+#             old_df.iloc[index]=values
+#         else:
+#             print(values)
+#             old_df  = old_df.append(values, ignore_index=True)
+#     old_df.to_csv('results/randomforest_ISLR_results10_mem.csv', index=False)
+# else:
+#     df.to_csv('results/randomforest_ISLR_results10_mem.csv', index=False)
 
 
