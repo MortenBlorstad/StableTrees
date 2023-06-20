@@ -307,10 +307,7 @@ for train_index, test_index in kf.split(df.to_numpy()):
             preprocessor = glm_preprocessor            
         else:
             preprocessor = tree_preprocessor
-        if name == "glm":
-            m = smf.glm("Frequency~DriverAge_binned+Density_binned+CarAge_binned+brandF+Power_glm+Gas", df_1, family=sm.families.Poisson(), freq_weights=df_1['Exposure']).fit()
-            pred1 = m.predict(df_test) 
-        elif name == "baseGTB":
+        if name == "baseGTB":
             model.fit(preprocessor.transform(df_1),df_1.ClaimNb,verbose = 25, offset=np.log(df_1["Exposure"]))
             pred1 = model.predict(preprocessor.transform(df_test),offset=np.log(df_test.Exposure) )
             print(pred1)
