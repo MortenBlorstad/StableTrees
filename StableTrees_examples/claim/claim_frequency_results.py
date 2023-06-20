@@ -197,7 +197,6 @@ models = {
             "BABUrf3": RF("babu",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,bumping_iterations=5),
             "sklearn": GridSearchCV(DecisionTreeRegressor(criterion="poisson",random_state=0), parameters),
             "poisReg": PoissonRegressor(solver="newton-cholesky"),
-            "glm":  smf.glm,
             "TR": TreeReevaluation(criterion = criterion, max_depth=5, min_samples_leaf=5),
             "SL": StabilityRegularization(criterion = criterion, max_depth=5, min_samples_leaf=5),
             "ABU": AbuTree(criterion = criterion, max_depth=5, min_samples_leaf=5),
