@@ -137,6 +137,14 @@ class BaseLineTree(BaseRegressionTree):
                 min_samples_split samples.
     min_samples_split : int,  default = 2.
                 Hyperparameter to determine the minimum number of samples required in order to split a internel node.
+    min_samples_leaf : int,  default = 5.
+                Hyperparameter to determine the minimum number of samples required in a leaf node.
+    adaptive_complexity : bool,  default = False.
+                Hyperparameter to determine wheter find the tree complexity adaptively.
+    max_features : bool,  default = None.
+                The number of features to consider when looking for the best split.
+    random_state : bool,  default = None.
+                Controls the randomness of the tree.
     """
 
     def __init__(self, *,criterion : str = "mse", max_depth : int = None, min_samples_split : int = 2,min_samples_leaf:int = 5,
@@ -176,6 +184,14 @@ class SklearnTree(DecisionTreeRegressor):
                 min_samples_split samples.
     min_samples_split : int,  default = 2.
                 Hyperparameter to determine the minimum number of samples required in order to split a internel node.
+    min_samples_leaf : int,  default = 5.
+                Hyperparameter to determine the minimum number of samples required in a leaf node.
+    adaptive_complexity : bool,  default = False.
+                Hyperparameter to determine wheter find the tree complexity adaptively.
+    max_features : bool,  default = None.
+                The number of features to consider when looking for the best split.
+    random_state : bool,  default = None.
+                Controls the randomness of the tree.
 
     """
     
@@ -204,6 +220,14 @@ class NaiveUpdate(BaseRegressionTree):
                 min_samples_split samples.
     min_samples_split : int,  default = 2.
                 Hyperparameter to determine the minimum number of samples required in order to split a internel node.
+    min_samples_leaf : int,  default = 5.
+                Hyperparameter to determine the minimum number of samples required in a leaf node.
+    adaptive_complexity : bool,  default = False.
+                Hyperparameter to determine wheter find the tree complexity adaptively.
+    max_features : bool,  default = None.
+                The number of features to consider when looking for the best split.
+    random_state : bool,  default = None.
+                Controls the randomness of the tree.
 
     """
     
@@ -237,6 +261,18 @@ class TreeReevaluation(BaseRegressionTree):
                 min_samples_split samples.
     min_samples_split : int,  default = 2.
                 Hyperparameter to determine the minimum number of samples required in order to split a internel node.
+    min_samples_leaf : int,  default = 5.
+                Hyperparameter to determine the minimum number of samples required in a leaf node.
+    adaptive_complexity : bool,  default = False.
+                Hyperparameter to determine wheter find the tree complexity adaptively.
+    max_features : bool,  default = None.
+                The number of features to consider when looking for the best split.
+    random_state : int,  default = None.
+                Controls the randomness of the tree.
+    delta : float,  default = 0.1.
+                Determines the confidence level, 1-delta.
+    alpha : float,  default = None.
+                Determines the minimum improvements of replace update subtree.
 
     """
     
@@ -272,6 +308,16 @@ class StabilityRegularization(BaseRegressionTree):
                 min_samples_split samples.
     min_samples_split : int,  default = 2.
                 Hyperparameter to determine the minimum number of samples required in order to split a internel node.
+    min_samples_leaf : int,  default = 5.
+                Hyperparameter to determine the minimum number of samples required in a leaf node.
+    adaptive_complexity : bool,  default = False.
+                Hyperparameter to determine wheter find the tree complexity adaptively.
+    max_features : bool,  default = None.
+                The number of features to consider when looking for the best split.
+    random_state : int,  default = None.
+                Controls the randomness of the tree.
+    gamma : float,  default = 0.5.
+                Determines the strength of the stability regularization.
 
     """
     
@@ -305,6 +351,14 @@ class AbuTree(BaseRegressionTree):
                 min_samples_split samples.
     min_samples_split : int,  default = 2.
                 Hyperparameter to determine the minimum number of samples required in order to split a internel node.
+    min_samples_leaf : int,  default = 5.
+                Hyperparameter to determine the minimum number of samples required in a leaf node.
+    adaptive_complexity : bool,  default = False.
+                Hyperparameter to determine wheter find the tree complexity adaptively.
+    max_features : bool,  default = None.
+                The number of features to consider when looking for the best split.
+    random_state : int,  default = None.
+                Controls the randomness of the tree.
 
     """
     
@@ -351,7 +405,16 @@ class BABUTree(BaseRegressionTree):
                 min_samples_split samples.
     min_samples_split : int,  default = 2.
                 Hyperparameter to determine the minimum number of samples required in order to split a internel node.
-
+    min_samples_leaf : int,  default = 5.
+                Hyperparameter to determine the minimum number of samples required in a leaf node.
+    adaptive_complexity : bool,  default = False.
+                Hyperparameter to determine wheter find the tree complexity adaptively.
+    max_features : bool,  default = None.
+                The number of features to consider when looking for the best split.
+    random_state : int,  default = None.
+                Controls the randomness of the tree.
+    bumping_iterations : int,  default = 5.
+                Determines the number of bumping interations.
     """
     
     def __init__(self, *,criterion = "mse", max_depth = None, min_samples_split = 5,min_samples_leaf:int = 5, adaptive_complexity : bool = False,
@@ -415,6 +478,14 @@ class BABUTreeI(BaseRegressionTree):
                 min_samples_split samples.
     min_samples_split : int,  default = 2.
                 Hyperparameter to determine the minimum number of samples required in order to split a internel node.
+    min_samples_leaf : int,  default = 5.
+                Hyperparameter to determine the minimum number of samples required in a leaf node.
+    adaptive_complexity : bool,  default = False.
+                Hyperparameter to determine wheter find the tree complexity adaptively.
+    max_features : bool,  default = None.
+                The number of features to consider when looking for the best split.
+    random_state : int,  default = None.
+                Controls the randomness of the tree.
 
     """
     
@@ -482,6 +553,14 @@ class STTree(BaseRegressionTree):
                 min_samples_split samples.
     min_samples_split : int,  default = 2.
                 Hyperparameter to determine the minimum number of samples required in order to split a internel node.
+    min_samples_leaf : int,  default = 5.
+                Hyperparameter to determine the minimum number of samples required in a leaf node.
+    adaptive_complexity : bool,  default = False.
+                Hyperparameter to determine wheter find the tree complexity adaptively.
+    max_features : bool,  default = None.
+                The number of features to consider when looking for the best split.
+    random_state : bool,  default = None.
+                Controls the randomness of the tree.
 
     """
     

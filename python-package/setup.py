@@ -6,7 +6,7 @@ import pybind11; print(pybind11.__file__)
 from pybind11.setup_helpers import Pybind11Extension
 
 
-__version__ = "0.0.1"
+__version__ = "0.0.2"
 
 ext_modules = [
     Pybind11Extension(
@@ -38,7 +38,7 @@ class BuildExt(build_ext):
 
 setup(
     name='stabletrees',
-    version='0.1.0',    
+    version='0.1.1',    
     description='Regression tree with stable update',
     author='Morten Blørstad',
     author_email='mblorstad@email.com',

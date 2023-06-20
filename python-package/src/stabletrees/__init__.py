@@ -13,11 +13,7 @@ from stabletrees.tree import BABUTreeI
 from stabletrees.tree import STTree
 
 
-from stabletrees.random_forest import RandomForest
-from stabletrees.random_forest import NaiveRandomForest
-from stabletrees.random_forest import AbuRandomForest
-from stabletrees.random_forest import ReevaluateRandomForest
-from stabletrees.random_forest import StackedRF
+from stabletrees.random_forest import RF
 from stabletrees.AGTBoost import AGTBoost
 
 
