@@ -1,10 +1,13 @@
+#######################
+# Script to plot pareto frontier for the ISLR datasets for the tree-based methods
+#######################
+
 from matplotlib import pyplot as plt
 from adjustText import adjust_text
 from pareto_efficient import is_pareto_optimal
 import numpy as np
 import pandas as pd
 plt.rcParams.update({'figure.autolayout': True})
-
 from matplotlib.lines import Line2D
 from matplotlib.ticker import FormatStrFormatter
 plot_params = {"ytick.color" : "black",
@@ -23,12 +26,17 @@ plt.rcParams.update(plot_params)
 
 college_box_plot_info = []
 import itertools
-method =  "tree" #"randomforest" #"agtboost" # 
-df =pd.read_csv(f'results/{method}_ISLR_results_1305.csv')
+
+
+# switch to plot pareto frontier for different tree-based methods
+method =  "agtboost" # "tree" #"randomforest" #
+df =pd.read_csv(f'results/{method}_ISLR_results_10_5.csv')
 #df =pd.read_csv('results/randomforest_ISLR_results.csv')
 
 datasets =["Boston", "Carseats","College", "Hitters", "Wage"]
 
+
+point_style = {"tree":"o", "randomforest":"v", "agtboost": "D"}
 
 print(df)
 print(df[df.dataset == "Boston"])
@@ -53,10 +61,6 @@ for ds,ax in zip(datasets,axes[:-1]):
             frontier.append((X[i,0],X[i,1]))
     frontier = sorted(frontier)
 
-    # ax2 = ax.twinx()
-    # ax3 = ax.twiny()
-    # [ax2.scatter(x = row['loss'] , y=row['stability'] , s = 1, c =c,alpha = 0) for index, row  in plot_info.iterrows()]
-    # #[ax3.scatter(x = x_, y=y, s = 1, c =c,alpha = 0) for index, row  in plot_info.iterrows()]
 
     print(frontier)
     frontier = [ (frontier[0][0], 2) ] + frontier+ [ (2, frontier[-1][1]) ]
@@ -65,7 +69,7 @@ for ds,ax in zip(datasets,axes[:-1]):
     ax.axhline(y=1, linestyle = "--", c = "#3776ab", lw = 0.5)
     ax.set_title(ds,fontsize = 10)
     
-    scatters = [ax.scatter(x = row['loss'], y=row['stability'], s = 6, c =row['color'],marker = "o") for index, row  in plot_info.iterrows()]
+    scatters = [ax.scatter(x = row['loss'], y=row['stability'], s = 6, c =row['color'],marker = point_style[method]) for index, row  in plot_info.iterrows()]
     #scatters.append(ax.scatter(x=[1],y=[1], c = "#3776ab",s = 6,marker = "v"))
     texts = [ax.text(x = row['loss'], y=row['stability'], s = r"$\mathbf{"+row['marker']+"}$",fontsize=8,weight='heavy') if (row['loss'],row['stability']) in frontier else ax.text(x = row['loss'], y=row['stability'], s = "$"+row['marker']+"$",fontsize=8) for index, row  in plot_info.iterrows()]
     #texts.append(ax.text(x = 1, y=1, s = r"$baseline$",fontsize=8) )
@@ -123,5 +127,5 @@ axes[-1].axis("off")
 # adjust spacing between subplots
 fig.tight_layout()
 #plt.show()
-plt.savefig(f"StableTrees_examples\plots\\real_data_mse_pareto_{method}_1305.png")
+plt.savefig(f"StableTrees_examples\plots\\real_data_mse_pareto_{method}.png")
 plt.close()
