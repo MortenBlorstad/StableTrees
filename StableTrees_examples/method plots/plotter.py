@@ -1,6 +1,24 @@
 
 from matplotlib import pyplot as plt
 import numpy as np
+
+# colnames = {0: "age",1 : "sex", 2:"bmi", 3:"bp", 4: "tc", 5: "ldl", 6: "hdl", 7: "tch", 8:"ltg", 9: "glu" }
+
+
+colnames = {0: "CompPrice",
+            1 : "Income",
+            2:"Advertising",
+            3:"Population", 
+            4: "Price", 
+            5: "ShelveLoc",
+            6:"age", 
+            7: "Education", 
+            8:"Urban", 
+            9: "US" }
+
+
+
+font_size = 8
 def plot(node, index = 0, indices = []):
         '''
         plots the tree. A visualisation of the tree
@@ -30,17 +48,20 @@ def __plot(node,x=0,y=-1,off_x = 100000,off_y = 10, color = "royalblue", index =
         #f"impurity: {node.score:.3f}\n",
         f"samples: {node.n_samples}"))
         
-        plt.plot(x+10, y-5, alpha=1) 
-        plt.plot(x-10, y-5, alpha=1) 
-        plt.text(x, y, textstr, fontsize=20, bbox=props,ha='center')
+        plt.plot(x+10, y, alpha=1) 
+        plt.plot(x-10, y, alpha=1) 
+        plt.text(x, y, textstr, fontsize=font_size-1, bbox=props,ha='center')
         #plt.text(x, y,f"{node.prediction:.4f}", fontsize=8,ha='center')
+        
         return 
   
     
 
     textstr = ''.join((
-        f"$x_{node.split_feature} \leq{node.split_value:.4f}$ \n",
-        f"samples: {node.n_samples}"))
+        #f"$x_{node.split_feature} \leq{node.split_value:.4f}$ \n",
+        f"${colnames[node.split_feature]} \leq{node.split_value:.1f}$ \n",
+        f"samples: {node.n_samples}"
+        ))
 
 
         
@@ -48,9 +69,11 @@ def __plot(node,x=0,y=-1,off_x = 100000,off_y = 10, color = "royalblue", index =
     #plt.text(x, y,f"X[{node.feature}] <= {node.value:.4f}", fontsize=8,ha='center')
     #plt.text(x, y-2,f"impurity: {node.score:.3f}", fontsize=8,ha='center')
     #plt.text(x, y-4,f"nsamples: {node.nsamples}", fontsize=8,ha='center')
-    plt.text(x, y, textstr, fontsize=20, bbox=props,ha='center')
+    plt.text(x, y, textstr, fontsize=font_size, bbox=props,ha='center')
     plt.annotate("", xy=(new_x, new_y+4), xytext=(x-2, y-1),
         arrowprops=dict(arrowstyle="->"))
+    bbox = plt.gca().get_children()[0].get_bbox_patch()
+    bbox.set_width(0.5)
     __plot(node.get_left_node(),new_x, new_y, off_x*0.5,color = color, index= index*2+1, indices=indices)
             
     
@@ -58,9 +81,11 @@ def __plot(node,x=0,y=-1,off_x = 100000,off_y = 10, color = "royalblue", index =
     # plt.text(x, y,f"X[{node.feature}] <= {node.value:.4f}", fontsize=8,ha='center')
     # plt.text(x, y-2,f"impurity: {node.score:.3f}", fontsize=8,ha='center')
     # plt.text(x, y-4,f"nsamples: {node.nsamples}", fontsize=8,ha='center')
-    plt.text(x, y, textstr, fontsize=20, bbox=props,ha='center')
+    plt.text(x, y, textstr, fontsize=font_size, bbox=props,ha='center')
     plt.annotate("", xy=(new_x , new_y+4), xytext=(x+2, y-1),
         arrowprops=dict(arrowstyle="->"))
+    bbox = plt.gca().get_children()[0].get_bbox_patch()
+    bbox.set_width(0.5)
     __plot(node.get_right_node(), new_x, new_y,off_x*0.5,color = color, index= index*2+2, indices=indices)
     
 

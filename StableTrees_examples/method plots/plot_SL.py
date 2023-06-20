@@ -1,5 +1,5 @@
 from sklearn.datasets import load_diabetes
-from stabletrees import NaiveUpdate
+from stabletrees import StabilityRegularization
 import numpy as np
 from matplotlib import pyplot as plt
 from plotter import plot
@@ -29,19 +29,19 @@ X = data.drop("Sales", axis=1).to_numpy()
 
 X1,X2, y1, y2 = train_test_split(X,y,test_size=0.5,random_state=0)
 
-t = NaiveUpdate(max_depth=2).fit(X1,y1)
+t = StabilityRegularization(max_depth=2,gamma=0.25).fit(X1,y1)
 
 plt.figure(figsize=(4, 4) ,dpi=500)
 
 # plot(t.root)
 # plt.tight_layout()
-# plt.savefig(f"StableTrees_examples\plots\\method_example_NU_part1.png",bbox_inches='tight')
+# plt.savefig(f"StableTrees_examples\plots\\method_example_SL_part1.png",bbox_inches='tight')
 # plt.close()
 t.update(X,y)
 
 plt.figure(figsize=(4, 4) ,dpi=500)
 plot(t.root)
 plt.tight_layout()
-plt.savefig(f"StableTrees_examples\plots\\method_example_NU_part2.png",bbox_inches='tight')
+plt.savefig(f"StableTrees_examples\plots\\method_example_SL_part2.png",bbox_inches='tight')
 plt.close()
 

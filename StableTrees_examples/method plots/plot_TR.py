@@ -1,5 +1,5 @@
 from sklearn.datasets import load_diabetes
-from stabletrees import NaiveUpdate
+from stabletrees import TreeReevaluation
 import numpy as np
 from matplotlib import pyplot as plt
 from plotter import plot
@@ -29,19 +29,19 @@ X = data.drop("Sales", axis=1).to_numpy()
 
 X1,X2, y1, y2 = train_test_split(X,y,test_size=0.5,random_state=0)
 
-t = NaiveUpdate(max_depth=2).fit(X1,y1)
+t = TreeReevaluation(max_depth=2,delta=0.05,alpha=0.05).fit(X1,y1)
 
 plt.figure(figsize=(4, 4) ,dpi=500)
 
 # plot(t.root)
 # plt.tight_layout()
-# plt.savefig(f"StableTrees_examples\plots\\method_example_NU_part1.png",bbox_inches='tight')
+# plt.savefig(f"StableTrees_examples\plots\\method_example_TR_part1.png",bbox_inches='tight')
 # plt.close()
 t.update(X,y)
 
 plt.figure(figsize=(4, 4) ,dpi=500)
-plot(t.root)
+plot(t.root, indices=[2])
 plt.tight_layout()
-plt.savefig(f"StableTrees_examples\plots\\method_example_NU_part2.png",bbox_inches='tight')
+plt.savefig(f"StableTrees_examples\plots\\method_example_TR_part2.png",bbox_inches='tight')
 plt.close()
 

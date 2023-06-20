@@ -23,7 +23,7 @@ plt.rcParams.update(plot_params)
 
 import itertools
 method = "tree"
-df =pd.read_csv(f'results/claim_freq_results_tree_1505.csv')
+df =pd.read_csv(f'results/claim_freq_results_tree_2705.csv')
 
 plot_info = df
 frontier = []
@@ -81,5 +81,5 @@ ax.legend( handles=legend_elements,loc="center right",   # Position of legend
 plt.tight_layout()
 plt.subplots_adjust(right=0.84)
 #plt.show()
-plt.savefig(f"StableTrees_examples\plots\\claim_freq_pareto 1505.png")
+plt.savefig(f"StableTrees_examples\plots\\claim_freq_pareto 2705.png")
 plt.close()

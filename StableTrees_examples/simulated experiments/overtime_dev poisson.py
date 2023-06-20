@@ -116,5 +116,5 @@ for name, model in models.items():
 
 adjust_text(texts,add_objects=scatters, arrowprops=dict(arrowstyle="-", color='k', lw=0.1),ax= ax)
 plt.tight_layout()
-plt.savefig(f"StableTrees_examples\plots\\example_poisson_simulated_overtime.png")
+plt.savefig(f"StableTrees_examples\plots\\example_poisson_simulated_overtime_theory.png")
 plt.close()

@@ -144,7 +144,7 @@ iMatrix RandomForestNU::sample_indices(int start, int end){
     iMatrix bootstrap_indices_(end-start,this->n_estimator);
     //printf("max_threads %d\n", max_threads);
     int num_procs = omp_get_num_procs();
-    #pragma omp parallel for num_threads(num_procs)
+    //#pragma omp parallel for num_threads(num_procs)
     for (int b = 0; b < n_estimator; b++) {
         std::mt19937 gen(b);
         for (int i = 0; i < end-start; i++) {
