@@ -329,9 +329,6 @@ for train_index, test_index in kf.split(df.to_numpy()):
         elif name == "baseGTB":
             model.fit(preprocessor.transform(df_12),df_12.ClaimNb,verbose = 25, offset =np.log(df_12.Exposure))
             #print(params)
-        elif name == "glm":
-            m = smf.glm("Frequency~DriverAge_binned+Density_binned+CarAge_binned+brandF+Power_glm+Gas", df_1, family=sm.families.Poisson(), freq_weights=df_1['Exposure']).fit()
-            #print(params)
         else:
             model.update(preprocessor.transform(df_12),df_12.Frequency, sample_weight=df_12["Exposure"])
 
