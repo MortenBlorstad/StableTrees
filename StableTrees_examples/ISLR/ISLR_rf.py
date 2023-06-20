@@ -1,4 +1,4 @@
-from stabletrees.random_forest import RF, RandomForest, AbuRandomForest,MyRandomForestRegressor
+from stabletrees.random_forest import RF
 from sklearn.datasets import make_regression
 from sklearn.metrics import mean_squared_error
 from sklearn.model_selection import train_test_split,GridSearchCV,RepeatedKFold
@@ -69,7 +69,6 @@ criterion = "mse"
 models = {  
                        "baseline": RF("base",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=True),
                         "standard": RandomForestRegressor(n_estimators= 100,min_samples_leaf=5,random_state=0,max_features=0.33),
-                        "RandomForest": RandomForest(100,random_state=0),
                         "NU": RF("nu",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False),
                         "TR1": RF("tr",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False,alpha=0, delta=0.05),
                         "TR2": RF("tr",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False,alpha=0.05, delta=0.05),
@@ -83,8 +82,6 @@ models = {
                         "BABU1": RF("babu",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False,bumping_iterations=1),
                         "BABU2": RF("babu",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False,bumping_iterations=3),
                         "BABU3": RF("babu",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False,bumping_iterations=5),
-                        "abupy": AbuRandomForest(n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False, random_state=0),
-                        "sk" : MyRandomForestRegressor("abu",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False)
                         
                        
                 }
@@ -96,7 +93,7 @@ for ds,target, feature in zip(datasets,targets, features):
         continue
     iteration = 1
     kf = RepeatedKFold(n_splits= 10,n_repeats=1, random_state=SEED)
-    data = pd.read_csv("data/"+ ds+".csv") # load dataset
+    data = pd.read_csv("..//data//"+ ds+".csv") # load dataset
     
     # data preperation
     # data = data.dropna(axis=0, how="any") # remove missing values if any

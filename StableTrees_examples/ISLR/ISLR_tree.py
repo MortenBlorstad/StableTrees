@@ -91,7 +91,7 @@ for ds,target, feature in zip(datasets,targets, features):
     #     continue
     iteration = 1
     kf = RepeatedKFold(n_splits= 10,n_repeats=5, random_state=SEED)
-    data = pd.read_csv("data/"+ ds+".csv") # load dataset
+    data = pd.read_csv("..//data/"+ ds+".csv") # load dataset
     
 
     data = datapreprocess.data_preperation(ds)
@@ -132,7 +132,7 @@ for ds,target, feature in zip(datasets,targets, features):
                         "SL3": StabilityRegularization(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,gamma=0.5),
                         "SL4": StabilityRegularization(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,gamma=0.75),
                         "SL5": StabilityRegularization(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,gamma=0.9),
-                        "ABU": AbuTree(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True),
+                         "ABU": AbuTree(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True),
                         "BABU1": BABUTree(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,bumping_iterations=1),
                         "BABU2": BABUTree(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,bumping_iterations=3),
                         "BABU3": BABUTree(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,bumping_iterations=5),
@@ -192,7 +192,7 @@ for ds,target, feature in zip(datasets,targets, features):
         stability_SE = np.std(standard_stability[name])/np.sqrt(10)  #np.sqrt(len(mse[name]))
         stability_SE_norm = np.std(standard_stability[name]/S_scale)/np.sqrt(10) #/np.sqrt(len(mse[name]))
         print(f"test - mse: {loss_score:.3f} ({loss_SE:.3f}), stability: {stability_score:.3f} ({stability_SE:.3f})")
-        print(f"test - mse: {loss_score/mse_scale:.2f} ({loss_SE_norm:.2f}), stability: {stability_score/S_scale:.2f} ({stability_SE_norm:.2f})")
+        print(f"test - mse: {loss_score/mse_scale:.3f} ({loss_SE_norm:.2f}), stability: {stability_score/S_scale:.3f} ({stability_SE_norm:.2f})")
         print("="*80)
         mse_all[name] += [score/mse_scale for score in mse[name]]
         if name!= "standard":
@@ -260,18 +260,18 @@ df = pd.DataFrame(df_list, columns=["dataset",'loss', 'stability', 'color', "mar
 # else:
 #     df.to_csv('results/tree_ISLR_results_10_051.csv', index=False)
 
-import os
-import itertools
-if os.path.isfile('results/tree_ISLR_results_1305.csv'):
-    old_df =pd.read_csv('results/tree_ISLR_results_1305.csv')
-    for i,(d,m) in enumerate(zip(df.dataset, df.marker)):
-        index = old_df.loc[(old_df["dataset"] == d) & (old_df["marker"] ==m)].index
-        values  = df.iloc[i]
-        if len(index)>0:
-            old_df.iloc[index]=values
-        else:
-            print(values)
-            old_df  = old_df.append(values, ignore_index=True)
-    old_df.to_csv('results/tree_ISLR_results_1305.csv', index=False)
-else:
-    df.to_csv('results/tree_ISLR_results_1305.csv', index=False)
+# import os
+# import itertools
+# if os.path.isfile('results/tree_ISLR_results_1305.csv'):
+#     old_df =pd.read_csv('results/tree_ISLR_results_1305.csv')
+#     for i,(d,m) in enumerate(zip(df.dataset, df.marker)):
+#         index = old_df.loc[(old_df["dataset"] == d) & (old_df["marker"] ==m)].index
+#         values  = df.iloc[i]
+#         if len(index)>0:
+#             old_df.iloc[index]=values
+#         else:
+#             print(values)
+#             old_df  = old_df.append(values, ignore_index=True)
+#     old_df.to_csv('results/tree_ISLR_results_1305.csv', index=False)
+# else:
+#     df.to_csv('results/tree_ISLR_results_1305.csv', index=False)

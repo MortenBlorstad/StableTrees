@@ -66,7 +66,7 @@ def handle_ordinal(dataset : pd.DataFrame,var : str) ->pd.DataFrame:
     return dataset
         
 def data_preperation(dataname:str):
-    data = pd.read_csv("data/"+ dataname+".csv") # load dataset
+    data = pd.read_csv("..//data/"+ dataname+".csv") # load dataset
     
     data = data.dropna(axis=0, how="any") # remove missing values if any
     for var in drop_features[dataname]:

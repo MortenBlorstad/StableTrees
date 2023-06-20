@@ -32,7 +32,7 @@ EPSILON = 1.1
 ################################################################
 ## data prepocessing 
 ################################################################
-with tarfile.open("data\poisson\\freMTPLfreq.tar.gz", "r:*") as tar:
+with tarfile.open("..\data\poisson\\freMTPLfreq.tar.gz", "r:*") as tar:
     csv_path = tar.getnames()[0]
     df = pd.read_csv(tar.extractfile(csv_path), header=0)
 
@@ -146,7 +146,8 @@ colors2 = {"tree":"#1f77b4", "NU":"#D55E00", "SL":"#CC79A7",
 
 
 plot_info  = []
-
+import statsmodels.api as sm
+import statsmodels.formula.api as smf
 plot_params = {"ytick.color" : "black",
           "xtick.color" : "black",
           "axes.labelcolor" : "black",
@@ -197,6 +198,7 @@ models = {
             "BABUrf3": RF("babu",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,bumping_iterations=5),
             "sklearn": GridSearchCV(DecisionTreeRegressor(criterion="poisson",random_state=0), parameters),
             "poisReg": PoissonRegressor(solver="newton-cholesky"),
+            "glm":  smf.glm,
             "TR": TreeReevaluation(criterion = criterion, max_depth=5, min_samples_leaf=5),
             "SL": StabilityRegularization(criterion = criterion, max_depth=5, min_samples_leaf=5),
             "ABU": AbuTree(criterion = criterion, max_depth=5, min_samples_leaf=5),
@@ -224,7 +226,7 @@ train_mse = {name:[] for name in models.keys()}
 orig_stability = {name:[] for name in models.keys()}
 orig_standard_stability = {name:[] for name in models.keys()}
 orig_mse = {name:[] for name in models.keys()}
-#parameters = {"ccp_alpha" : [0,0.01,1e-3,1e-4, 1e-5]}
+
 
 
 validation_score = {name:[] for name in models.keys()}
@@ -240,14 +242,16 @@ itesd= 1
 for train_index, test_index in kf.split(df.to_numpy()):
     df_12 = df.iloc[train_index]
     
+   
     
     df_test = df.iloc[test_index]
     
-    
+   
+
     df_1,df_2 =  train_test_split(df_12, test_size=0.5, random_state=SEED)
     df_1_train, df_1_val = train_test_split(df_1, test_size=0.3, random_state=SEED)
     
-    
+   
     print(itesd)
     itesd+=1
     # clf.fit(X1,y1)
@@ -272,7 +276,7 @@ for train_index, test_index in kf.split(df.to_numpy()):
              "BABU4": BABUTree(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,bumping_iterations=7),
             "BABU5": BABUTree(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,bumping_iterations=10),
             "BABU6": BABUTree(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,bumping_iterations=20),
-            #"baseforest": RF("base",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=100,adaptive_complexity=False),
+            "baseforest": RF("base",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=100,adaptive_complexity=False),
             "baseforest": RF("base",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=True),
             "NUrf": RF("nu",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=True),
             "TRrf": RF("tr",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=True),
@@ -287,13 +291,8 @@ for train_index, test_index in kf.split(df.to_numpy()):
             "BABUrf1": RF("babu",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False,bumping_iterations=1),
             "BABUrf2": RF("babu",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,bumping_iterations=3),
             "BABUrf3": RF("babu",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,bumping_iterations=5),
-            # "sklearn": GridSearchCV(DecisionTreeRegressor(criterion="poisson",random_state=0), parameters),
+            "sklearn": GridSearchCV(DecisionTreeRegressor(criterion="poisson",random_state=0), parameters),
             "poisReg": PoissonRegressor(solver="newton-cholesky"),
-            # "TR": TreeReevaluation(criterion = criterion, max_depth=5, min_samples_leaf=5),
-            # "SL": StabilityRegularization(criterion = criterion, max_depth=5, min_samples_leaf=5),
-            # "ABU": AbuTree(criterion = criterion, max_depth=5, min_samples_leaf=5),
-            # "BABU": BABUTree(criterion = criterion, max_depth=5, min_samples_leaf=5),
-            #"BABU": BABUTree(criterion = criterion, max_depth=5, min_samples_leaf=5),
             #"baseGTB" : AGTBoost(loss_function=criterion,gamma=0),
             #"SLbaseGTB" : AGTBoost(loss_function=criterion,gamma=0.1)
 
@@ -302,12 +301,15 @@ for train_index, test_index in kf.split(df.to_numpy()):
             }
     
     for name, model in models.items():
-      
+  
         if name == "poisReg":
             preprocessor = glm_preprocessor            
         else:
             preprocessor = tree_preprocessor
-        if name == "baseGTB":
+        if name == "glm":
+            m = smf.glm("Frequency~DriverAge_binned+Density_binned+CarAge_binned+brandF+Power_glm+Gas", df_1, family=sm.families.Poisson(), freq_weights=df_1['Exposure']).fit()
+            pred1 = m.predict(df_test) 
+        elif name == "baseGTB":
             model.fit(preprocessor.transform(df_1),df_1.ClaimNb,verbose = 25, offset=np.log(df_1["Exposure"]))
             pred1 = model.predict(preprocessor.transform(df_test),offset=np.log(df_test.Exposure) )
             print(pred1)
@@ -329,6 +331,9 @@ for train_index, test_index in kf.split(df.to_numpy()):
         elif name == "baseGTB":
             model.fit(preprocessor.transform(df_12),df_12.ClaimNb,verbose = 25, offset =np.log(df_12.Exposure))
             #print(params)
+        elif name == "glm":
+            m = smf.glm("Frequency~DriverAge_binned+Density_binned+CarAge_binned+brandF+Power_glm+Gas", df_1, family=sm.families.Poisson(), freq_weights=df_1['Exposure']).fit()
+            #print(params)
         else:
             model.update(preprocessor.transform(df_12),df_12.Frequency, sample_weight=df_12["Exposure"])
 
@@ -345,7 +350,7 @@ for train_index, test_index in kf.split(df.to_numpy()):
         mse[name].append(mean_poisson_deviance(df_test.ClaimNb, pred2*df_test.Exposure))
         stability[name].append(S1(pred1*df_test["Exposure"],pred2*df_test["Exposure"]))
 
-     
+
 
     
 for name in models.keys():
@@ -375,6 +380,7 @@ for name in models.keys():
         plot_info.append((x_r,y_r,colors[name],markers[name], x_abs,y_abs,x_se, y_se, x_abs_se, y_abs_se, markers_to_method[name], markers_to_m[name] ))
 print()
 print(plot_info)
+
 import os
 df = pd.DataFrame(plot_info, columns=['loss', 'stability', 'color', "marker", 'loss_abs','stability_abs','loss_se','stability_se','loss_abs_se','stability_abs_se',"method", "m"  ] )
 if os.path.isfile('results/claim_freq_results.csv'):
@@ -391,5 +397,7 @@ if os.path.isfile('results/claim_freq_results.csv'):
     old_df.to_csv('results/claim_freq_results.csv', index=False)
 else:
      df.to_csv('results/claim_freq_results.csv', index=False)
+
+
 
 

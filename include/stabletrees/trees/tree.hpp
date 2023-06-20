@@ -203,9 +203,16 @@ tuple<iVector, iVector> Tree::get_masks(const dVector &feature, double value){
 }
 
 
-
+/**
+ * Learn a regression tree from the training set (X, y).
+ *
+ *
+ * @param X Feature matrix.
+ * @param y response vector.
+ * @param weights Sample weights.
+ */
 void Tree::learn(const dMatrix  X, const  dVector y, const dVector weights){
-    std::lock_guard<std::mutex> lock(mutex);
+    std::lock_guard<std::mutex> lock(mutex); // to make it thread safe when used for parallization in random forest 
     total_obs = y.size();
     //printf("min_samples_leaf: %d \n", min_samples_leaf);
     splitter = new Splitter(min_samples_leaf,total_obs, adaptive_complexity,max_features, learning_rate);
@@ -217,13 +224,16 @@ void Tree::learn(const dMatrix  X, const  dVector y, const dVector weights){
     //}
     
     //dVector offset =  dVector::Constant(y.size(),0,  0);
-    pred_0 = loss_function->link_function(y.mean())  ; //learn_initial_prediction(y,offset,loss_function); //
+    pred_0 = loss_function->link_function(y.mean()) ; //learn_initial_prediction(y,offset,loss_function); //
     //pred_0 = 0;
     //printf("pred_0 %f %f \n", pred_0, loss_function->link_function(y.array().mean()+y.array().mean()/2));
-    dVector pred = dVector::Constant(y.size(),0,  pred_0) ;
-    dVector g = loss_function->dloss(y, pred ).array()*weights.array(); //dVector::Zero(n1,1)
-    dVector h = loss_function->ddloss(y, pred ).array()*weights.array();//dVector::Zero(n1,1)
+    dVector pred = dVector::Constant(y.size(),0,  pred_0); 
 
+    // compute first and second derivatives for the second-order approximation of the loss
+    dVector g = loss_function->dloss(y, pred ).array()*weights.array(); 
+    dVector h = loss_function->ddloss(y, pred ).array()*weights.array();
+
+    //build tree recursively
     this->root = build_tree(X, y,g, h, 0, NULL,weights);//
     
 }
@@ -287,6 +297,12 @@ double Tree::predict_obs(const dVector  &obs){
     return NULL;
 }
 
+/**
+ * Predict response values for X.
+ *
+ *
+ * @param X Feature matrix.
+ */
 dVector Tree::predict(const dMatrix  &X){
     int n = X.rows();
     dVector y_pred(n);
@@ -298,7 +314,17 @@ dVector Tree::predict(const dMatrix  &X){
     return loss_function->inverse_link_function(pred_0 + y_pred.array());//y_pred; //
 }
 
-
+/**
+ * Builds a tree based on on X.
+ *
+ * @param X Feature matrix.
+ * @param y response vector.
+ * @param g first derivatives.
+ * @param h second derivatives.
+ * @param depth node depth.
+ * @param previuos_tree_node node from previous tree (null if no previous tree).
+ * @param weights sample weights.
+ */
 Node* Tree::build_tree(const dMatrix  &X, const dVector &y, const dVector &g, const dVector &h, int depth, const Node* previuos_tree_node, const dVector &weights){
     number_of_nodes +=1;
     tree_depth = max(depth,tree_depth);
@@ -520,42 +546,18 @@ Node* Tree::build_tree(const dMatrix  &X, const dVector &y, const dVector &g, co
     return node;
 }
 
-// Node* Tree::update_tree_info(dMatrix &X, dVector &y, Node* node, int depth){
-//     tree_depth = max(tree_depth, depth);
-//     node->n_samples = y.size();
-//     if(node->n_samples<1){
-//         return NULL;
-//     }else if(node->n_samples<1){
-//         node->prediction = y[0];
-//     }else{
-//         node->prediction = y.array().mean();
-//     }
-//     if(node->is_leaf()){
-//         return node;
-//     }
-//     dVector feature = X.col(node->split_feature);
-//     iVector mask_left;
-//     iVector mask_right;
-//     tie(mask_left, mask_right) = get_masks(feature, node->split_value);
-//     if(mask_left.size()<1 || mask_right.size()<1 ){
-//         //printf("null %d %d \n", mask_left.size()<1, mask_right.size()<1);
-//         node->left_child = NULL;
-//         node->right_child = NULL;
-//     }else{
-//         iVector keep_cols = iVector::LinSpaced(X.cols(), 0, X.cols()-1).array();
-//         dMatrix X_left = X(mask_left,keep_cols); dVector y_left = y(mask_left,1);
-//         dMatrix X_right = X(mask_right,keep_cols); dVector y_right = y(mask_right,1);
 
-//         //printf("update rec %d %d \n", mask_left.size()<1, mask_right.size()<1);
-
-//         node->left_child = update_tree_info(X_left, y_left, node->left_child, depth+1) ;
-//         node->right_child = update_tree_info(X_right, y_right, node->right_child, depth+1) ;
-//     }
-//     //printf("update %d \n", node->get_split_feature());
-//     return node;
-// }
-
-
+/**
+ * Update leaf predictions.
+ *
+ * @param X Feature matrix.
+ * @param y response vector.
+ * @param g first derivatives.
+ * @param h second derivatives.
+ * @param depth node depth.
+ * @param previuos_tree_node node from previous tree (null if no previous tree).
+ * @param weights sample weights.
+ */
 Node* Tree::update_tree_info(const dMatrix &X, const dVector &y, const dVector &g , const dVector &h, Node* node, int depth, const dVector &weights){
     tree_depth = max(tree_depth, depth);
     node->n_samples = y.size();
@@ -626,7 +628,13 @@ std::vector<Node*> Tree::make_node_list(){
 }
 
 
-
+/**
+ * Update the tree based on X.
+ *
+ * @param X Feature matrix.
+ * @param y response vector.
+ * @param weights sample weights.
+ */
 void Tree::update(const dMatrix X, const  dVector y,const dVector weights){
     this->random_state = this->init_random_state; //
     this->learn(X,y,weights);
