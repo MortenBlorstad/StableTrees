@@ -146,8 +146,7 @@ colors2 = {"tree":"#1f77b4", "NU":"#D55E00", "SL":"#CC79A7",
 
 
 plot_info  = []
-import statsmodels.api as sm
-import statsmodels.formula.api as smf
+
 plot_params = {"ytick.color" : "black",
           "xtick.color" : "black",
           "axes.labelcolor" : "black",
