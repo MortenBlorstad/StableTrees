@@ -1,5 +1,5 @@
 
-from stabletrees import BaseLineTree, AbuTreeI, NaiveUpdate,TreeReevaluation,StabilityRegularization,BootstrapUpdate
+from stabletrees import BaseLineTree, AbuTree, NaiveUpdate,TreeReevaluation,StabilityRegularization
 import numpy as np
 from matplotlib import pyplot as plt
 from sklearn.model_selection import train_test_split,RepeatedKFold
@@ -7,7 +7,7 @@ from sklearn.tree import DecisionTreeRegressor
 from sklearn.metrics import mean_poisson_deviance, mean_squared_error
 
 SEED = 0
-n = 100
+n = 1000
 np.random.seed(SEED)
 X = np.random.uniform(low=0,high=4,size=(n,2))
 y = np.random.normal(loc=X[:,0]+X[:,1],scale=1,size=n)
@@ -41,8 +41,6 @@ def _draw_line(node,x_min = 0,x_max=4,y_min=0,y_max=4):
     _draw_line(node.get_left_node(),x_min,x_max_next,y_min ,y_max_next )
     _draw_line(node.get_right_node(),x_min_next,x_max,y_min_next ,y_max)
 
-tree.plot()
-plt.show()
 
 node = tree.root
 fig = plt.figure(figsize=(16, 15))

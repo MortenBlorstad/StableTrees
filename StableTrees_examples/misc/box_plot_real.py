@@ -11,7 +11,7 @@ from sklearn.linear_model import LinearRegression
 from adjustText import adjust_text
 import sys
 sys.path.insert(0, './simulated experiments')
-from pareto_efficient import is_pareto_optimal
+
 
 SEED = 0
 EPSILON = 2
@@ -150,12 +150,12 @@ for ds,target, feature in zip(datasets,targets, features):
                 "SL6":StabilityRegularization(criterion = criterion,min_samples_leaf=5, adaptive_complexity=True,gamma=0.75),
                 "SL7":StabilityRegularization(criterion = criterion,min_samples_leaf=5, adaptive_complexity=True,gamma=0.9),
                 #"ABU":AbuTree(criterion = criterion,min_samples_leaf=5, adaptive_complexity=True),
-                "BABU1":BABUTree(criterion = criterion,min_samples_leaf=5, adaptive_complexity=True,bumping_iterations=1),
+                #"BABU1":BABUTree(criterion = criterion,min_samples_leaf=5, adaptive_complexity=True,bumping_iterations=1),
                 #"BABU2":BABUTree(criterion = criterion,min_samples_leaf=5, adaptive_complexity=True,bumping_iterations=3),
-                "BABU3":BABUTree(criterion = criterion,min_samples_leaf=5, adaptive_complexity=True,bumping_iterations=5),
+                #"BABU3":BABUTree(criterion = criterion,min_samples_leaf=5, adaptive_complexity=True,bumping_iterations=5),
                 #"BABU4":BABUTree(criterion = criterion,min_samples_leaf=5, adaptive_complexity=True,bumping_iterations=7),
                 #"BABU5":BABUTree(criterion = criterion,min_samples_leaf=5, adaptive_complexity=True,bumping_iterations=10),
-                "BABU6":BABUTree(criterion = criterion,min_samples_leaf=5, adaptive_complexity=True,bumping_iterations=20)
+                #"BABU6":BABUTree(criterion = criterion,min_samples_leaf=5, adaptive_complexity=True,bumping_iterations=20)
                 }
         for name, model in models.items():
             model.fit(X1,y1)

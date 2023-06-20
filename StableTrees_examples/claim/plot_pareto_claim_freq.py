@@ -23,7 +23,7 @@ plt.rcParams.update(plot_params)
 
 import itertools
 method = "tree"
-df =pd.read_csv(f'results/claim_freq_results_tree_2705.csv')
+df =pd.read_csv(f'results/claim_freq_results_tree_1505.csv')
 
 plot_info = df
 frontier = []

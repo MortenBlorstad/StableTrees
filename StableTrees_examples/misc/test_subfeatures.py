@@ -62,7 +62,7 @@ print(f"sklearn, {np.mean((pred1-pred2)**2):.3f}, {np.mean((y_test-pred2)**2):.3
 #     # plt.show()
  
 
-tree = TreeReevaluation(adaptive_complexity=True,max_depth=4, max_features=4).fit(X1,y1)
+tree = TreeReevaluation(adaptive_complexity=True,max_depth=4, max_features=2).fit(X1,y1)
 tree.update(X,y)
 tree.plot()
 plt.show()
