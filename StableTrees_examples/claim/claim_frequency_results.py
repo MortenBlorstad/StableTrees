@@ -29,7 +29,9 @@ clf = GridSearchCV(DecisionTreeRegressor(random_state=0), parameters)
 SEED = 0
 EPSILON = 1.1
 
+################################################################
 ## data prepocessing 
+################################################################
 with tarfile.open("data\poisson\\freMTPLfreq.tar.gz", "r:*") as tar:
     csv_path = tar.getnames()[0]
     df = pd.read_csv(tar.extractfile(csv_path), header=0)
@@ -80,7 +82,9 @@ glm_preprocessor = ColumnTransformer(
 tree_preprocessor.fit_transform(df)
 glm_preprocessor.fit_transform(df)
 
-
+################################################################
+## Dictionaries with plotting info 
+################################################################
 markers = {"basetree":"tree","NU":"NU","SL": "SL", "SL1":"SL_{0.1}", "SL2":"SL_{0.25}","SL3":"SL_{0.5}",
             "SL4": "SL_{0.75}", "SL5": "SL_{0.9}",
             "TR":"TR","TR1":"TR_{0,5}",
@@ -152,10 +156,13 @@ plot_params = {"ytick.color" : "black",
           "font.family" : "serif",
           'text.latex.preamble': r"\usepackage{amsmath}",
           "font.serif" : ["Computer Modern Serif"]}
+
+
+################################################################
+## Experimental
+################################################################
 criterion = "poisson"
-parameters = {"ccp_alpha" : [1e-4]}
-criterion = "poisson"
-parameters = {"ccp_alpha" : [1e-4]}
+# parameters = {"ccp_alpha" : [1e-4]}
 models = {  
             "basetree": BaseLineTree(criterion = criterion, max_depth=5, min_samples_leaf=5),
             "NU": NaiveUpdate(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True),
@@ -192,13 +199,15 @@ models = {
             "sklearn": GridSearchCV(DecisionTreeRegressor(criterion="poisson",random_state=0), parameters),
             "poisReg": PoissonRegressor(solver="newton-cholesky"),
             "glm":  smf.glm,
-            # "TR": TreeReevaluation(criterion = criterion, max_depth=5, min_samples_leaf=5),
-            # "SL": StabilityRegularization(criterion = criterion, max_depth=5, min_samples_leaf=5),
-            # "ABU": AbuTree(criterion = criterion, max_depth=5, min_samples_leaf=5),
-            # "BABU": BABUTree(criterion = criterion, max_depth=5, min_samples_leaf=5),
-            "baseGTB" : AGTBoost(loss_function=criterion,gamma=0),
+            "TR": TreeReevaluation(criterion = criterion, max_depth=5, min_samples_leaf=5),
+            "SL": StabilityRegularization(criterion = criterion, max_depth=5, min_samples_leaf=5),
+            "ABU": AbuTree(criterion = criterion, max_depth=5, min_samples_leaf=5),
+            "BABU": BABUTree(criterion = criterion, max_depth=5, min_samples_leaf=5),
+            #"baseGTB" : AGTBoost(loss_function=criterion,gamma=0),
             # "SLbaseGTB" : AGTBoost(loss_function=criterion,gamma=0.1)
             }
+
+# dictionaries to store results
 stability_all = {name:[] for name in models.keys()}
 standard_stability_all= {name:[] for name in models.keys()}
 mse_all= {name:[] for name in models.keys()}
@@ -218,7 +227,7 @@ orig_stability = {name:[] for name in models.keys()}
 orig_standard_stability = {name:[] for name in models.keys()}
 orig_mse = {name:[] for name in models.keys()}
 #parameters = {"ccp_alpha" : [0,0.01,1e-3,1e-4, 1e-5]}
-parameters = {"ccp_alpha" : [1e-4]}
+
 
 validation_score = {name:[] for name in models.keys()}
 name = 'BABUrf2'
@@ -228,51 +237,19 @@ print(markers_to_method[name])
 print(markers_to_m[name])
 
 #clf = GridSearchCV(DecisionTreeRegressor(random_state=0, criterion="poisson"), parameters)
-kf = RepeatedKFold(n_splits= 6,n_repeats=1, random_state=SEED)
+kf = RepeatedKFold(n_splits= 6,n_repeats=1, random_state=SEED) # 6-fold cross-validation
 itesd= 1
 for train_index, test_index in kf.split(df.to_numpy()):
     df_12 = df.iloc[train_index]
     
-    # print(df_12.columns)
-    
-    # df12 = pd.DataFrame(tree_preprocessor.transform(df_12),columns=["Brand", "Power", "Gas", "Region","CarAge","DriverAge","Density"])
-    # print(df_12.Frequency.isnull().any())
-    # print(df_12.Exposure.isnull().any())
-    # print(df_12.ClaimNb.isnull().any())
-    # df12["Frequency"] = df_12["Frequency"].to_numpy()
-    # df12["Exposure"] = df_12["Exposure"].to_numpy()
-    # df12["ClaimNb"] = df_12["ClaimNb"].to_numpy()
-    # df12.to_csv(f'freq_data_6fold_cv/D2/D2_{itesd}.csv', index=False)
-    # if df12.isnull().any().any():
-    #     print("df12 The DataFrame contains NaN values.")
-    # else:
-    #     print("df12 The DataFrame does not contain NaN values.")
-    # print(itesd)
     
     df_test = df.iloc[test_index]
     
-    # dftest = pd.DataFrame(tree_preprocessor.transform(df_test),columns=["Brand", "Power", "Gas", "Region","CarAge","DriverAge","Density"])
-    # dftest["Frequency"] = df_test["Frequency"].to_numpy()
-    # dftest["Exposure"] = df_test["Exposure"].to_numpy()
-    # dftest["ClaimNb"] = df_test["ClaimNb"].to_numpy()
-    # dftest.to_csv(f'freq_data_6fold_cv/D_test/D_test_{itesd}.csv', index=False)
-    # if dftest.isnull().any().any():
-    #     print("dftest The DataFrame contains NaN values.")
-    # else:
-    #     print("dftest The DataFrame does not contain NaN values.")
-
+    
     df_1,df_2 =  train_test_split(df_12, test_size=0.5, random_state=SEED)
     df_1_train, df_1_val = train_test_split(df_1, test_size=0.3, random_state=SEED)
     
-    # df1 = pd.DataFrame(tree_preprocessor.transform(df_1),columns=["Brand", "Power", "Gas", "Region","CarAge","DriverAge","Density"])
-    # df1["Frequency"] = df_1["Frequency"].to_numpy()
-    # df1["Exposure"] = df_1["Exposure"].to_numpy()
-    # df1["ClaimNb"] = df_1["ClaimNb"].to_numpy()
-    # if df1.isnull().any().any():
-    #     print("df1 The DataFrame contains NaN values.")
-    # else:
-    #     print("df1 The DataFrame does not contain NaN values.")
-    # df1.to_csv(f'freq_data_6fold_cv/D1/D1_{itesd}.csv', index=False)
+    
     print(itesd)
     itesd+=1
     # clf.fit(X1,y1)
@@ -280,41 +257,40 @@ for train_index, test_index in kf.split(df.to_numpy()):
     # initial model 
     criterion = "poisson"
     models = {  
-            #  "basetree": BaseLineTree(criterion = criterion, max_depth=5, min_samples_leaf=5, adaptive_complexity=True),
-            # "NU": NaiveUpdate(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True),
-            #  "TR1": TreeReevaluation(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,delta=0.05,alpha=0),
-            #  "TR2": TreeReevaluation(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,delta=0.05,alpha=0.05),
-            #  "TR3": TreeReevaluation(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,delta=0.05,alpha=0.1),
-            #  "SL1": StabilityRegularization(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,gamma=0.1),
-            # "SL2": StabilityRegularization(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,gamma=0.25),
-            #  "SL3": StabilityRegularization(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,gamma=0.5),
-            #  "SL4": StabilityRegularization(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,gamma=0.75),
-            #  "SL5": StabilityRegularization(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,gamma=0.9),
-            # "ABU": AbuTree(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True),
-            #  "BABU1": BABUTree(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,bumping_iterations=1),
-            #  "BABU2": BABUTree(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,bumping_iterations=3),
-            #  "BABU3": BABUTree(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,bumping_iterations=5),
-            #  "BABU4": BABUTree(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,bumping_iterations=7),
-            # "BABU5": BABUTree(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,bumping_iterations=10),
-            # "BABU6": BABUTree(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,bumping_iterations=20),
+             "basetree": BaseLineTree(criterion = criterion, max_depth=5, min_samples_leaf=5, adaptive_complexity=True),
+            "NU": NaiveUpdate(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True),
+             "TR1": TreeReevaluation(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,delta=0.05,alpha=0),
+             "TR2": TreeReevaluation(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,delta=0.05,alpha=0.05),
+             "TR3": TreeReevaluation(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,delta=0.05,alpha=0.1),
+             "SL1": StabilityRegularization(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,gamma=0.1),
+            "SL2": StabilityRegularization(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,gamma=0.25),
+             "SL3": StabilityRegularization(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,gamma=0.5),
+             "SL4": StabilityRegularization(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,gamma=0.75),
+             "SL5": StabilityRegularization(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,gamma=0.9),
+            "ABU": AbuTree(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True),
+             "BABU1": BABUTree(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,bumping_iterations=1),
+             "BABU2": BABUTree(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,bumping_iterations=3),
+             "BABU3": BABUTree(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,bumping_iterations=5),
+             "BABU4": BABUTree(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,bumping_iterations=7),
+            "BABU5": BABUTree(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,bumping_iterations=10),
+            "BABU6": BABUTree(criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,bumping_iterations=20),
             #"baseforest": RF("base",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=100,adaptive_complexity=False),
-            #"baseforest": RF("base",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=True),
-            # "NUrf": RF("nu",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=True),
-            # "TRrf": RF("tr",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=True),
-            # "TRrf2": RF("tr",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=True, alpha=0.05),
-            # "TRrf3": RF("tr",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=True, alpha=0.1),
-            # "SLrf1": RF("sl",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,gamma=0.1),
-            # "SLrf2": RF("sl",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,gamma=0.25),
-            # "SLrf3": RF("sl",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,gamma=0.5),
-            # "SLrf4": RF("sl",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,gamma=0.75),
-            # "SLrf5": RF("sl",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,gamma=0.9),
-            #"ABUrf": RF("abu",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=True),
-            #"BABUrf1": RF("babu",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False,bumping_iterations=1),
-            #"BABUrf2": RF("babu",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,bumping_iterations=3),
-            #"BABUrf3": RF("babu",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,bumping_iterations=5),
+            "baseforest": RF("base",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=True),
+            "NUrf": RF("nu",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=True),
+            "TRrf": RF("tr",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=True),
+            "TRrf2": RF("tr",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=True, alpha=0.05),
+            "TRrf3": RF("tr",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=True, alpha=0.1),
+            "SLrf1": RF("sl",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,gamma=0.1),
+            "SLrf2": RF("sl",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,gamma=0.25),
+            "SLrf3": RF("sl",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,gamma=0.5),
+            "SLrf4": RF("sl",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,gamma=0.75),
+            "SLrf5": RF("sl",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,gamma=0.9),
+            "ABUrf": RF("abu",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=True),
+            "BABUrf1": RF("babu",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=False,bumping_iterations=1),
+            "BABUrf2": RF("babu",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,bumping_iterations=3),
+            "BABUrf3": RF("babu",n_estimators= 100,max_features="third",criterion=criterion,min_samples_leaf=5,adaptive_complexity=True,bumping_iterations=5),
             # "sklearn": GridSearchCV(DecisionTreeRegressor(criterion="poisson",random_state=0), parameters),
             "poisReg": PoissonRegressor(solver="newton-cholesky"),
-            #"glm":  smf.glm,
             # "TR": TreeReevaluation(criterion = criterion, max_depth=5, min_samples_leaf=5),
             # "SL": StabilityRegularization(criterion = criterion, max_depth=5, min_samples_leaf=5),
             # "ABU": AbuTree(criterion = criterion, max_depth=5, min_samples_leaf=5),
@@ -328,10 +304,7 @@ for train_index, test_index in kf.split(df.to_numpy()):
             }
     
     for name, model in models.items():
-        # model.fit(tree_preprocessor.transform(df_1_train),df_1_train.Frequency, sample_weight=df_1_train.Exposure)
-        # pred1 = model.predict(tree_preprocessor.transform(df_1_val) )
-        # validation_score[name] = mean_poisson_deviance(df_1_val.ClaimNb, pred1*df_1_val.Exposure)
-        # print(name, validation_score[name])
+      
         if name == "poisReg":
             preprocessor = glm_preprocessor            
         else:
@@ -380,8 +353,7 @@ for train_index, test_index in kf.split(df.to_numpy()):
         mse[name].append(mean_poisson_deviance(df_test.ClaimNb, pred2*df_test.Exposure))
         stability[name].append(S1(pred1*df_test["Exposure"],pred2*df_test["Exposure"]))
 
-        # mse2[name].append(mean_poisson_deviance(df_test.Frequency, pred2, sample_weight = df_test["Exposure"]))
-        # stability2[name].append(S1(pred1,pred2))
+     
 
     
 for name in models.keys():
@@ -411,28 +383,10 @@ for name in models.keys():
         plot_info.append((x_r,y_r,colors[name],markers[name], x_abs,y_abs,x_se, y_se, x_abs_se, y_abs_se, markers_to_method[name], markers_to_m[name] ))
 print()
 print(plot_info)
-# import os
-# df = pd.DataFrame(plot_info, columns=['loss', 'stability', 'color', "marker", 'loss_abs','stability_abs','loss_se','stability_se','loss_abs_se','stability_abs_se',"method", "m"  ] )
-# if os.path.isfile('results/claim_freq_results.csv'):
-#     old_df =pd.read_csv('results/claim_freq_results.csv')
-#     for i,m in enumerate(df.marker):
-#         index = old_df.loc[(old_df["marker"] ==m)].index
-#         values  = df.iloc[i]
-#         if len(index)>0:
-#             old_df.iloc[index]=values
-#         else:
-#             print(values)
-#             old_df  = old_df.append(values, ignore_index=True)
-
-#     old_df.to_csv('results/claim_freq_results.csv', index=False)
-# else:
-#      df.to_csv('results/claim_freq_results.csv', index=False)
-
-
 import os
 df = pd.DataFrame(plot_info, columns=['loss', 'stability', 'color', "marker", 'loss_abs','stability_abs','loss_se','stability_se','loss_abs_se','stability_abs_se',"method", "m"  ] )
-if os.path.isfile('results/claim_freq_results_tree_2705.csv'):
-    old_df =pd.read_csv('results/claim_freq_results_tree_2705.csv')
+if os.path.isfile('results/claim_freq_results.csv'):
+    old_df =pd.read_csv('results/claim_freq_results.csv')
     for i,m in enumerate(df.marker):
         index = old_df.loc[(old_df["marker"] ==m)].index
         values  = df.iloc[i]
@@ -442,6 +396,8 @@ if os.path.isfile('results/claim_freq_results_tree_2705.csv'):
             print(values)
             old_df  = old_df.append(values, ignore_index=True)
 
-    old_df.to_csv('results/claim_freq_results_tree_2705.csv', index=False)
+    old_df.to_csv('results/claim_freq_results.csv', index=False)
 else:
-     df.to_csv('results/claim_freq_results_tree_2705.csv', index=False)
+     df.to_csv('results/claim_freq_results.csv', index=False)
+
+
