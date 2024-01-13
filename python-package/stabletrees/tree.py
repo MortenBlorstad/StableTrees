@@ -277,7 +277,7 @@ class Tree(BaseRegressionTree):
         return self.fit(X,y,sample_weight)
     
 
-class ABU(Tree):
+class ABUTree(Tree):
     def __init__(self, *, criterion: str = "mse", max_depth: int = None, min_samples_split: int = 2, min_samples_leaf: int = 5, adaptive_complexity: bool = False, max_features: int = None, random_state: int = None) -> None:
         super().__init__(criterion=criterion, max_depth=max_depth, min_samples_split=min_samples_split, min_samples_leaf=min_samples_leaf, adaptive_complexity=adaptive_complexity, max_features=max_features, random_state=random_state)
 

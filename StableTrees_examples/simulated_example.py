@@ -1,7 +1,7 @@
 from sklearn.datasets import fetch_california_housing
 from sklearn.model_selection import train_test_split
 from sklearn.decomposition import PCA
-from trees.tree import Tree,ABU
+from stabletrees.tree import Tree,ABUTree
 from sklearn.model_selection import train_test_split
 import numpy as np
 import matplotlib.pyplot as plt
@@ -19,7 +19,7 @@ X1,_,y1,_ =  train_test_split(X,y,train_size=0.5)
 
 
 
-abu = ABU(adaptive_complexity=True,min_samples_leaf=5)
+abu = ABUTree(adaptive_complexity=True,min_samples_leaf=5)
 
 abu.fit(X1,y1)
 
