@@ -1,6 +1,6 @@
 import numpy as np
-from optimism.cir import cir_sim_mat, rmax_cir, simpson
-from optimism.gumbel import par_gumbel_estimates, pgumbel
+from stabletrees.optimism.cir import cir_sim_mat, rmax_cir, simpson
+from stabletrees.optimism.gumbel import par_gumbel_estimates, pgumbel
 # You need to implement or import the corresponding Python functions for:
 # cir_sim_mat, rmax_cir, par_gumbel_estimates, pgumbel, simpson
 
@@ -41,7 +41,7 @@ class Splitter:
         expected_max_S = None
 
         split_feature = None
-        split_value = None
+        split_value = False
 
         grid_end = 1.5 * np.max(self.cir_sim)
         grid = np.linspace(0.0, grid_end, self.grid_size)
@@ -59,6 +59,7 @@ class Splitter:
             gum_cdf_grid = np.ones(self.grid_size)
 
             Gl, Gl2, Hl, Hl2 = 0, 0, 0, 0
+            largestValue = feature[sorted_index[n-1]]
             for i in range(n - 1):
                 low = sorted_index[i]
                 high = sorted_index[i + 1]
@@ -78,7 +79,7 @@ class Splitter:
                 Hr2 = H2 - Hl2
                 nl = i + 1
                 nr = n - nl
-                if lowValue == highValue:
+                if lowValue == largestValue:
                     break
                 if highValue-lowValue<0.00000000001:
                     continue
@@ -90,6 +91,7 @@ class Splitter:
 
                 u_store[num_splits] = nl * prob_delta
                 num_splits += 1
+                
                 score = ((Gl**2) / Hl + (Gr**2) / Hr - (G**2) / H) / (2 * n)
                 if observed_reduction < score:
                     any_split = True

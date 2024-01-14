@@ -2,8 +2,15 @@ pyproject.toml
 setup.py
 stabletrees/__init__.py
 stabletrees/node.py
+stabletrees/randomforest.py
+stabletrees/tempCodeRunnerFile.py
 stabletrees/tree.py
 stabletrees.egg-info/PKG-INFO
 stabletrees.egg-info/SOURCES.txt
 stabletrees.egg-info/dependency_links.txt
 stabletrees.egg-info/top_level.txt
+stabletrees/optimism/__init__.py
+stabletrees/optimism/cir.py
+stabletrees/optimism/gumbel.py
+stabletrees/splitters/__init__.py
+stabletrees/splitters/splitter.py
