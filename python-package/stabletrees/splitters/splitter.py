@@ -12,7 +12,7 @@ class Splitter:
         self.total_obs = total_obs
         self.max_features = max_features
         self.learning_rate = learning_rate
-        self.cir_sim = cir_sim_mat(200, 200, 1)
+        self.cir_sim = cir_sim_mat(500, 500, 1)
         self.grid_size = 101
         self.grid = np.linspace(0.0, 1.5 * np.max(self.cir_sim), self.grid_size)
         self.gum_cdf_mmcir_grid = np.ones(self.grid_size)
@@ -22,6 +22,7 @@ class Splitter:
     def find_best_split(self, X, y, g, h, features_indices):
         n = len(y)
         observed_reduction = -np.inf
+        score= -np.inf
         any_split = False
 
         G = np.sum(g)
@@ -48,7 +49,7 @@ class Splitter:
             u_store = np.zeros(n)
             prob_delta = 1.0 / n
             gum_cdf_grid = np.ones(self.grid_size)
-
+            nl=0;nr = n
             Gl, Gl2, Hl, Hl2 = 0, 0, 0, 0
             largestValue = feature[sorted_index[n-1]]
             for i in range(n - 1):
@@ -68,8 +69,8 @@ class Splitter:
                 Hr = H - Hl
                 Gr2 = G2 - Gl2
                 Hr2 = H2 - Hl2
-                nl = i + 1
-                nr = n - nl
+                nl += 1
+                nr -= 1
                 if lowValue == largestValue:
                     break
                 if highValue-lowValue<0.00000000001:

@@ -47,6 +47,9 @@ pred_rf1 = rf.predict(X_test)
 abu.update(X,y)
 pred2 = abu.predict(X_test)
 
+abu.fit(X,y)
+pred3 = abu.predict(X_test)
+
 rf.fit(X,y)
 pred_rf2 = rf.predict(X_test)
 EPSILON =10
@@ -56,7 +59,9 @@ print(f"stability: {np.std(np.log((pred2+EPSILON)/(pred1+EPSILON)))}")
 print("\n\n rf:")
 print(f"loss: {np.sum((y_test-pred_rf2)**2)}")
 print(f"stability: {np.std(np.log((pred_rf2+EPSILON)/(pred_rf1+EPSILON)))}")
-
+print("\n\n base:")
+print(f"loss: {np.sum((y_test-pred3)**2)}")
+print(f"stability: {np.std(np.log((pred3+EPSILON)/(pred1+EPSILON)))}")
 
 
 ax1.scatter(pca1,y_test,c = "red", s = 2, alpha = 0.5)

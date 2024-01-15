@@ -286,8 +286,24 @@ class Tree(BaseRegressionTree):
     
 
 class ABUTree(Tree):
-    def __init__(self, *, criterion: str = "mse", max_depth: int = None, min_samples_split: int = 2, min_samples_leaf: int = 5, adaptive_complexity: bool = False, max_features: int = None, random_state: int = None) -> None:
+    def __init__(self, *, criterion: str = "mse", max_depth: int = None, min_samples_split: int = 2, min_samples_leaf: int = 5, adaptive_complexity: bool = False, max_features: int = None, random_state: int = None, update_node = False) -> None:
         super().__init__(criterion=criterion, max_depth=max_depth, min_samples_split=min_samples_split, min_samples_leaf=min_samples_leaf, adaptive_complexity=adaptive_complexity, max_features=max_features, random_state=random_state)
+        self.update_node = update_node
+    
+    def update_node_obs(self,X: np.ndarray, node:Node):
+
+        print("before", node.num_samples)
+        node.num_samples = X.shape[0]
+        print("after",node.num_samples)
+        print("=========\n")
+        if node.is_leaf():
+            return node
+        left_mask = X[:,node.split_feature]<=node.split_value
+        right_mask = ~left_mask
+        node.left_child = self.update_node_obs(X[left_mask],node.left_child)
+        node.right_child =self.update_node_obs(X[right_mask],node.right_child)
+        return node
+
 
 
     def update_tree(self,X : np.ndarray, y : np.ndarray, y_prev : np.ndarray, g : np.ndarray, h : np.ndarray,gammas:np.ndarray, depth:int, sample_weight: np.ndarray):
@@ -330,8 +346,8 @@ class ABUTree(Tree):
         left_mask = X[:,split_feature]<=split_value
         right_mask = ~left_mask
         node = Node(split_value, score, split_feature, n , pred, y_var, w_var,features_indices)
-        node.left_child = self.build_tree(X[left_mask], y[left_mask] , g[left_mask] , h[left_mask], depth+1, sample_weight[left_mask])
-        node.right_child = self.build_tree(X[right_mask], y[right_mask] , g[right_mask] , h[right_mask], depth+1, sample_weight[right_mask])
+        node.left_child = self.update_tree(X[left_mask], y[left_mask], y_prev[left_mask], g[left_mask] , h[left_mask],gammas[left_mask], depth+1, sample_weight[left_mask])
+        node.right_child = self.update_tree(X[right_mask], y[right_mask],y_prev[right_mask] , g[right_mask] , h[right_mask],gammas[right_mask], depth+1, sample_weight[right_mask])
 
         if node.left_child!=None and expected_max_S is not None:
             node.left_child.w_var*=expected_max_S
@@ -365,19 +381,22 @@ class ABUTree(Tree):
 
     def update(self, X: np.ndarray, y: np.ndarray,gammas:np.ndarray = None,
                 y_prev:np.ndarray = None, sample_weight: np.ndarray = None):
+        
+
+        self.pred_0 = self.loss_function.link_function(y.mean()) 
         if sample_weight is None:
             sample_weight = np.ones(shape=(len(y),))
+        if self.update_node:
+            self.update_node_obs(X,self.root)
         if gammas is None or y_prev is None :
             info = self.predict_info(X)
             gammas = info[:,1]
-            y_prev = info[:,0]
-
+            y_prev = info[:,0] + self.pred_0
+        
         
         self.total_obs = len(y)
         self.splitter = Splitter(min_samples_leaf=self.min_samples_leaf, total_obs=self.total_obs , adaptive_complexity=self.adaptive_complexity, 
                 max_features=None, learning_rate=1)
-        
-        self.pred_0 = self.loss_function.link_function(y.mean()) 
         pred = np.ones(self.total_obs)*self.pred_0
         
         g = self.loss_function.dloss(y, pred, y_prev, gammas)*sample_weight 
