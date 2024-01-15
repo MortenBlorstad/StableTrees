@@ -6,6 +6,8 @@ from sklearn.base import BaseEstimator
 import numpy as np
 
 from stabletrees.splitters.splitter import Splitter
+
+
 from stabletrees.node import Node
 from matplotlib import pyplot as plt
 criterions = {"mse":0, "poisson":1}
@@ -203,25 +205,25 @@ class Tree(BaseRegressionTree):
         split_value = None
         w_var = 1
         y_var = 1
-        features_indices = np.arange(0, X.shape[1])
+        features_indices = np.arange(0, X.shape[1], dtype=np.intp)
 
         loss_parent = ((y - pred)**2).sum()
         
         if self.all_same(y):
             #print("all_same stops")
-            return Node(split_value, score, None, n , pred, y_var, w_var,features_indices)
+            return Node(split_value, score, -1, n , pred, y_var, w_var,features_indices)
         
         any_split, split_feature, split_value, score, y_var ,w_var,expected_max_S = self.splitter.find_best_split(X,y, g,h, features_indices)
 
         if depth >=self.max_depth:
            #print("depth stops")
-           return Node(split_value, score, None, n , pred, y_var, w_var,features_indices)
+           return Node(split_value, score, -1, n , pred, y_var, w_var,features_indices)
         if n< self.min_samples_split:
             #print("min_samples_split stops")
-            return Node(split_value, score, None, n , pred, y_var, w_var,features_indices)
+            return Node(split_value, score, -1, n , pred, y_var, w_var,features_indices)
         if not any_split:
             #print("any_split stops",split_value, score)
-            return Node(split_value, score, None, n , pred, y_var, w_var,features_indices)
+            return Node(split_value, score, -1, n , pred, y_var, w_var,features_indices)
         
         left_mask = X[:,split_feature]<=split_value
         right_mask = ~left_mask
@@ -308,7 +310,7 @@ class ABUTree(Tree):
         split_value = None
         w_var = 1
         y_var = 1
-        features_indices = np.arange(0, X.shape[1])
+        features_indices = np.arange(0, X.shape[1], dtype=np.intp)
 
         loss_parent = ((y - pred)**2).sum()
         
@@ -319,11 +321,11 @@ class ABUTree(Tree):
         
 
         if depth >=self.max_depth:
-           return Node(split_value, score, None, n , pred, y_var, w_var,features_indices)
+           return Node(split_value, score, -1, n , pred, y_var, w_var,features_indices)
         if n< self.min_samples_split:
-            return Node(split_value, score, None, n , pred, y_var, w_var,features_indices)
+            return Node(split_value, score, -1, n , pred, y_var, w_var,features_indices)
         if not any_split:
-            return Node(split_value, score, None, n , pred, y_var, w_var,features_indices)
+            return Node(split_value, score, -1, n , pred, y_var, w_var,features_indices)
         
         left_mask = X[:,split_feature]<=split_value
         right_mask = ~left_mask
@@ -361,13 +363,16 @@ class ABUTree(Tree):
         return None
 
 
-    def update(self, X: np.ndarray, y: np.ndarray, sample_weight: np.ndarray = None):
+    def update(self, X: np.ndarray, y: np.ndarray,gammas:np.ndarray = None,
+                y_prev:np.ndarray = None, sample_weight: np.ndarray = None):
         if sample_weight is None:
             sample_weight = np.ones(shape=(len(y),))
+        if gammas is None or y_prev is None :
+            info = self.predict_info(X)
+            gammas = info[:,1]
+            y_prev = info[:,0]
 
-        info = self.predict_info(X)
-        gammas = info[:,1]
-        y_prev = info[:,0]
+        
         self.total_obs = len(y)
         self.splitter = Splitter(min_samples_leaf=self.min_samples_leaf, total_obs=self.total_obs , adaptive_complexity=self.adaptive_complexity, 
                 max_features=None, learning_rate=1)

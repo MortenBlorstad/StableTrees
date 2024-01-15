@@ -4,9 +4,10 @@ from stabletrees.tree import Tree, ABUTree
 import numpy as np
 from joblib import Parallel, delayed
 class ABUForest():
-    def __init__(self, n_estimators=100, random_state = 0):
+    def __init__(self, n_estimators=100,min_samples_leaf=5, random_state = 0):
         self.estimators_ = []
         self.random_state = random_state
+        self.min_samples_leaf = min_samples_leaf
         self.n_outputs_ =1
         self.n_estimators = n_estimators
 
@@ -25,7 +26,7 @@ class ABUForest():
         self.estimators_ = []
         # Function to fit a single tree
         def fit_single_tree(random_state, X, y):
-            tree = ABUTree(random_state=random_state, adaptive_complexity=True, min_samples_leaf=5)
+            tree = ABUTree(random_state=random_state, adaptive_complexity=True, min_samples_leaf=self.min_samples_leaf)
             bootstrap_idx = self._generate_bootstrap_indices(random_state,X.shape[0])
             X_sample, y_sample = X[bootstrap_idx], y[bootstrap_idx]
   
@@ -40,13 +41,17 @@ class ABUForest():
 
         return self
     
-    def update(self, X, y, n_jobs=2):
+    def update(self, X, y, n_jobs=8):
         """Update the forest of trees in parallel."""
-
+        
         # Function to update a single tree
         def update_single_tree(tree,random_state, X, y):
+
             bootstrap_idx = self._generate_bootstrap_indices(random_state,X.shape[0])
             X_sample, y_sample = X[bootstrap_idx], y[bootstrap_idx]
+            info = self.predict_info(X_sample)
+            gammas =info[:,1]
+            y_prev = info[:,0]
             tree.update(X_sample, y_sample)
             return tree
 
@@ -58,7 +63,24 @@ class ABUForest():
         return self
     
 
-    def predict(self, X, n_jobs=2):
+    def predict_info(self, X, n_jobs=8):
+        """Make predictions using the forest of trees."""
+        
+        # Parallel prediction across all trees
+        all_predictions_info = Parallel(n_jobs=n_jobs)(
+            delayed(self._predict_info_tree)(tree, X) for tree in self.estimators_
+        )
+        
+        # Average predictions from all trees
+        avg_info = np.mean(all_predictions_info, axis=0)
+        return avg_info
+
+    def _predict_info_tree(self, tree, X):
+        """Helper function to predict with a single tree."""
+        return tree.predict_info(X)
+
+
+    def predict(self, X, n_jobs=8):
         """Make predictions using the forest of trees."""
         
         # Parallel prediction across all trees

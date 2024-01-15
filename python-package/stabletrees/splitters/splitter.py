@@ -17,16 +17,7 @@ class Splitter:
         self.grid = np.linspace(0.0, 1.5 * np.max(self.cir_sim), self.grid_size)
         self.gum_cdf_mmcir_grid = np.ones(self.grid_size)
 
-    # def get_reduction(self, g, h, mask_left):
-    #     G = np.sum(g)
-    #     H = np.sum(h)
-    #     Gl = np.sum(g[mask_left])
-    #     Hl = np.sum(h[mask_left])
-    #     Gr = G - Gl
-    #     Hr = H - Hl
-    #     n = len(g)
-    #     reduction = ((Gl * Gl) / Hl + (Gr * Gr) / Hr - (G * G) / H) / (2 * n)
-    #     return reduction
+    
 
     def find_best_split(self, X, y, g, h, features_indices):
         n = len(y)

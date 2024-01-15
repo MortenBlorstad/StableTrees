@@ -35,4 +35,3 @@ class Node:
         return self.prediction
     def nsamples(self):
         return self.num_samples
-
